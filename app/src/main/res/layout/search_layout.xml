@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+    <ScrollView
+        android:id="@+id/scrollView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <EditText
+            android:id="@+id/find_deal"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/edittextsize"
+            android:layout_centerHorizontal="true"
+            android:layout_margin="@dimen/inner_fragment_margin"
+            android:background="@drawable/edittextstyle"
+            android:drawableLeft="@android:drawable/ic_menu_search"
+            android:drawableRight="@android:drawable/ic_menu_close_clear_cancel"
+            android:hint="@string/lets_find_a_deal"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:maxLines="1"
+            android:textAlignment="center"
+            tools:ignore="RtlHardcoded"/>
+
+
+    </ScrollView>
+
+
+</RelativeLayout>

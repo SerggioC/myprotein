@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item android:title="Main">
+            <menu>
+                <item
+                    android:id="@+id/nav_item_watching"
+                    android:icon="@android:drawable/ic_menu_view"
+                    android:title="Watching"/>
+                <item
+                    android:id="@+id/nav_item_search"
+                    android:icon="@drawable/sent"
+                    android:title="Search"/>
+                <item
+                    android:id="@+id/nav_item_graphs"
+                    android:icon="@drawable/draft"
+                    android:title="Graphs"/>
+            </menu>
+        </item>
+        <item android:title="More">
+            <menu>
+                <item
+                    android:id="@+id/nav_item_fav"
+                    android:icon="@drawable/spam"
+                    android:title="Favorites"/>
+                <item
+                    android:id="@+id/nav_item_database"
+                    android:icon="@drawable/composea"
+                    android:title="Database"/>
+                <item
+                    android:id="@+id/nav_item_settings"
+                    android:icon="@drawable/settings"
+                    android:title="Settings"/>
+                <item
+                    android:id="@+id/nav_item_about"
+                    android:icon="@drawable/arrow"
+                    android:title="About"/>
+                <item
+                    android:id="@+id/nav_item_contact"
+                    android:icon="@drawable/compose"
+                    android:title="Contact"/>
+            </menu>
+        </item>
+    </group>
+</menu>
