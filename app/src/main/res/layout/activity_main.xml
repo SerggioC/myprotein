@@ -48,8 +48,11 @@
         android:layout_marginTop="-24dp"
         android:background="@drawable/menubg8"
         app:headerLayout="@layout/navigation_view_header"
-        app:itemTextColor="#ffffff"
+
         app:itemIconTint="@color/white"
+        app:itemTextColor="@color/white"
+        app:itemBackground="@drawable/state_list"
+
         app:menu="@menu/drawermenu"
         app:theme="@style/NavigationDrawerStyle"
 

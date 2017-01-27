@@ -5,15 +5,18 @@
             <menu>
                 <item
                     android:id="@+id/nav_item_watching"
+                    android:checkable="true"
                     android:icon="@android:drawable/ic_menu_view"
                     android:title="Watching"/>
                 <item
                     android:id="@+id/nav_item_search"
-                    android:icon="@drawable/sent"
+                    android:checkable="true"
+                    android:icon="@android:drawable/ic_menu_search"
                     android:title="Search"/>
                 <item
                     android:id="@+id/nav_item_graphs"
-                    android:icon="@drawable/draft"
+                    android:checkable="true"
+                    android:icon="@android:drawable/ic_menu_today"
                     android:title="Graphs"/>
             </menu>
         </item>
@@ -21,22 +24,27 @@
             <menu>
                 <item
                     android:id="@+id/nav_item_fav"
-                    android:icon="@drawable/spam"
+                    android:checkable="true"
+                    android:icon="@android:drawable/btn_star_big_on"
                     android:title="Favorites"/>
                 <item
                     android:id="@+id/nav_item_database"
+                    android:checkable="true"
                     android:icon="@drawable/composea"
                     android:title="Database"/>
                 <item
                     android:id="@+id/nav_item_settings"
+                    android:checkable="true"
                     android:icon="@drawable/settings"
                     android:title="Settings"/>
                 <item
                     android:id="@+id/nav_item_about"
+                    android:checkable="true"
                     android:icon="@drawable/arrow"
                     android:title="About"/>
                 <item
                     android:id="@+id/nav_item_contact"
+                    android:checkable="true"
                     android:icon="@drawable/compose"
                     android:title="Contact"/>
             </menu>

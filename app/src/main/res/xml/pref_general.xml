@@ -30,4 +30,43 @@
         android:positiveButtonText="@null"
         android:title="@string/pref_title_add_friends_to_messages"/>
 
+
+
+    <!-- NOTE: Hide buttons to simplify the UI. Users can touch outside the dialog to
+         dismiss it. -->
+    <!-- NOTE: ListPreference's summary should be set to its value by the activity code. -->
+    <ListPreference
+        android:defaultValue="de-at"
+        android:entries="@array/pref_mp_website_titles"
+        android:entryValues="@array/pref_mp_website_values"
+        android:key="mp_website_location"
+        android:negativeButtonText="@null"
+        android:positiveButtonText="@null"
+        android:title="@string/pref_title_mp_website"/>
+    <!-- NOTE: Hide buttons to simplify the UI. Users can touch outside the dialog to
+         dismiss it. -->
+    <!-- NOTE: ListPreference's summary should be set to its value by the activity code. -->
+    <ListPreference
+        android:defaultValue="GB"
+        android:entries="@array/pref_mp_shippingTo_titles"
+        android:entryValues="@array/pref_mp_shippingTo_values"
+        android:key="mp_shipping_location"
+        android:negativeButtonText="@null"
+        android:positiveButtonText="@null"
+        android:title="@string/pref_title_mp_shippingTo"/>
+
+    <!-- NOTE: Hide buttons to simplify the UI. Users can touch outside the dialog to
+         dismiss it. -->
+    <!-- NOTE: ListPreference's summary should be set to its value by the activity code. -->
+    <ListPreference
+        android:defaultValue="GBP"
+        android:entries="@array/pref_mp_Currencies_titles"
+        android:entryValues="@array/pref_mp_Currencies_values"
+        android:key="mp_currencies"
+        android:negativeButtonText="@null"
+        android:positiveButtonText="@null"
+        android:title="@string/pref_title_mp_Currency"/>
+
+
+
 </PreferenceScreen>

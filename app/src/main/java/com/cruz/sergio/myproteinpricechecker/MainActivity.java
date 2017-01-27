@@ -12,24 +12,24 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import static com.cruz.sergio.myproteinpricechecker.TabFragment.viewPager;
 
 public class MainActivity extends AppCompatActivity {
+    public static NavigationView mNavigationView;
     DrawerLayout mDrawerLayout;
-    NavigationView mNavigationView;
     FragmentManager mFragmentManager;
     FragmentTransaction mFragmentTransaction;
     Activity mActivity;
     SharedPreferences sharedPrefs;
     Handler mHandler;
     Bundle indexBundle;
+    int index = 0;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -57,6 +57,10 @@ public class MainActivity extends AppCompatActivity {
         mFragmentTransaction = mFragmentManager.beginTransaction();
         mFragmentTransaction.replace(R.id.containerView, tabFragment).commit();
 
+        MenuItem firstMenuItem = mNavigationView.getMenu().findItem(R.id.nav_item_watching);
+        firstMenuItem.setChecked(true);
+        TheMenuItem.lastMenuItem = firstMenuItem;
+
         /**
          * Setup click events on the Navigation View Items.
          */
@@ -64,73 +68,51 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onNavigationItemSelected(MenuItem menuItem) {
                 mDrawerLayout.closeDrawers();
-                Log.i("Sergio>>>", "tabFragment.isAdded(?) " + tabFragment.isAdded());
 
-                if (menuItem.getItemId() == R.id.nav_item_watching) {
-                    int index = 0;
-                    if (tabFragment.isAdded()) {
-                        viewPager.setCurrentItem(index);
-                    } else {
-                        indexBundle.putInt("index", index);
-                        tabFragment.getArguments().putAll(indexBundle);
-                        FragmentTransaction fragmentTransaction = mFragmentManager.beginTransaction();
-                        fragmentTransaction.replace(R.id.containerView, tabFragment);
-                        fragmentTransaction.commit();
-                        Log.i("Sergio>>>", "onNavigationItemSelected: " + indexBundle);
-                    }
-                }
-
-                if (menuItem.getItemId() == R.id.nav_item_search) {
-                    int index = 1;
-                    if (tabFragment.isAdded()) {
-                        viewPager.setCurrentItem(index);
-                    } else {
-                        indexBundle.putInt("index", index);
-                        tabFragment.getArguments().putAll(indexBundle);
-                        FragmentTransaction fragmentTransaction = mFragmentManager.beginTransaction();
-                        fragmentTransaction.replace(R.id.containerView, tabFragment);
-                        fragmentTransaction.commit();
-                    }
-
-//                    FragmentTransaction fragmentTransaction = mFragmentManager.beginTransaction();
-//                    fragmentTransaction.replace(R.id.containerView, new TabFragment()).commit();
-                }
-
-                if (menuItem.getItemId() == R.id.nav_item_graphs) {
-                    int index = 2;
-                    if (tabFragment.isAdded()) {
-                        viewPager.setCurrentItem(index);
-                    } else {
-                        indexBundle.putInt("index", index);
-                        tabFragment.getArguments().putAll(indexBundle);
-                        FragmentTransaction fragmentTransaction = mFragmentManager.beginTransaction();
-                        fragmentTransaction.replace(R.id.containerView, tabFragment);
-                        fragmentTransaction.commit();
-                    }
-                }
-
-                if (menuItem.getItemId() == R.id.nav_item_settings) {
-                    startActivity(new Intent(mActivity, SettingsActivity.class));
-                }
-
-                if (menuItem.getItemId() == R.id.nav_item_fav) {
-                    FragmentTransaction fragmentTransaction = mFragmentManager.beginTransaction();
-                    fragmentTransaction.replace(R.id.containerView, new SentFragment()).commit();
-
-                }
-
-                //Checking if the item is in checked state or not, if not make it in checked state
-                if (menuItem.isChecked()) {
-                    menuItem.setChecked(false);
-                } else {
-                    menuItem.setChecked(true);
-                }
+                TheMenuItem.lastMenuItem.setChecked(false);
                 menuItem.setChecked(true);
+
+                int menu_Item_Id = menuItem.getItemId();
+
+                switch (menu_Item_Id) {
+                    case R.id.nav_item_watching:
+                        index = 0;
+                        break;
+                    case R.id.nav_item_search:
+                        index = 1;
+                        break;
+                    case R.id.nav_item_graphs:
+                        index = 2;
+                        break;
+                    case R.id.nav_item_settings:
+                        Intent intent = new Intent(mActivity, SettingsActivity.class);
+                        intent.putExtra("menuId", TheMenuItem.lastMenuItem.getItemId());
+                        startActivity(intent);
+                        break;
+                    case R.id.nav_item_fav:
+                        FragmentTransaction fragmentTransaction = mFragmentManager.beginTransaction();
+                        fragmentTransaction.replace(R.id.containerView, new SentFragment()).commit();
+                        break;
+                }
+
+
+                if (tabFragment.isAdded()) {
+                    viewPager.setCurrentItem(index);
+                } else {
+                    indexBundle.putInt("index", index);
+                    tabFragment.getArguments().putAll(indexBundle);
+                    FragmentTransaction fragmentTransaction = mFragmentManager.beginTransaction();
+                    fragmentTransaction.replace(R.id.containerView, tabFragment);
+                    fragmentTransaction.commit();
+                }
+
+                TheMenuItem.lastMenuItem = menuItem;
 
                 return true;
             }
 
         });
+
 
         /**
          * Setup Drawer Toggle on the Toolbar ? triple parallel lines on the left
@@ -174,7 +156,6 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
@@ -183,6 +164,13 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public static class TheMenuItem {
+        static MenuItem lastMenuItem;
+        TheMenuItem(MenuItem lastMenuItem) {
+            this.lastMenuItem = lastMenuItem;
+        }
     }
 
 

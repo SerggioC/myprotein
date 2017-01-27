@@ -47,6 +47,316 @@
         <item>-1</item>
     </string-array>
 
+    <string name="pref_title_mp_website">Myprotein Website Location</string>
+    <string-array name="pref_mp_website_titles">
+        <item>Austria (German)</item>
+        <item>Australia (English)</item>
+        <item>Azerbaijan (Azeri)</item>
+        <item>Bosnia and Herzegovina (Bosnian)</item>
+        <item>Belgium (Dutch)</item>
+        <item>Bulgaria (Bulgarian)</item>
+        <item>Canada (English)</item>
+        <item>Canada (French)</item>
+        <item>China (Chinese)</item>
+        <item>Croatia (Croatian)</item>
+        <item>Cyprus (Greek)</item>
+        <item>Czech Republic (Czech)</item>
+        <item>Denmark (Danish)</item>
+        <item>Germany (German)</item>
+        <item>Estonia (Estonian)</item>
+        <item>Finland (Finnish)</item>
+        <item>France (French)</item>
+        <item>Greece (Greek)</item>
+        <item>Hong Kong (English)</item>
+        <item>Ireland (English)</item>
+        <item>India (English)</item>
+        <item>Italy (Italian)</item>
+        <item>Japan (Japanese)</item>
+        <item>Korea (Korean)</item>
+        <item>Latvia (Latvian)</item>
+        <item>Lithuania (Lithuanian)</item>
+        <item>Netherlands (Dutch)</item>
+        <item>New Zealand (English)</item>
+        <item>Norway (Norwegian)</item>
+        <item>Poland (Polish)</item>
+        <item>Portugal (Portuguese)</item>
+        <item>Romania (Romanian)</item>
+        <item>Russia (Russian)</item>
+        <item>Serbia (Serbian)</item>
+        <item>Singapore (English)</item>
+        <item>Slovakia (Slovak)</item>
+        <item>Slovenia (Slovenian)</item>
+        <item>South Africa (English)</item>
+        <item>Spain (Spanish)</item>
+        <item>Sweden (Swedish)</item>
+        <item>Switzerland (German)</item>
+        <item>Ukraine (Ukrainian)</item>
+        <item>United Kingdom (English)</item>
+        <item>United States (English)</item>
+    </string-array>
+    <string-array name="pref_mp_website_values">
+        <item>de-at</item>
+        <item>en-au</item>
+        <item>az-az</item>
+        <item>bs-ba</item>
+        <item>nl-be</item>
+        <item>bg-bg</item>
+        <item>en-ca</item>
+        <item>fr-ca</item>
+        <item>zh-cn</item>
+        <item>hr-hr</item>
+        <item>el-cy</item>
+        <item>cs-cz</item>
+        <item>da-dk</item>
+        <item>de-de</item>
+        <item>et-ee</item>
+        <item>fi-fi</item>
+        <item>fr-fr</item>
+        <item>el-gr</item>
+        <item>en-hk</item>
+        <item>en-ie</item>
+        <item>en-in</item>
+        <item>it-it</item>
+        <item>ja-jp</item>
+        <item>ko-kr</item>
+        <item>lv-lv</item>
+        <item>lt-lt</item>
+        <item>nl-nl</item>
+        <item>en-nz</item>
+        <item>nb-no</item>
+        <item>pl-pl</item>
+        <item>pt-pt</item>
+        <item>ro-ro</item>
+        <item>ru-ru</item>
+        <item>sr-rs</item>
+        <item>en-sg</item>
+        <item>sk-sk</item>
+        <item>sl-si</item>
+        <item>en-za</item>
+        <item>es-es</item>
+        <item>sv-se</item>
+        <item>de-ch</item>
+        <item>uk-ua</item>
+        <item>en-gb</item>
+        <item>en-us</item>
+    </string-array>
+
+    <string-array name="pref_mp_shippingTo_titles">
+        <item>Algeria</item>
+        <item>Andorra</item>
+        <item>Australia</item>
+        <item>Austria</item>
+        <item>Azerbaijan</item>
+        <item>Bahamas</item>
+        <item>Belgium</item>
+        <item>Bosnia and Herzegovina</item>
+        <item>Bulgaria</item>
+        <item>Canada</item>
+        <item>China</item>
+        <item>Colombia</item>
+        <item>Croatia</item>
+        <item>Cyprus</item>
+        <item>Czech Republic</item>
+        <item>Denmark</item>
+        <item>Dominican Republic</item>
+        <item>Estonia</item>
+        <item>Finland</item>
+        <item>France</item>
+        <item>Georgia</item>
+        <item>Germany</item>
+        <item>Gibraltar</item>
+        <item>Greece</item>
+        <item>Guadeloupe</item>
+        <item>Guatemala</item>
+        <item>Guernsey</item>
+        <item>Hong Kong</item>
+        <item>Hungary</item>
+        <item>Iceland</item>
+        <item>India</item>
+        <item>Indonesia</item>
+        <item>Ireland</item>
+        <item>Israel</item>
+        <item>Italy</item>
+        <item>Japan</item>
+        <item>Jersey</item>
+        <item>Kazakhstan</item>
+        <item>Korea, Republic of</item>
+        <item>Latvia</item>
+        <item>Lichtenstein</item>
+        <item>Lithuania</item>
+        <item>Luxembourg</item>
+        <item>Macao</item>
+        <item>Macedonia, the former Yugoslav Republic of</item>
+        <item>Malaysia</item>
+        <item>Malta</item>
+        <item>Martinique</item>
+        <item>Netherlands</item>
+        <item>New Zealand</item>
+        <item>Nigeria</item>
+        <item>Norway</item>
+        <item>Peru</item>
+        <item>Poland</item>
+        <item>Portugal</item>
+        <item>Puerto Rico</item>
+        <item>Romania</item>
+        <item>Russian Federation</item>
+        <item>Réunion</item>
+        <item>Saint Pierre and Miquelon</item>
+        <item>San Marino</item>
+        <item>Serbia</item>
+        <item>Singapore</item>
+        <item>Slovakia</item>
+        <item>Slovenia</item>
+        <item>South Africa</item>
+        <item>Spain</item>
+        <item>Sweden</item>
+        <item>Switzerland</item>
+        <item>Taiwan</item>
+        <item>Ukraine</item>
+        <item>United Kingdom</item>
+        <item>United States</item>
+        <item>Viet Nam</item>
+    </string-array>
+    <string-array name="pref_mp_shippingTo_values">
+        <item>"DZ"</item>
+        <item>"AD"</item>
+        <item>"AU"</item>
+        <item>"AT"</item>
+        <item>"AZ"</item>
+        <item>"BS"</item>
+        <item>"BE"</item>
+        <item>"BA"</item>
+        <item>"BG"</item>
+        <item>"CA"</item>
+        <item>"CN"</item>
+        <item>"CO"</item>
+        <item>"HR"</item>
+        <item>"CY"</item>
+        <item>"CZ"</item>
+        <item>"DK"</item>
+        <item>"DO"</item>
+        <item>"EE"</item>
+        <item>"FI"</item>
+        <item>"FR"</item>
+        <item>"GE"</item>
+        <item>"DE"</item>
+        <item>"GI"</item>
+        <item>"GR"</item>
+        <item>"GP"</item>
+        <item>"GT"</item>
+        <item>"GG"</item>
+        <item>"HK"</item>
+        <item>"HU"</item>
+        <item>"IS"</item>
+        <item>"IN"</item>
+        <item>"ID"</item>
+        <item>"IE"</item>
+        <item>"IL"</item>
+        <item>"IT"</item>
+        <item>"JP"</item>
+        <item>"JE"</item>
+        <item>"KZ"</item>
+        <item>"KR"</item>
+        <item>"LV"</item>
+        <item>"LI"</item>
+        <item>"LT"</item>
+        <item>"LU"</item>
+        <item>"MO"</item>
+        <item>"MK"</item>
+        <item>"MY"</item>
+        <item>"MT"</item>
+        <item>"MQ"</item>
+        <item>"NL"</item>
+        <item>"NZ"</item>
+        <item>"NG"</item>
+        <item>"NO"</item>
+        <item>"PE"</item>
+        <item>"PL"</item>
+        <item>"PT"</item>
+        <item>"PR"</item>
+        <item>"RO"</item>
+        <item>"RU"</item>
+        <item>"RE"</item>
+        <item>"PM"</item>
+        <item>"SM"</item>
+        <item>"RS"</item>
+        <item>"SG"</item>
+        <item>"SK"</item>
+        <item>"SI"</item>
+        <item>"ZA"</item>
+        <item>"ES"</item>
+        <item>"SE"</item>
+        <item>"CH"</item>
+        <item>"TW"</item>
+        <item>"UA"</item>
+        <item>"GB"</item>
+        <item>"US"</item>
+        <item>"VN"</item>
+    </string-array>
+
+
+    <string-array name="pref_mp_Currencies_titles">
+        <item>£ GBP</item>
+        <item>A$ AUD</item>
+        <item>CHF CHF</item>
+        <item>€ EUR</item>
+        <item>Ft HUF</item>
+        <item>NZ$ NZD</item>
+        <item>KM BAM</item>
+        <item>kn HRK</item>
+        <item>лв BGN</item>
+        <item>CA$ CAD</item>
+        <item>¥ CNY</item>
+        <item>Kč CZK</item>
+        <item>zł PLN</item>
+        <item>kr DKK</item>
+        <item>kr NOK</item>
+        <item>kr SEK</item>
+        <item>$ USD</item>
+        <item>руб RUB</item>
+        <item>HK$ HKD</item>
+        <item>Rs INR</item>
+        <item>S$ SGD</item>
+        <item>R ZAR</item>
+        <item>RON RON</item>
+        <item>¥ JPY</item>
+        <item>W KRW</item>
+        <item>din RSD</item>
+        <item>₴ UAH</item>
+    </string-array>
+
+    <string-array name="pref_mp_Currencies_values">
+        <item>GBP</item>
+        <item>AUD</item>
+        <item>CHF</item>
+        <item>EUR</item>
+        <item>HUF</item>
+        <item>NZD</item>
+        <item>BAM</item>
+        <item>HRK</item>
+        <item>BGN</item>
+        <item>CAD</item>
+        <item>CNY</item>
+        <item>CZK</item>
+        <item>PLN</item>
+        <item>DKK</item>
+        <item>NOK</item>
+        <item>SEK</item>
+        <item>USD</item>
+        <item>RUB</item>
+        <item>HKD</item>
+        <item>INR</item>
+        <item>SGD</item>
+        <item>ZAR</item>
+        <item>RON</item>
+        <item>JPY</item>
+        <item>KRW</item>
+        <item>RSD</item>
+        <item>UAH</item>
+    </string-array>
+
+
+
     <string-array name="list_preference_entries">
         <item>Entry 1</item>
         <item>Entry 2</item>
@@ -72,5 +382,7 @@
     <string name="pref_ringtone_silent">Silent</string>
 
     <string name="pref_title_vibrate">Vibrate</string>
+    <string name="pref_title_mp_shippingTo">Myprotein Shipping to</string>
+    <string name="pref_title_mp_Currency">Currency</string>
 
 </resources>

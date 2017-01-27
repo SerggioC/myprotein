@@ -19,12 +19,16 @@ import android.preference.RingtonePreference;
 import android.support.v7.app.ActionBar;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.LinearLayout;
 
 import java.util.List;
+import java.util.Locale;
+
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.mNavigationView;
 
 
 /**
@@ -94,7 +98,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     };
 
     /**
-     * Helper method to determine if the device has an extra-large screen. For
+     * MyHelper method to determine if the device has an extra-large screen. For
      * example, 10" tablets are extra-large.
      */
     private static boolean isXLargeTablet(Context context) {
@@ -151,10 +155,22 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
     }
 
+    @TargetApi(Build.VERSION_CODES.N)
+    public Locale getCurrentLocale(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
+            return getResources().getConfiguration().getLocales().get(0);
+        } else{
+            //noinspection deprecation
+            return getResources().getConfiguration().locale;
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setupActionBar();
+        Locale local = getCurrentLocale();
+        Log.i("Sergio>>>", "onCreate: local= " + local);
     }
 
     /**
@@ -167,6 +183,24 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
     }
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        mNavigationView.getMenu().findItem(R.id.nav_item_settings).setChecked(false);
+
+        Bundle bundle = getIntent().getExtras();
+        if(bundle != null){
+            int menuId = bundle.getInt("menuId");
+            mNavigationView.setCheckedItem(menuId);
+            //MainActivity.TheMenuItem.lastMenuItem =
+        }
+
+    }
+
+
 
     /**
      * {@inheritDoc}
@@ -214,6 +248,9 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             // guidelines.
             bindPreferenceSummaryToValue(findPreference("example_text"));
             bindPreferenceSummaryToValue(findPreference("example_list"));
+            bindPreferenceSummaryToValue(findPreference("mp_website_location"));
+            bindPreferenceSummaryToValue(findPreference("mp_shipping_location"));
+            bindPreferenceSummaryToValue(findPreference("mp_currencies"));
         }
 
         @Override

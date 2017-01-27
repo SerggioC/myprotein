@@ -5,29 +5,89 @@
                 android:layout_height="match_parent"
                 android:orientation="vertical">
 
+
+    <RelativeLayout
+        android:id="@+id/relativeLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical">
+
+            <Button
+                android:id="@+id/btn_clear"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center_vertical|right"
+                android:layout_marginRight="12dp"
+                android:background="@android:drawable/ic_menu_close_clear_cancel"/>
+
+            <EditText
+                android:id="@+id/searchTextView"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/edittextsize"
+                android:layout_centerHorizontal="true"
+                android:layout_margin="@dimen/inner_fragment_margin"
+                android:background="@drawable/edittextstyle"
+                android:hint="@string/lets_find_a_deal"
+                android:imeOptions="actionSearch"
+                android:inputType="text"
+                android:maxLines="1"
+                android:text="Impact Whey Protein 5kg"
+                android:textAlignment="center"
+                tools:ignore="RtlHardcoded"/>
+
+            <Button
+                android:id="@+id/btn_search"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center_vertical|left"
+                android:layout_marginLeft="12dp"
+                android:background="@android:drawable/ic_menu_search"/>
+
+        </FrameLayout>
+
+    </RelativeLayout>
+
+    <ListView
+        android:id="@+id/results"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/relativeLayout"
+        android:layout_marginBottom="8dp"
+        android:layout_marginLeft="4dp"
+        android:layout_marginRight="4dp"
+        android:animateLayoutChanges="true"
+        android:orientation="vertical">
+    </ListView>
+
     <ScrollView
         android:id="@+id/scrollView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginBottom="8dp"
+        android:layout_below="@+id/relativeLayout">
 
-        <EditText
-            android:id="@+id/find_deal"
+        <LinearLayout
+            android:id="@+id/results2"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/edittextsize"
-            android:layout_centerHorizontal="true"
-            android:layout_margin="@dimen/inner_fragment_margin"
-            android:background="@drawable/edittextstyle"
-            android:drawableLeft="@android:drawable/ic_menu_search"
-            android:drawableRight="@android:drawable/ic_menu_close_clear_cancel"
-            android:hint="@string/lets_find_a_deal"
-            android:imeOptions="actionSearch"
-            android:inputType="text"
-            android:maxLines="1"
-            android:textAlignment="center"
-            tools:ignore="RtlHardcoded"/>
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginLeft="4dp"
+            android:layout_marginRight="4dp"
+            android:layout_marginTop="8dp"
+            android:animateLayoutChanges="true"
+            android:orientation="vertical">
 
+        </LinearLayout>
 
     </ScrollView>
-
 
 </RelativeLayout>
