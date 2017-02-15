@@ -2,6 +2,7 @@
     <string name="app_name">My Whey Price Checker</string>
     <string name="lets_find_a_deal">Let\'s find a deal!</string>
     <string name="title_activity_settings">Settings</string>
+    <string name="title_activity_details">Details</string>
 
     <!-- Strings related to Settings -->
 

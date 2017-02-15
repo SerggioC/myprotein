@@ -1,5 +1,6 @@
 package com.cruz.sergio.myproteinpricechecker;
 
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
@@ -44,7 +45,7 @@ public class TabFragment extends Fragment {
          *Set an Adapter for the View Pager
          */
         viewPager.setAdapter(new MyAdapter(getChildFragmentManager()));
-        
+
         /**
          * Now , this is a workaround ,
          * The setupWithViewPager dose't works without the runnable .
@@ -60,7 +61,6 @@ public class TabFragment extends Fragment {
                 }
             }
         });
-
 
 
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
@@ -98,7 +98,11 @@ public class TabFragment extends Fragment {
         return tabLayout;
     }
 
-    
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+    }
+
     class MyAdapter extends FragmentPagerAdapter {
 
         MyAdapter(FragmentManager fm) {

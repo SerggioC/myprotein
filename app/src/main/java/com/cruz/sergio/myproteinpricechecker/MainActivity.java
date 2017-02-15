@@ -3,6 +3,7 @@ package com.cruz.sergio.myproteinpricechecker;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
@@ -20,7 +21,7 @@ import static com.cruz.sergio.myproteinpricechecker.TabFragment.viewPager;
 public class MainActivity extends AppCompatActivity {
     public static NavigationView mNavigationView;
     DrawerLayout mDrawerLayout;
-    FragmentManager mFragmentManager;
+    static FragmentManager mFragmentManager;
     FragmentTransaction mFragmentTransaction;
     Activity mActivity;
     SharedPreferences sharedPrefs;
@@ -91,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case R.id.nav_item_fav:
                         FragmentTransaction fragmentTransaction = mFragmentManager.beginTransaction();
-                        fragmentTransaction.replace(R.id.containerView, new SentFragment()).commit();
+                        fragmentTransaction.replace(R.id.containerView, new DetailsFragment()).commit();
                         break;
                 }
 
@@ -130,6 +131,12 @@ public class MainActivity extends AppCompatActivity {
 
         mDrawerToggle.syncState();
 
+    }
+
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
     }
 
     @Override

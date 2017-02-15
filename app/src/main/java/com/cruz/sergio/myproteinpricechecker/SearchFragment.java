@@ -1,14 +1,23 @@
 package com.cruz.sergio.myproteinpricechecker;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
-import android.text.Editable;
-import android.text.TextWatcher;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -16,12 +25,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
-import android.widget.LinearLayout;
+import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.cruz.sergio.myproteinpricechecker.helper.CreateCardView;
+import com.bumptech.glide.Glide;
 import com.cruz.sergio.myproteinpricechecker.helper.MyProteinDomain;
 
 import org.jsoup.Jsoup;
@@ -30,21 +41,98 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.util.ArrayList;
 
-/**
- * Created by Ratan on 7/29/2015.
- */
 public class SearchFragment extends Fragment {
+    private static final String PING_URL = "www.myprotein.com";
     Activity mActivity;
-    int i = 0;
-    int j = 0;
-    int k = 0;
-    int l = 0;
+    ArrayAdapter adapter;
+    ArrayList<ProductCards> arrayListProductCards = new ArrayList<>();
+    BroadcastReceiver BCReceiver = null;
+    Boolean hasMorePages = true;
+    int pageNumber = 1;
+    ListView resultsListView;
+    String queryStr = "";
+    Snackbar noNetworkSnackBar;
+    static SearchFragment thisSearchFragment;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mActivity = getActivity();
+        thisSearchFragment = this;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        createBroadcast();
+    }
+
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        UnregisterBroadcastReceiver(BCReceiver);
+
+    }
+
+    public final void UnregisterBroadcastReceiver(BroadcastReceiver receiver) {
+        LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(receiver);
+        Toast.makeText(mActivity, "Unregistering Broadcast Receiver", Toast.LENGTH_SHORT).show();
+    }
+
+    public void createBroadcast() {
+        if (BCReceiver == null) {
+            BroadcastReceiver BCReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    Bundle extras = intent.getExtras();
+                    NetworkInfo info = extras.getParcelable("networkInfo");
+                    NetworkInfo.State state = info.getState();
+
+                    noNetworkSnackBar = Snackbar.make(getView(), "No Network Connection", Snackbar.LENGTH_INDEFINITE);
+                    if (noNetworkSnackBar != null && noNetworkSnackBar.isShown()) noNetworkSnackBar.dismiss();
+                    if (state == NetworkInfo.State.CONNECTED) {
+                        Toast toast1 = Toast.makeText(getContext(), "Connected to Network", Toast.LENGTH_SHORT);
+                        toast1.show();
+                    } else {
+                        noNetworkSnackBar.show();
+                    }
+                }
+            };
+            final IntentFilter intentFilter = new IntentFilter();
+            intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+            getContext().registerReceiver(BCReceiver, intentFilter);
+        }
+    }
+
+    private boolean hasActiveNetworkConnection() {
+        ConnectivityManager connManager = (ConnectivityManager)
+                getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork = connManager.getActiveNetworkInfo();
+        boolean isConnected = activeNetwork != null && activeNetwork.isConnected() && activeNetwork.isAvailable();
+        if (isConnected) {
+            if (noNetworkSnackBar != null && noNetworkSnackBar.isShown()) noNetworkSnackBar.dismiss(); // Tem network connection
+            try {
+                if (ping(PING_URL)) {
+                    return true;
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                return false;
+            } catch (IOException e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+        return false;
+    }
+
+    public boolean ping(String hostAddr) throws InterruptedException, IOException {
+        String command = "ping -c 1 " + hostAddr;
+        return (Runtime.getRuntime().exec(command).waitFor() == 0);
     }
 
     @Nullable
@@ -61,54 +149,18 @@ public class SearchFragment extends Fragment {
         searchTextView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-
+                if (actionId == EditorInfo.IME_ACTION_SEARCH) { //search no keyboard
                     String querystr = searchTextView.getText().toString();
-
                     if (!querystr.equals("")) {
-                        j++;
                         performSearch(querystr);
                     } else if (querystr.equals("")) {
                         Toast theToast = Toast.makeText(getContext(), "Nothing to search", Toast.LENGTH_SHORT);
                         theToast.setGravity(Gravity.CENTER, 0, 0);
                         theToast.show();
                     }
-
                     return true;
                 }
                 return false;
-            }
-        });
-
-        searchTextView.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                String querystr = s.toString().trim();
-
-                if (!querystr.equals("")) {
-                    j++;
-                    //performSearch(querystr);
-                }
-            }
-        });
-
-
-        mActivity.findViewById(R.id.btn_clear).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                searchTextView.setText("");
-                k++;
-                Toast theToast = Toast.makeText(getContext(), "deleting k= " + k, Toast.LENGTH_SHORT);
-                theToast.setGravity(Gravity.CENTER, 0, 0);
-                theToast.show();
             }
         });
 
@@ -116,40 +168,72 @@ public class SearchFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 String querystr = searchTextView.getText().toString();
-                if (!querystr.equals("")) {
-                    l++;
-                    performSearch(querystr);
-                } else if (querystr.equals("")) {
-                    Toast theToast = Toast.makeText(getContext(), "Nothing to search", Toast.LENGTH_SHORT);
-                    theToast.setGravity(Gravity.CENTER, 0, 0);
-                    theToast.show();
-                }
+
+                performSearch(querystr);
+
             }
         });
+        mActivity.findViewById(R.id.btn_clear).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                searchTextView.setText("");
+            }
+        });
+        resultsListView = (ListView) mActivity.findViewById(R.id.results);
 
     }
 
     public void performSearch(String searchString) {
-        SharedPreferences prefManager = PreferenceManager.getDefaultSharedPreferences(mActivity);
-        String pref_MP_Domain = prefManager.getString("mp_website_location", "en-gb");
-        String shippingCountry = prefManager.getString("mp_shipping_location", "GB"); //"PT";
-        String currency = prefManager.getString("mp_currencies", "GBP"); //"EUR";
-        String MP_Domain = MyProteinDomain.getHref(pref_MP_Domain);
-        String URL_suffix = "&settingsSaved=Y&shippingcountry=" + shippingCountry + "&switchcurrency=" + currency + "&countrySelected=Y";
-        String queryStr = MP_Domain + "elysium.search?search=" + searchString + URL_suffix;
+        if (!searchString.equals("")) {
+            if (hasActiveNetworkConnection()) {
+                searchString = URLEncoder.encode(searchString);
+                SharedPreferences prefManager = PreferenceManager.getDefaultSharedPreferences(mActivity);
+                String pref_MP_Domain = prefManager.getString("mp_website_location", "en-gb");
+                String shippingCountry = prefManager.getString("mp_shipping_location", "GB"); //"PT";
+                String currency = prefManager.getString("mp_currencies", "GBP"); //"EUR";
+                String MP_Domain = MyProteinDomain.getHref(pref_MP_Domain);
+                String URL_suffix = "&settingsSaved=Y&shippingcountry=" + shippingCountry + "&switchcurrency=" + currency + "&countrySelected=Y";
+                queryStr = MP_Domain + "elysium.search?search=" + searchString + URL_suffix;
 
-        Log.i("Sergio>>>", "performSearch: querystr=" + queryStr);
+                Log.i("Sergio>>>", "performSearch: querystr=" + queryStr);
 
-        AsyncTask<String, Void, Document> performSearch = new performSearch();
-        performSearch.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, queryStr);
-/*
-        String MyproteinURL = "http://pt.myprotein.com/sports-nutrition/impact-whey-protein/10530943.html";
-        AsyncTask<String, Void, String> getItemPrice = new getPrice();
-        getItemPrice.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, MyproteinURL);
-*/
+                hasMorePages = true;
+                resultsListView.setAdapter(null);
+                arrayListProductCards.clear();
+                AsyncTask<String, Void, Document> performSearch = new performSearch();
+                performSearch.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, queryStr);
+
+            } else {
+                if (noNetworkSnackBar != null && !noNetworkSnackBar.isShown()) {
+                    noNetworkSnackBar.show();
+                } else {
+                    noNetworkSnackBar = Snackbar.make(getView(), "No Network Connection", Snackbar.LENGTH_INDEFINITE);
+                    noNetworkSnackBar.show();
+                }
+            }
+        } else if (searchString.equals("")) {
+            Toast theToast = Toast.makeText(getContext(), "Nothing to search", Toast.LENGTH_SHORT);
+            theToast.setGravity(Gravity.CENTER, 0, 0);
+            theToast.show();
+            return;
+        }
     }
 
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        //Quando altera a orientação do ecrã
+        Log.i("Sergio>>>", "onConfigurationChanged: arrayListProductCards " + arrayListProductCards);
+        Log.i("Sergio>>>", "onConfigurationChanged: adapter " + adapter);
+        resultsListView.setAdapter(adapter);
+        super.onConfigurationChanged(newConfig);
 
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+
+    }
 
     private class performSearch extends AsyncTask<String, Void, Document> {
         @Override
@@ -174,7 +258,6 @@ public class SearchFragment extends Fragment {
         @Override
         protected Document doInBackground(String... params) {
             Document resultDocument = null;
-
             try {
                 resultDocument = Jsoup.connect(params[0])
                         .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
@@ -196,68 +279,178 @@ public class SearchFragment extends Fragment {
         @Override
         protected void onPostExecute(Document resultDocument) {
             super.onPostExecute(resultDocument);
-            LinearLayout resultsLinearLayout = (LinearLayout) mActivity.findViewById(R.id.results2);
 
-            //Log.i("Sergio>>>", "onPostExecute: resultDocument= " + resultDocument);
-
-            Element elementsSelected = resultDocument.getElementById("divSearchResults");
-//            Log.i("Sergio>>>", "onPostExecute: selected= " + elementsSelected);
-//            Log.i("Sergio>>>", "onPostExecute: html= " + elementsSelected.html());
-
-            Elements ProductCards = resultDocument.getElementById("divSearchResults").getElementsByClass("item"); //Todos os resultados em "cards"
+            Elements resultProductCards = resultDocument.getElementById("divSearchResults").getElementsByClass("item"); //Todos os resultados em "cards"
             //#divSearchResults > div:nth-child(1) > div:nth-child(1)
-            for (Element singleProductCard : ProductCards) { // Selecionar um unico "Card" Produto
-                //Log.d("Sergio>>>", "Product Card= "+ singleProductCard);
+            //Log.i("Sergio>>>", "onPostExecute: " + resultProductCards);
 
-                Element productTitle = singleProductCard.getElementsByClass("product-title").first();
-                String productTitleStr = "";
-                String productHref = "";
-                if (productTitle != null) {
-                    productHref = productTitle.attr("href");
-                    productTitleStr = productTitle.text();
-                    Log.d("Sergio>>>", "productTitleStr= " + productTitleStr + "\nhref= " + productHref);
-                } else {
-                    //failed getting product title
-                }
+            if (resultProductCards.size() < 1) {
+                ArrayList item = new ArrayList();
+                item.add("No Results");
+                ArrayAdapter noAdapter = new ArrayAdapter(mActivity, android.R.layout.simple_list_item_1, item);
+                resultsListView.setAdapter(noAdapter);
+            } else if (resultProductCards.size() > 0) {
 
-                String productPrice = singleProductCard.select(".price").first().ownText(); // .removeClass("from-text")
-                Log.i("Sergio>>>", "productPrice= " + productPrice);
+                for (Element singleProductCard : resultProductCards) { // Selecionar um único "Card" Produto
+                    //Log.d("Sergio>>>", "Product Card= "+ singleProductCard);
 
-                String productID = singleProductCard.child(0).attr("data-product-id");
-                Log.i("Sergio>>>", "productID= " + productID);
-                String productID2 = singleProductCard.select("span").first().attr("data-product-id");
-                Log.i("Sergio>>>", "productID= " + productID2);
+                    Element productTitle = singleProductCard.getElementsByClass("product-title").first();
+                    String productTitleStr;
+                    String productHref;
+                    if (productTitle != null) {
+                        productTitleStr = productTitle.text();
+                        productHref = productTitle.attr("href");
+                        //Log.d("Sergio>>>", "productTitleStr= " + productTitleStr + "\nhref= " + productHref);
+                    } else {
+                        //failed getting product title
+                        productTitleStr = "(No info)";
+                        productHref = "";
+                    }
 
-                Element productImage = singleProductCard.select("img").first();
-                String imgURL = "";
-                String pptListStr = "";
-                if (productImage != null) {
+                    String productPrice = singleProductCard.select(".price").first().ownText(); // .removeClass("from-text")
+                    //Log.i("Sergio>>>", "productPrice= " + productPrice);
 
-                    Log.i("Sergio>>>", " productImage.attr= " + productImage.attr("src"));
+                    String productID = singleProductCard.child(0).attr("data-product-id");
+                    //Log.i("Sergio>>>", "productID= " + productID);
+                    String productID2 = singleProductCard.select("span").first().attr("data-product-id");
+                    //Log.i("Sergio>>>", "productID= " + productID2);
 
-                    imgURL = productImage.attr("src");
-
-
-                    Elements SingleProductProperties = singleProductCard.getElementsByClass("product-key-benefits");
-                    for (Element Properties : SingleProductProperties) {
+                    Element productImage = singleProductCard.select("img").first();
+                    String imgURL = "";
+                    String pptListStr = "";
+                    if (productImage != null) {
+                        //Log.i("Sergio>>>", " productImage.attr= " + productImage.attr("src"));
+                        imgURL = productImage.attr("src");
                     /*
                     * Listagem das infos e propriedades do produto
                     * class="product-key-benefits"
                     **/
-                        Elements pptList = Properties.select("li");
-                        int pptSize = pptList.size();
+                        Elements SingleProductProperties = singleProductCard.getElementsByClass("product-key-benefits");
+                        for (Element Properties : SingleProductProperties) {
 
-                        for (int m = 0; m < pptSize; m++) {
-                            pptListStr += pptList.get(m).text() + "\n";
+                            Elements pptList = Properties.select("li");
+                            int pptSize = pptList.size();
+                            for (int m = 0; m < pptSize; m++) {
+                                pptListStr += pptList.get(m).text() + "\n";
+                            }
+                            //Log.i("Sergio>>>", "ProductProperties= " + pptListStr);
                         }
-                        Log.i("Sergio>>>", "ProductProperties= " + pptListStr);
                     }
+
+                    ProductCards productCard = new ProductCards(productID, productTitleStr, productHref, productPrice, imgURL, pptListStr);
+                    arrayListProductCards.add(productCard);
+
                 }
 
-                CreateCardView.create(mActivity, resultsLinearLayout, productID, productTitleStr, productHref, productPrice, imgURL, pptListStr);
+                Element pagination = resultDocument.getElementsByClass("pagination").get(0);
+                String pages = pagination.child(0).attr("data-total-pages");
+                if (pages == null || pages.equals("")) {
+                    pages = "1";
+                }
+                int numPages = Integer.parseInt(pages);
+                if (numPages > 1 && hasMorePages) {
+                    pageNumber++;
+                    AsyncTask<String, Void, Document> performSearch = new performSearch();
+                    performSearch.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, queryStr + "&pageNumber=" + pageNumber);
+                }
 
+                if (pageNumber == numPages) {
+                    hasMorePages = false;
+                    queryStr = "";
+                    pageNumber = 1;
+
+                    adapter = new ProductAdapter(mActivity, R.layout.product_card, arrayListProductCards);
+                    resultsListView.setAdapter(adapter);
+                    //arrayListProductCards.clear();
+
+                }
+            }
+        }
+    }
+
+    public class ProductAdapter extends ArrayAdapter {
+        ArrayList<ProductCards> products;
+        Context context;
+        int customViewID;
+
+        ProductAdapter(Context context, int customViewID, ArrayList<ProductCards> products) {
+            super(context, customViewID, products);
+            this.context = context;
+            this.customViewID = customViewID;
+            this.products = products;
+        }
+
+        @NonNull
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            final ProductCards product = products.get(position);
+
+            //get the inflater and inflate the XML layout for each item
+            LayoutInflater inflater = (LayoutInflater) context.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
+            View view = inflater.inflate(R.layout.product_card, null);
+
+            ImageView productImageView = (ImageView) view.findViewById(R.id.product_image);
+            String imgURL = product.imgURL;
+
+            if (imgURL.contains(".jpg") || imgURL.contains(".bmp") || imgURL.contains(".png")) {
+                Glide.with(mActivity).load(imgURL).into(productImageView);
+            } else {
+                //failed getting product image
+                Glide.with(mActivity).load(R.drawable.noimage).into(productImageView);
             }
 
+            view.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+//                    Intent intent = new Intent(getActivity(), DetailActivity.class); // Iniciar activity DetailActivity.java Class
+//                    intent.putExtra(intent.EXTRA_TEXT, product.productID);
+//                    startActivity(intent);
+
+
+                    Bundle urlBundle = new Bundle();
+                    urlBundle.putString("url", product.productHref);
+                    DetailsFragment detailsFragment = new DetailsFragment();
+                    detailsFragment.setArguments(urlBundle);
+
+                    FragmentTransaction ft = MainActivity.mFragmentManager.beginTransaction();
+                    ft.hide(getParentFragment());
+                    ft.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
+                    ft.add(R.id.containerView, detailsFragment);
+                    ft.addToBackStack(null);
+                    ft.commit();
+
+                }
+            });
+            ((TextView) view.findViewById(R.id.titleTextView)).setText(product.productTitleStr);
+            ((TextView) view.findViewById(R.id.product_description)).setText(product.pptListStr);
+            ((TextView) view.findViewById(R.id.price_textView)).setText(product.productPrice);
+//            view.findViewById(R.id.image_watch).setOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View v) {
+//                    Uri address = Uri.parse(product.productHref);
+//                    Intent browser = new Intent(Intent.ACTION_VIEW, address);
+//                    startActivity(browser);
+//                }
+//            });
+            return view;
+        }
+    }
+
+    class ProductCards {
+        String productID;
+        String productTitleStr;
+        String productHref;
+        String productPrice;
+        String imgURL;
+        String pptListStr;
+
+        ProductCards(String productID, String productTitleStr, String productHref, String productPrice, String imgURL, String pptListStr) {
+            this.productID = productID;
+            this.productTitleStr = productTitleStr;
+            this.productHref = productHref;
+            this.productPrice = productPrice;
+            this.imgURL = imgURL;
+            this.pptListStr = pptListStr;
         }
     }
 

@@ -1,5 +1,6 @@
 package com.cruz.sergio.myproteinpricechecker;
 
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -7,11 +8,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-/**
- * Created by Ratan on 7/29/2015.
- */
-public class WatchingFragment extends Fragment {
 
+public class WatchingFragment extends Fragment {
 
     public WatchingFragment(){
         //required empty constructor?
@@ -23,10 +21,8 @@ public class WatchingFragment extends Fragment {
         return inflater.inflate(R.layout.watching_fragment, null);
     }
 
-
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+    }
 }
-
-
-
-
-
