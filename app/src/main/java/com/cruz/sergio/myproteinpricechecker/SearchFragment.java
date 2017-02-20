@@ -25,6 +25,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -46,6 +47,7 @@ import java.util.ArrayList;
 
 public class SearchFragment extends Fragment {
     private static final String PING_URL = "www.myprotein.com";
+    static SearchFragment thisSearchFragment;
     Activity mActivity;
     ArrayAdapter adapter;
     ArrayList<ProductCards> arrayListProductCards = new ArrayList<>();
@@ -55,7 +57,6 @@ public class SearchFragment extends Fragment {
     ListView resultsListView;
     String queryStr = "";
     Snackbar noNetworkSnackBar;
-    static SearchFragment thisSearchFragment;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -168,7 +169,6 @@ public class SearchFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 String querystr = searchTextView.getText().toString();
-
                 performSearch(querystr);
 
             }
@@ -183,7 +183,17 @@ public class SearchFragment extends Fragment {
 
     }
 
+    private void hideKeyBoard() {
+        try {
+            InputMethodManager imm = (InputMethodManager) mActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(mActivity.getCurrentFocus().getWindowToken(), 0);
+        } catch (Exception e) {
+            Log.e("Sergio>>>", "hideKeyboard error: ", e);
+        }
+    }
+
     public void performSearch(String searchString) {
+        hideKeyBoard();
         if (!searchString.equals("")) {
             if (hasActiveNetworkConnection()) {
                 searchString = URLEncoder.encode(searchString);
@@ -362,7 +372,6 @@ public class SearchFragment extends Fragment {
                     adapter = new ProductAdapter(mActivity, R.layout.product_card, arrayListProductCards);
                     resultsListView.setAdapter(adapter);
                     //arrayListProductCards.clear();
-
                 }
             }
         }
@@ -392,7 +401,7 @@ public class SearchFragment extends Fragment {
             ImageView productImageView = (ImageView) view.findViewById(R.id.product_image);
             String imgURL = product.imgURL;
 
-            if (imgURL.contains(".jpg") || imgURL.contains(".bmp") || imgURL.contains(".png")) {
+            if (imgURL.contains(".jpg") || imgURL.contains(".jpeg") || imgURL.contains(".bmp") || imgURL.contains(".png")) {
                 Glide.with(mActivity).load(imgURL).into(productImageView);
             } else {
                 //failed getting product image
@@ -402,13 +411,11 @@ public class SearchFragment extends Fragment {
             view.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-//                    Intent intent = new Intent(getActivity(), DetailActivity.class); // Iniciar activity DetailActivity.java Class
-//                    intent.putExtra(intent.EXTRA_TEXT, product.productID);
-//                    startActivity(intent);
-
 
                     Bundle urlBundle = new Bundle();
                     urlBundle.putString("url", product.productHref);
+                    urlBundle.putString("description", product.pptListStr);
+                    urlBundle.putString("productID", product.productID);
                     DetailsFragment detailsFragment = new DetailsFragment();
                     detailsFragment.setArguments(urlBundle);
 

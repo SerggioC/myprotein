@@ -27,7 +27,7 @@
                 android:layout_height="32dp"
                 android:layout_gravity="center_vertical|start"
                 android:layout_marginLeft="12dp"
-                android:background="@android:drawable/ic_menu_search"/>
+                android:background="@drawable/find_icon_statelist"/>
 
             <EditText
                 android:id="@+id/searchTextView"
@@ -52,7 +52,7 @@
                 android:layout_height="32dp"
                 android:layout_gravity="center_vertical|right"
                 android:layout_marginRight="12dp"
-                android:background="@android:drawable/ic_menu_close_clear_cancel"/>
+                android:background="@drawable/clear_icon_statelist"/>
         </FrameLayout>
     </RelativeLayout>
 
@@ -70,26 +70,5 @@
         android:dividerHeight="8dp"
         >
     </ListView>
-    <!--
-        <ScrollView
-            android:id="@+id/scrollView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_alignParentLeft="true"
-            android:layout_alignParentStart="true"
-            android:layout_below="@+id/relativeLayout"
-            android:layout_marginLeft="@dimen/inner_fragment_margin"
-            android:layout_marginRight="@dimen/inner_fragment_margin">
-
-            <LinearLayout
-                android:id="@+id/results2"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:animateLayoutChanges="true"
-                android:orientation="vertical">
-
-            </LinearLayout>
-
-        </ScrollView>-->
 
 </RelativeLayout>

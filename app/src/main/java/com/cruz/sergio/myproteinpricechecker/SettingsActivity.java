@@ -19,7 +19,6 @@ import android.preference.RingtonePreference;
 import android.support.v7.app.ActionBar;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -169,8 +168,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setupActionBar();
-        Locale local = getCurrentLocale();
-        Log.i("Sergio>>>", "onCreate: local= " + local);
+        //Locale local = getCurrentLocale();
     }
 
     /**
