@@ -1,14 +1,10 @@
 package com.cruz.sergio.myproteinpricechecker;
 
 import android.app.Activity;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -17,7 +13,10 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.content.res.ResourcesCompat;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+import android.text.style.ImageSpan;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -35,6 +34,7 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.cruz.sergio.myproteinpricechecker.helper.MyProteinDomain;
+import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -45,18 +45,18 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetworkSnackBar;
+
+
 public class SearchFragment extends Fragment {
-    private static final String PING_URL = "www.myprotein.com";
     static SearchFragment thisSearchFragment;
     Activity mActivity;
     ArrayAdapter adapter;
     ArrayList<ProductCards> arrayListProductCards = new ArrayList<>();
-    BroadcastReceiver BCReceiver = null;
     Boolean hasMorePages = true;
     int pageNumber = 1;
     ListView resultsListView;
     String queryStr = "";
-    Snackbar noNetworkSnackBar;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -68,72 +68,20 @@ public class SearchFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-        createBroadcast();
+        NetworkUtils.createBroadcast(mActivity);
     }
 
 
     @Override
     public void onPause() {
         super.onPause();
-        UnregisterBroadcastReceiver(BCReceiver);
-
+        NetworkUtils.UnregisterBroadcastReceiver(mActivity);
     }
 
-    public final void UnregisterBroadcastReceiver(BroadcastReceiver receiver) {
-        LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(receiver);
-        Toast.makeText(mActivity, "Unregistering Broadcast Receiver", Toast.LENGTH_SHORT).show();
-    }
-
-    public void createBroadcast() {
-        if (BCReceiver == null) {
-            BroadcastReceiver BCReceiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    Bundle extras = intent.getExtras();
-                    NetworkInfo info = extras.getParcelable("networkInfo");
-                    NetworkInfo.State state = info.getState();
-
-                    noNetworkSnackBar = Snackbar.make(getView(), "No Network Connection", Snackbar.LENGTH_INDEFINITE);
-                    if (noNetworkSnackBar != null && noNetworkSnackBar.isShown()) noNetworkSnackBar.dismiss();
-                    if (state == NetworkInfo.State.CONNECTED) {
-                        Toast toast1 = Toast.makeText(getContext(), "Connected to Network", Toast.LENGTH_SHORT);
-                        toast1.show();
-                    } else {
-                        noNetworkSnackBar.show();
-                    }
-                }
-            };
-            final IntentFilter intentFilter = new IntentFilter();
-            intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
-            getContext().registerReceiver(BCReceiver, intentFilter);
-        }
-    }
-
-    private boolean hasActiveNetworkConnection() {
-        ConnectivityManager connManager = (ConnectivityManager)
-                getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetwork = connManager.getActiveNetworkInfo();
-        boolean isConnected = activeNetwork != null && activeNetwork.isConnected() && activeNetwork.isAvailable();
-        if (isConnected) {
-            if (noNetworkSnackBar != null && noNetworkSnackBar.isShown()) noNetworkSnackBar.dismiss(); // Tem network connection
-            try {
-                if (ping(PING_URL)) {
-                    return true;
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                return false;
-            } catch (IOException e) {
-                e.printStackTrace();
-                return false;
-            }
-        }
-        return false;
-    }
-
-    public boolean ping(String hostAddr) throws InterruptedException, IOException {
-        String command = "ping -c 1 " + hostAddr;
-        return (Runtime.getRuntime().exec(command).waitFor() == 0);
+    @Override
+    public void onStop() {
+        super.onStop();
+        NetworkUtils.UnregisterBroadcastReceiver(mActivity);
     }
 
     @Nullable
@@ -195,7 +143,7 @@ public class SearchFragment extends Fragment {
     public void performSearch(String searchString) {
         hideKeyBoard();
         if (!searchString.equals("")) {
-            if (hasActiveNetworkConnection()) {
+            if (NetworkUtils.hasActiveNetworkConnection(mActivity)) {
                 searchString = URLEncoder.encode(searchString);
                 SharedPreferences prefManager = PreferenceManager.getDefaultSharedPreferences(mActivity);
                 String pref_MP_Domain = prefManager.getString("mp_website_location", "en-gb");
@@ -232,8 +180,6 @@ public class SearchFragment extends Fragment {
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         //Quando altera a orientação do ecrã
-        Log.i("Sergio>>>", "onConfigurationChanged: arrayListProductCards " + arrayListProductCards);
-        Log.i("Sergio>>>", "onConfigurationChanged: adapter " + adapter);
         resultsListView.setAdapter(adapter);
         super.onConfigurationChanged(newConfig);
 
@@ -251,20 +197,6 @@ public class SearchFragment extends Fragment {
             super.onPreExecute();
         }
 
-        /**
-         * Override this method to perform a computation on a background thread. The
-         * specified parameters are the parameters passed to {@link #execute}
-         * by the caller of this task.
-         * <p>
-         * This method can call {@link #publishProgress} to publish updates
-         * on the UI thread.
-         *
-         * @param params The parameters of the task.
-         * @return A result, defined by the subclass of this task.
-         * @see #onPreExecute()
-         * @see #onPostExecute
-         * @see #publishProgress
-         **/
         @Override
         protected Document doInBackground(String... params) {
             Document resultDocument = null;
@@ -327,27 +259,34 @@ public class SearchFragment extends Fragment {
 
                     Element productImage = singleProductCard.select("img").first();
                     String imgURL = "";
-                    String pptListStr = "";
-                    if (productImage != null) {
-                        //Log.i("Sergio>>>", " productImage.attr= " + productImage.attr("src"));
-                        imgURL = productImage.attr("src");
-                    /*
-                    * Listagem das infos e propriedades do produto
-                    * class="product-key-benefits"
-                    **/
-                        Elements SingleProductProperties = singleProductCard.getElementsByClass("product-key-benefits");
-                        for (Element Properties : SingleProductProperties) {
 
-                            Elements pptList = Properties.select("li");
-                            int pptSize = pptList.size();
-                            for (int m = 0; m < pptSize; m++) {
-                                pptListStr += pptList.get(m).text() + "\n";
-                            }
-                            //Log.i("Sergio>>>", "ProductProperties= " + pptListStr);
+                    if (productImage != null) {
+                        imgURL = productImage.attr("src");
+                    }
+
+                    Drawable drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.tick, null);
+                    SpannableStringBuilder pptList_SSB = new SpannableStringBuilder();
+                    drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+                    String drawableStr = drawable.toString();
+
+                    ArrayList<String> pptList_stringarray = new ArrayList<>();
+                    // Listagem das infos e propriedades do produto * class="product-key-benefits"
+                    Elements SingleProductProperties = singleProductCard.getElementsByClass("product-key-benefits");
+                    for (Element Properties : SingleProductProperties) {
+                        Elements pptList = Properties.select("li");
+                        int pptSize = pptList.size();
+                        for (int m = 0; m < pptSize; m++) {
+                            pptList_stringarray.add(pptList.get(m).text());
+
+                            pptList_SSB.append(drawableStr);
+                            pptList_SSB.setSpan(new ImageSpan(drawable), pptList_SSB.length() - drawableStr.length(), pptList_SSB.length(),
+                                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            pptList_SSB.append(" " + pptList.get(m).text() + "\n");
+
                         }
                     }
 
-                    ProductCards productCard = new ProductCards(productID, productTitleStr, productHref, productPrice, imgURL, pptListStr);
+                    ProductCards productCard = new ProductCards(productID, productTitleStr, productHref, productPrice, imgURL, pptList_stringarray, pptList_SSB);
                     arrayListProductCards.add(productCard);
 
                 }
@@ -414,7 +353,8 @@ public class SearchFragment extends Fragment {
 
                     Bundle urlBundle = new Bundle();
                     urlBundle.putString("url", product.productHref);
-                    urlBundle.putString("description", product.pptListStr);
+                    //urlBundle.putString("description", product.pptListStr.toString());
+                    urlBundle.putStringArrayList("description", product.pptList_stringarray);
                     urlBundle.putString("productID", product.productID);
                     DetailsFragment detailsFragment = new DetailsFragment();
                     detailsFragment.setArguments(urlBundle);
@@ -429,7 +369,7 @@ public class SearchFragment extends Fragment {
                 }
             });
             ((TextView) view.findViewById(R.id.titleTextView)).setText(product.productTitleStr);
-            ((TextView) view.findViewById(R.id.product_description)).setText(product.pptListStr);
+            ((TextView) view.findViewById(R.id.product_description)).setText(product.pptList_SSB);
             ((TextView) view.findViewById(R.id.price_textView)).setText(product.productPrice);
 //            view.findViewById(R.id.image_watch).setOnClickListener(new View.OnClickListener() {
 //                @Override
@@ -449,15 +389,17 @@ public class SearchFragment extends Fragment {
         String productHref;
         String productPrice;
         String imgURL;
-        String pptListStr;
+        ArrayList<String> pptList_stringarray;
+        SpannableStringBuilder pptList_SSB;
 
-        ProductCards(String productID, String productTitleStr, String productHref, String productPrice, String imgURL, String pptListStr) {
+        ProductCards(String productID, String productTitleStr, String productHref, String productPrice, String imgURL, ArrayList<String> pptList_stringarray, SpannableStringBuilder pptList_SSB) {
             this.productID = productID;
             this.productTitleStr = productTitleStr;
             this.productHref = productHref;
             this.productPrice = productPrice;
             this.imgURL = imgURL;
-            this.pptListStr = pptListStr;
+            this.pptList_stringarray = pptList_stringarray;
+            this.pptList_SSB = pptList_SSB;
         }
     }
 

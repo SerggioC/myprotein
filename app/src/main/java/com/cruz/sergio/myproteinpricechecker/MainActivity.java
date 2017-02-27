@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
         mHandler = new Handler();
 
         mActivity = this;
-        sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity); //TODO settings
+        sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
 
         /**
          *Setup the DrawerLayout and NavigationView

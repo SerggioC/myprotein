@@ -5,20 +5,26 @@
     android:id="@+id/ll_vertical_tab"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"
     android:background="@color/appBackground"
     android:orientation="vertical">
 
     <android.support.design.widget.TabLayout
         android:id="@+id/tabs"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
+        android:layout_gravity="center"
         android:background="@color/colorPrimary"
-        app:tabGravity="fill"
+        android:fillViewport="true"
+        app:tabGravity="center"
         app:tabIndicatorColor="@color/orange"
         app:tabIndicatorHeight="4dp"
-        app:tabMode="fixed"
+        app:tabMode="scrollable"
+        app:tabPaddingEnd="4dp"
+        app:tabPaddingStart="4dp"
         app:tabSelectedTextColor="@color/orange"
-        app:tabTextColor="@color/white">
+        app:tabTextColor="@color/white"
+        >
     </android.support.design.widget.TabLayout>
 
     <android.support.v4.view.ViewPager

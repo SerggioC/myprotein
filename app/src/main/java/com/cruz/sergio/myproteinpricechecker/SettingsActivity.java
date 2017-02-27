@@ -16,17 +16,20 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.preference.RingtonePreference;
+import android.support.annotation.LayoutRes;
 import android.support.v7.app.ActionBar;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.LinearLayout;
 
 import java.util.List;
 import java.util.Locale;
 
+import static android.content.res.Configuration.SCREENLAYOUT_SIZE_XLARGE;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.mNavigationView;
 
 
@@ -102,7 +105,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
      */
     private static boolean isXLargeTablet(Context context) {
         return (context.getResources().getConfiguration().screenLayout
-                & Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_XLARGE;
+                & Configuration.SCREENLAYOUT_SIZE_MASK) >= SCREENLAYOUT_SIZE_XLARGE;
     }
 
     /**
@@ -125,6 +128,36 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                         .getDefaultSharedPreferences(preference.getContext())
                         .getString(preference.getKey(), ""));
     }
+
+    @Override
+    public void setContentView(@LayoutRes int layoutResID) {
+        super.setContentView(layoutResID);
+
+        View decorView = getWindow().getDecorView();
+        decorView.setFitsSystemWindows(false);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+            decorView.requestFitSystemWindows();
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        }
+
+//
+//        // Hide the status bar.
+//        if (Build.VERSION.SDK_INT < 16) {
+//            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+//        } else {
+//            View decorView = getWindow().getDecorView();
+//            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
+//
+//            decorView.setFitsSystemWindows(false);
+//            decorView.requestFitSystemWindows();
+//            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+//        }
+
+    }
+
+
 
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
@@ -155,10 +188,10 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     }
 
     @TargetApi(Build.VERSION_CODES.N)
-    public Locale getCurrentLocale(){
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
+    public Locale getCurrentLocale() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             return getResources().getConfiguration().getLocales().get(0);
-        } else{
+        } else {
             //noinspection deprecation
             return getResources().getConfiguration().locale;
         }
@@ -186,19 +219,14 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
         mNavigationView.getMenu().findItem(R.id.nav_item_settings).setChecked(false);
-
         Bundle bundle = getIntent().getExtras();
-        if(bundle != null){
+        if (bundle != null) {
             int menuId = bundle.getInt("menuId");
             mNavigationView.setCheckedItem(menuId);
             //MainActivity.TheMenuItem.lastMenuItem =
         }
-
     }
-
-
 
     /**
      * {@inheritDoc}
@@ -214,7 +242,15 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     @Override
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public void onBuildHeaders(List<Header> target) {
-        loadHeadersFromResource(R.xml.pref_headers, target);
+        int screenSize = getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK;
+
+        if (screenSize >= SCREENLAYOUT_SIZE_XLARGE) {
+            loadHeadersFromResource(R.xml.pref_headers, target);
+        } else {
+            getFragmentManager().beginTransaction().replace(android.R.id.content,
+                    new AllSettingsPreferenceFragment()).commit();
+        }
+
     }
 
     /**
@@ -225,7 +261,31 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         return PreferenceFragment.class.getName().equals(fragmentName)
                 || GeneralPreferenceFragment.class.getName().equals(fragmentName)
                 || DataSyncPreferenceFragment.class.getName().equals(fragmentName)
-                || NotificationPreferenceFragment.class.getName().equals(fragmentName);
+                || NotificationPreferenceFragment.class.getName().equals(fragmentName)
+                || AllSettingsPreferenceFragment.class.getName().equals(fragmentName)
+                ;
+    }
+
+
+    public static class AllSettingsPreferenceFragment extends PreferenceFragment {
+
+        @Override
+        public void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            addPreferencesFromResource(R.xml.pref_all);
+            setHasOptionsMenu(true);
+
+            // Bind the summaries of EditText/List/Dialog/Ringtone preferences
+            // to their values. When their values change, their summaries are
+            // updated to reflect the new value, per the Android Design guidelines.
+            bindPreferenceSummaryToValue(findPreference("mp_website_location"));
+            bindPreferenceSummaryToValue(findPreference("mp_shipping_location"));
+            bindPreferenceSummaryToValue(findPreference("mp_currencies"));
+            bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
+            bindPreferenceSummaryToValue(findPreference("sync_frequency"));
+
+        }
+
     }
 
     /**
@@ -244,8 +304,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             // to their values. When their values change, their summaries are
             // updated to reflect the new value, per the Android Design
             // guidelines.
-            bindPreferenceSummaryToValue(findPreference("example_text"));
-            bindPreferenceSummaryToValue(findPreference("example_list"));
+
             bindPreferenceSummaryToValue(findPreference("mp_website_location"));
             bindPreferenceSummaryToValue(findPreference("mp_shipping_location"));
             bindPreferenceSummaryToValue(findPreference("mp_currencies"));

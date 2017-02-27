@@ -13,6 +13,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.TheMenuItem.lastMenuItem;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.mNavigationView;
@@ -21,9 +23,12 @@ public class TabFragment extends Fragment {
 
     public static TabLayout tabLayout;
     public static ViewPager viewPager;
-    public static int int_items = 3;
+    public static int NUMBER_OF_TABS = 4;
     Bundle extras;
     MenuItem menuItem;
+    int[] tab_icons = {R.drawable.ic_view_statelist, R.drawable.ic_search_statelist, R.drawable.ic_graph_statelist, R.drawable.ic_voucher_statelist};
+    String[] tab_text = {"Watching Items", "Search Product", "Price Graphs", "Voucher Codes"};
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -55,6 +60,16 @@ public class TabFragment extends Fragment {
             @Override
             public void run() {
                 TabFragment.tabLayout.setupWithViewPager(viewPager);
+
+                for (int i = 0; i < NUMBER_OF_TABS; i++) {
+                    View one_tab = LayoutInflater.from(getContext()).inflate(R.layout.one_tab_layout, null);
+                    TabFragment.tabLayout.getTabAt(i).setCustomView(one_tab);
+                    TextView textView = (TextView) one_tab.findViewById(R.id.tabText);
+                    textView.setText(tab_text[i]);
+                    ImageView imageView = (ImageView) one_tab.findViewById(R.id.tabImage);
+                    imageView.setImageResource(tab_icons[i]);
+                }
+
                 if (extras != null) {
                     int index = extras.getInt("index");
                     viewPager.setCurrentItem(index);
@@ -71,7 +86,6 @@ public class TabFragment extends Fragment {
             @Override
             public void onPageSelected(int position) {
                 Menu menulateral = mNavigationView.getMenu();
-
                 switch (position) {
                     case 0:
                         menuItem = menulateral.findItem(R.id.nav_item_watching);
@@ -83,7 +97,6 @@ public class TabFragment extends Fragment {
                         menuItem = menulateral.findItem(R.id.nav_item_graphs);
                         break;
                 }
-
                 lastMenuItem.setChecked(false);
                 menuItem.setChecked(true);
                 lastMenuItem = menuItem;
@@ -91,10 +104,8 @@ public class TabFragment extends Fragment {
 
             @Override
             public void onPageScrollStateChanged(int state) {
-
             }
         });
-
         return tabLayout;
     }
 
@@ -109,10 +120,7 @@ public class TabFragment extends Fragment {
             super(fm);
         }
 
-
-        /**
-         * Return fragment with respect to Position
-         */
+        //Return fragment with respect to Position
         @Override
         public Fragment getItem(int position) {
 
@@ -123,30 +131,28 @@ public class TabFragment extends Fragment {
                     return new SearchFragment();
                 case 2:
                     return new GraphsFragment();
+                case 3:
+                    return new GraphsFragment();
             }
-
-
             return null;
         }
 
         @Override
         public int getCount() {
-            return int_items;
+            return NUMBER_OF_TABS;
         }
 
-        /**
-         * This method returns the title of the tab according to the position.
-         */
+        // This method returns the title of the tab according to the position.
         @Override
         public CharSequence getPageTitle(int position) {
-            switch (position) {
-                case 0:
-                    return "Watching";
-                case 1:
-                    return "Search";
-                case 2:
-                    return "Graphs";
-            }
+//            switch (position) {
+//                case 0:
+//                    return "Watching";
+//                case 1:
+//                    return "Search";
+//                case 2:
+//                    return "Graphs";
+//            }
             return null;
         }
     }
