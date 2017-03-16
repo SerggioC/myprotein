@@ -2,6 +2,7 @@ package com.cruz.sergio.myproteinpricechecker;
 
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -17,14 +18,14 @@ import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.preference.RingtonePreference;
 import android.support.annotation.LayoutRes;
-import android.support.v7.app.ActionBar;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.LinearLayout;
 
 import java.util.List;
 import java.util.Locale;
@@ -46,6 +47,34 @@ import static com.cruz.sergio.myproteinpricechecker.MainActivity.mNavigationView
  */
 public class SettingsActivity extends AppCompatPreferenceActivity {
 
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        //setupActionBar();
+        Locale local = getCurrentLocale();
+        Log.i("Sergio>>>", "onCreate: local= " + local);
+    }
+
+//    /*** Set up the {@link android.app.ActionBar}, if the API is available.     */
+//    private void setupActionBar() {
+//        ActionBar actionBar = getSupportActionBar();
+//        Log.i("Sergio>>>", "setupActionBar: actionbar= " + actionBar);
+//        if (actionBar != null) {
+//            // Show the Up button in the action bar.
+//            actionBar.setDisplayHomeAsUpEnabled(true);
+//        }
+//    }
+
+    @TargetApi(Build.VERSION_CODES.N)
+    public Locale getCurrentLocale() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            return getResources().getConfiguration().getLocales().get(0);
+        } else {
+            //noinspection deprecation
+            return getResources().getConfiguration().locale;
+        }
+    }
 
     /**
      * A preference value change listener that updates the preference's summary
@@ -133,6 +162,18 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     public void setContentView(@LayoutRes int layoutResID) {
         super.setContentView(layoutResID);
 
+        //Mete a toolbar no rootview at index 0
+//        LinearLayout root = (LinearLayout) findViewById(android.R.id.list).getParent().getParent().getParent();
+//        Toolbar toolbar = (Toolbar) LayoutInflater.from(this).inflate(R.layout.toolbar, root, false);
+//        root.addView(toolbar, 0); // insert at top
+//        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                finish();
+//            }
+//        });
+
+        // To fit bellow the statusbar
         View decorView = getWindow().getDecorView();
         decorView.setFitsSystemWindows(false);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
@@ -142,7 +183,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
         }
 
-//
+
 //        // Hide the status bar.
 //        if (Build.VERSION.SDK_INT < 16) {
 //            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -154,67 +195,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 //            decorView.requestFitSystemWindows();
 //            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
 //        }
-
     }
-
-
-
-    @Override
-    protected void onPostCreate(Bundle savedInstanceState) {
-        super.onPostCreate(savedInstanceState);
-
-        LinearLayout root = (LinearLayout) findViewById(android.R.id.list).getParent().getParent().getParent();
-        Toolbar toolbar = (Toolbar) LayoutInflater.from(this).inflate(R.layout.toolbar, root, false);
-        root.addView(toolbar, 0); // insert at top
-        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
-
-        if (toolbar != null) {
-            //toolbar.setNavigationIcon("homeAsUpIndicator);
-            toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    onBackPressed();
-                    //NavUtils.navigateUpFromSameTask(SettingsActivity.this);
-                }
-            });
-
-        }
-
-    }
-
-    @TargetApi(Build.VERSION_CODES.N)
-    public Locale getCurrentLocale() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            return getResources().getConfiguration().getLocales().get(0);
-        } else {
-            //noinspection deprecation
-            return getResources().getConfiguration().locale;
-        }
-    }
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setupActionBar();
-        //Locale local = getCurrentLocale();
-    }
-
-    /**
-     * Set up the {@link android.app.ActionBar}, if the API is available.
-     */
-    private void setupActionBar() {
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) {
-            // Show the Up button in the action bar.
-            actionBar.setDisplayHomeAsUpEnabled(true);
-        }
-    }
-
 
     @Override
     protected void onDestroy() {
@@ -242,13 +223,32 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     @Override
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public void onBuildHeaders(List<Header> target) {
-        int screenSize = getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK;
 
+        //ListView listview = (ListView) findViewById(android.R.id.list);
+        //Log.i("Sergio>>>", "listview childCount= " + listview.getChildCount());
+        //View root = (View) getActivity().getWindow().getDecorView().getRootView();
+        //Toolbar toolbar = (Toolbar) listview.findViewById(R.id.settings_toolbar);
+        //Toolbar toolbar = (Toolbar) listview.getChildAt(0);
+        //Log.i("Sergio>>>", "onViewCreated: toolbar= " + toolbar);
+//
+//        if (toolbar != null) {
+//            //toolbar.setNavigationIcon("homeAsUpIndicator);
+//            toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View v) {
+//                    onBackPressed();
+//                    Log.i("Sergio>>>", "onClick: back");
+//                    //NavUtils.navigateUpFromSameTask(SettingsActivity.this);
+//                }
+//            });
+//        }
+
+        int screenSize = getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK;
         if (screenSize >= SCREENLAYOUT_SIZE_XLARGE) {
             loadHeadersFromResource(R.xml.pref_headers, target);
         } else {
-            getFragmentManager().beginTransaction().replace(android.R.id.content,
-                    new AllSettingsPreferenceFragment()).commit();
+            AllSettingsPreferenceFragment fragment = new AllSettingsPreferenceFragment();
+            getFragmentManager().beginTransaction().replace(android.R.id.content, fragment).commit();
         }
 
     }
@@ -262,18 +262,22 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                 || GeneralPreferenceFragment.class.getName().equals(fragmentName)
                 || DataSyncPreferenceFragment.class.getName().equals(fragmentName)
                 || NotificationPreferenceFragment.class.getName().equals(fragmentName)
-                || AllSettingsPreferenceFragment.class.getName().equals(fragmentName)
-                ;
+                || AllSettingsPreferenceFragment.class.getName().equals(fragmentName);
     }
 
-
     public static class AllSettingsPreferenceFragment extends PreferenceFragment {
+
+        Activity settingsActivity;
 
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             addPreferencesFromResource(R.xml.pref_all);
-            setHasOptionsMenu(true);
+            settingsActivity = getActivity();
+
+            //getActivity().setContentView(R.layout.activity_settings);
+            //setHasOptionsMenu(true);
+            //put_ToolBar();
 
             // Bind the summaries of EditText/List/Dialog/Ringtone preferences
             // to their values. When their values change, their summaries are
@@ -286,7 +290,66 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
         }
 
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+            View view = inflater.inflate(R.layout.activity_settings, container, false);
+
+//            FitWindowsLinearLayout ab_root = (FitWindowsLinearLayout) view.findViewById(action_bar_root);
+//            Log.i("Sergio>>>", "onCreateView: ab_root= " + ab_root);
+//            Activity mActivity = getActivity();
+//
+//            Toolbar toolbar = (Toolbar) LayoutInflater.from(mActivity).inflate(R.layout.toolbar, ab_root, true);
+//            ab_root.addView(toolbar, 0); // insert at top
+//
+            return view;
+        }
+
+        @Override
+        public void onViewCreated(View view, Bundle savedInstanceState) {
+            super.onViewCreated(view, savedInstanceState);
+
+            Toolbar toolbar = (Toolbar) settingsActivity.findViewById(R.id.settings_toolbar);
+            toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    settingsActivity.finish();
+                    Log.d("Sergio>>>", "onClick: click");
+                }
+            });
+
+/*
+            FitWindowsLinearLayout ab_root = (FitWindowsLinearLayout) getActivity().findViewById(R.id.action_bar_root);
+            Log.i("Sergio>>>", "onViewCreated: view.getId()= " + view.getId() + "\n" +
+                    "abroot= " + ab_root);
+
+            Toolbar toolbar = (Toolbar) LayoutInflater.from(getActivity()).inflate(R.layout.toolbar, ab_root, false);
+            ab_root.addView(toolbar); // insert at top
+            toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    //finish();
+                    Log.d("Sergio>>>", "onClick: click");
+                }
+            });*/
+
+        }
+
+
+
+/*         private void put_ToolBar() {
+            //Mete a toolbar no rootview at index 0
+            LinearLayout root = (LinearLayout) rootview.findViewById(R.id.action_bar_root).getParent().getParent().getParent();
+            Toolbar toolbar = (Toolbar) LayoutInflater.from(this).inflate(R.layout.toolbar, root, false);
+            root.addView(toolbar, 0); // insert at top
+            toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    finish();
+                }
+            });
+        }*/
     }
+
 
     /**
      * This fragment shows general preferences only. It is used when the

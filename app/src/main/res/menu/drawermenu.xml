@@ -6,18 +6,23 @@
                 <item
                     android:id="@+id/nav_item_watching"
                     android:checkable="true"
-                    android:icon="@android:drawable/ic_menu_view"
-                    android:title="Watching"/>
+                    android:icon="@drawable/ic_view_statelist"
+                    android:title="@string/tab_text_watching"/>
                 <item
                     android:id="@+id/nav_item_search"
                     android:checkable="true"
-                    android:icon="@android:drawable/ic_menu_search"
-                    android:title="Search"/>
+                    android:icon="@drawable/ic_search_statelist"
+                    android:title="@string/tab_text_search"/>
                 <item
                     android:id="@+id/nav_item_graphs"
                     android:checkable="true"
-                    android:icon="@android:drawable/ic_menu_today"
-                    android:title="Graphs"/>
+                    android:icon="@drawable/ic_graph_statelist"
+                    android:title="@string/tab_text_graph"/>
+                <item
+                    android:id="@+id/nav_item_voucher"
+                    android:checkable="true"
+                    android:icon="@drawable/ic_voucher_statelist"
+                    android:title="@string/tab_text_voucher"/>
             </menu>
         </item>
         <item android:title="More">

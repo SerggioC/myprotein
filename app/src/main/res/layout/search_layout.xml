@@ -16,10 +16,10 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center_horizontal"
-        android:layout_centerHorizontal="true"
-        >
+        android:layout_centerHorizontal="true">
 
         <FrameLayout
+            android:id="@+id/frame_search"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical|center_horizontal">
@@ -57,18 +57,17 @@
                 android:layout_marginRight="12dp"
                 android:background="@drawable/clear_icon_statelist"/>
         </FrameLayout>
-        <View
-            android:id="@+id/progress_search"
-            android:layout_width="match_parent"
-            android:layout_height="4dp"/>
 
         <ProgressBar
-            android:id="@+id/progressBar2"
+            android:id="@+id/progressBarHorizontal"
             style="@style/Widget.AppCompat.ProgressBar.Horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:layout_alignParentEnd="true"/>
+            android:layout_below="@id/frame_search"
+            android:indeterminate="true"
+            android:layout_marginLeft="@dimen/inner_fragment_margin"
+            android:layout_marginRight="@dimen/inner_fragment_margin"
+            android:visibility="gone"/>
 
     </RelativeLayout>
 

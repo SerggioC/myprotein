@@ -4,6 +4,16 @@ package com.cruz.sergio.myproteinpricechecker.helper;
  * Project MyProteinPriceChecker
  * Package com.cruz.sergio.myproteinpricechecker
  * Created by Sergio on 24/01/2017 14:42
+ *
+ *
+ * .az/
+ .bg/voucher-codes.list
+ .ba/vaucer-kodovi.list
+ .cz/voucher-codes.list
+ .dk/voucher-codes.list
+ .at/voucher-codes.list
+ *
+ *
  ******/
 
 public class MyProteinDomain {
@@ -11,50 +21,50 @@ public class MyProteinDomain {
 
         String href;
         switch (country) {
-            case "az-az":href = "http://www.myprotein.az/";break;
-            case "bg-bg":href = "http://www.myprotein.bg/";break;
-            case "bs-ba":href = "http://www.myprotein.ba/";break;
-            case "cs-cz":href = "http://www.myprotein.cz/";break;
-            case "da-dk":href = "http://www.myprotein.dk/";break;
-            case "de-at":href = "http://www.myprotein.at/";break;
-            case "de-ch":href = "http://www.myprotein.ch/";break;
-            case "de-de":href = "http://de.myprotein.com/";break;
-            case "el-cy":href = "http://www.myprotein.com.cy/";break;
-            case "el-gr":href = "http://www.myprotein.gr/";break;
-            case "en-au":href = "http://au.myprotein.com/";break;
-            case "en-ca":href = "http://ca.myprotein.com/";break;
-            case "en-gb":href = "http://www.myprotein.com/";break;
-            case "en-hk":href = "http://www.myprotein.com.hk/";break;
-            case "en-ie":href = "http://www.myprotein.ie/";break;
-            case "en-in":href = "http://www.myprotein.co.in/";break;
-            case "en-nz":href = "http://nz.myprotein.com/";break;
-            case "en-sg":href = "http://www.myprotein.com.sg/";break;
-            case "en-us":href = "http://us.myprotein.com/";break;
-            case "en-za":href = "http://www.myprotein.co.za/";break;
-            case "es-es":href = "http://www.myprotein.es/";break;
-            case "et-ee":href = "http://www.myprotein.ee/";break;
-            case "fi-fi":href = "http://www.myprotein.fi/";break;
-            case "fr-ca":href = "http://fr-ca.myprotein.com/";break;
-            case "fr-fr":href = "http://fr.myprotein.com/";break;
-            case "hr-hr":href = "http://www.myprotein.hr/";break;
-            case "it-it":href = "http://www.myprotein.it/";break;
-            case "ja-jp":href = "http://www.myprotein.jp/";break;
-            case "ko-kr":href = "http://www.myprotein.co.kr/";break;
-            case "lt-lt":href = "http://www.myprotein.lt/";break;
-            case "lv-lv":href = "http://www.myprotein.lv/";break;
-            case "nb-no":href = "http://www.myprotein.no/";break;
-            case "nl-be":href = "http://www.myprotein.be/";break;
-            case "nl-nl":href = "http://nl.myprotein.com/";break;
-            case "pl-pl":href = "http://www.myprotein.pl/";break;
-            case "pt-pt":href = "http://pt.myprotein.com/";break;
-            case "ro-ro":href = "http://www.myprotein.ro/";break;
-            case "ru-ru":href = "http://www.myprotein.ru/";break;
-            case "sk-sk":href = "http://www.myprotein.sk/";break;
-            case "sl-si":href = "http://si.myprotein.com/";break;
-            case "sr-rs":href = "http://www.myprotein.rs/";break;
-            case "sv-se":href = "http://www.myprotein.se/";break;
-            case "uk-ua":href = "http://www.myprotein.com.ua/";break;
-            case "zh-cn":href = "http://www.myprotein.cn/";break;
+            case "az-az":href = "http://www.myprotein.az/";break;       //vaucer-kodlari.list <---
+            case "bg-bg":href = "http://www.myprotein.bg/";break;       //voucher-codes.list
+            case "bs-ba":href = "http://www.myprotein.ba/";break;       //vaucer-kodovi.list <---
+            case "cs-cz":href = "http://www.myprotein.cz/";break;       //voucher-codes.list
+            case "da-dk":href = "http://www.myprotein.dk/";break;       //voucher-codes.list
+            case "de-at":href = "http://www.myprotein.at/";break;       //voucher-codes.list
+            case "de-ch":href = "http://www.myprotein.ch/";break;       //voucher-codes.list
+            case "de-de":href = "http://de.myprotein.com/";break;       //voucher-codes.list
+            case "el-cy":href = "http://www.myprotein.com.cy/";break;   //voucher-codes.list
+            case "el-gr":href = "http://www.myprotein.gr/";break;       //voucher-codes.list
+            case "en-au":href = "http://au.myprotein.com/";break;       //voucher-codes.list
+            case "en-ca":href = "http://ca.myprotein.com/";break;       //voucher-codes.list
+            case "en-gb":href = "http://www.myprotein.com/";break;      //voucher-codes.list
+            case "en-hk":href = "http://www.myprotein.com.hk/";break;   //voucher-codes.list (vazio...)
+            case "en-ie":href = "http://www.myprotein.ie/";break;       //voucher-codes.list
+            case "en-in":href = "http://www.myprotein.co.in/";break;    //voucher-codes.list (zero...)
+            case "en-nz":href = "http://nz.myprotein.com/";break;       //voucher-codes.list (zero...)
+            case "en-sg":href = "http://www.myprotein.com.sg/";break;   //voucher-codes.list
+            case "en-us":href = "http://us.myprotein.com/";break;       //voucher-codes.list
+            case "en-za":href = "http://www.myprotein.co.za/";break;    //voucher-codes.list (zero...)
+            case "es-es":href = "http://www.myprotein.es/";break;       //voucher-codes.list
+            case "et-ee":href = "http://www.myprotein.ee/";break;       //voucher-codes.list
+            case "fi-fi":href = "http://www.myprotein.fi/";break;       //voucher-codes.list
+            case "fr-ca":href = "http://fr-ca.myprotein.com/";break;    //codes-de-reduction.list <---
+            case "fr-fr":href = "http://fr.myprotein.com/";break;       //voucher-codes.list
+            case "hr-hr":href = "http://www.myprotein.hr/";break;       //voucher-codes.list
+            case "it-it":href = "http://www.myprotein.it/";break;       //voucher-codes.list
+            case "ja-jp":href = "http://www.myprotein.jp/";break;       //voucher-codes.list
+            case "ko-kr":href = "http://www.myprotein.co.kr/";break;    //voucher-codes.list
+            case "lt-lt":href = "http://www.myprotein.lt/";break;       //voucher-codes.list
+            case "lv-lv":href = "http://www.myprotein.lv/";break;       //voucher-codes.list
+            case "nb-no":href = "http://www.myprotein.no/";break;       //voucher-codes.list
+            case "nl-be":href = "http://www.myprotein.be/";break;       //voucher-codes.list
+            case "nl-nl":href = "http://nl.myprotein.com/";break;       //voucher-codes.list
+            case "pl-pl":href = "http://www.myprotein.pl/";break;       //voucher-codes.list
+            case "pt-pt":href = "http://pt.myprotein.com/";break;       //voucher-codes.list
+            case "ro-ro":href = "http://www.myprotein.ro/";break;       //voucher-codes.list
+            case "ru-ru":href = "http://www.myprotein.ru/";break;       //voucher-codes.list
+            case "sk-sk":href = "http://www.myprotein.sk/";break;       //voucher-codes.list
+            case "sl-si":href = "http://si.myprotein.com/";break;       //voucher-codes.list
+            case "sr-rs":href = "http://www.myprotein.rs/";break;       //vaucer-kodovi.list <---
+            case "sv-se":href = "http://www.myprotein.se/";break;       //voucher-codes.list
+            case "uk-ua":href = "http://www.myprotein.com.ua/";break;   //voucher-codes.list
+            case "zh-cn":href = "http://www.myprotein.cn/";break;       //voucher-codes.list
             default:href = "http://www.myprotein.com/";break;
         }
         return href;

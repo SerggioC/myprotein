@@ -4,13 +4,13 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.res.ResourcesCompat;
@@ -29,12 +29,15 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.cruz.sergio.myproteinpricechecker.helper.DBHelper;
 import com.cruz.sergio.myproteinpricechecker.helper.MyProteinDomain;
 import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
+import com.cruz.sergio.myproteinpricechecker.helper.ProductsContract;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -45,8 +48,8 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetworkSnackBar;
-
 
 public class SearchFragment extends Fragment {
     static SearchFragment thisSearchFragment;
@@ -56,6 +59,7 @@ public class SearchFragment extends Fragment {
     Boolean hasMorePages = true;
     int pageNumber = 1;
     ListView resultsListView;
+    ProgressBar horizontalProgressBar;
     String queryStr = "";
 
     @Override
@@ -63,25 +67,17 @@ public class SearchFragment extends Fragment {
         super.onCreate(savedInstanceState);
         mActivity = getActivity();
         thisSearchFragment = this;
+
+        //reset_DataBase();
+
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-        NetworkUtils.createBroadcast(mActivity);
-    }
-
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        NetworkUtils.UnregisterBroadcastReceiver(mActivity);
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        NetworkUtils.UnregisterBroadcastReceiver(mActivity);
+    private void reset_DataBase() {
+        DBHelper dbHelper = new DBHelper(getContext());
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.ProductsEntry.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.PriceEntry.TABLE_NAME);
+        dbHelper.onCreate(db);
     }
 
     @Nullable
@@ -129,7 +125,10 @@ public class SearchFragment extends Fragment {
         });
         resultsListView = (ListView) mActivity.findViewById(R.id.results);
 
+        horizontalProgressBar = (ProgressBar) mActivity.findViewById(R.id.progressBarHorizontal);
+
     }
+
 
     private void hideKeyBoard() {
         try {
@@ -143,7 +142,47 @@ public class SearchFragment extends Fragment {
     public void performSearch(String searchString) {
         hideKeyBoard();
         if (!searchString.equals("")) {
-            if (NetworkUtils.hasActiveNetworkConnection(mActivity)) {
+            horizontalProgressBar.setVisibility(View.VISIBLE);
+
+            AsyncTask<String, Void, Boolean> internetAsyncTask = new checkInternetAsyncTask();
+            internetAsyncTask.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, searchString);
+
+        } else if (searchString.equals("")) {
+            Toast theToast = Toast.makeText(getContext(), "Nothing to search", Toast.LENGTH_SHORT);
+            theToast.setGravity(Gravity.CENTER, 0, 0);
+            theToast.show();
+            return;
+        }
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        //Quando altera a orientação do ecrã
+        resultsListView.setAdapter(adapter);
+        super.onConfigurationChanged(newConfig);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+    }
+
+
+    public class checkInternetAsyncTask extends AsyncTask<String, Void, Boolean> {
+        String searchString;
+
+        @Override
+        protected Boolean doInBackground(String... params) {
+            this.searchString = params[0];
+            //Importante porque ao executar o ping bloqueia o interface
+            return NetworkUtils.hasActiveNetworkConnection(mActivity);
+        }
+
+        @Override
+        protected void onPostExecute(Boolean hasInternet) {
+            super.onPostExecute(hasInternet);
+
+            if (hasInternet) {
                 searchString = URLEncoder.encode(searchString);
                 SharedPreferences prefManager = PreferenceManager.getDefaultSharedPreferences(mActivity);
                 String pref_MP_Domain = prefManager.getString("mp_website_location", "en-gb");
@@ -158,40 +197,27 @@ public class SearchFragment extends Fragment {
                 hasMorePages = true;
                 resultsListView.setAdapter(null);
                 arrayListProductCards.clear();
+
                 AsyncTask<String, Void, Document> performSearch = new performSearch();
                 performSearch.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, queryStr);
 
             } else {
+                if (horizontalProgressBar.getVisibility() == View.VISIBLE) {
+                    horizontalProgressBar.setVisibility(View.GONE);
+                }
                 if (noNetworkSnackBar != null && !noNetworkSnackBar.isShown()) {
                     noNetworkSnackBar.show();
                 } else {
-                    noNetworkSnackBar = Snackbar.make(getView(), "No Network Connection", Snackbar.LENGTH_INDEFINITE);
-                    noNetworkSnackBar.show();
+                    makeNoNetworkSnackBar(mActivity);
                 }
             }
-        } else if (searchString.equals("")) {
-            Toast theToast = Toast.makeText(getContext(), "Nothing to search", Toast.LENGTH_SHORT);
-            theToast.setGravity(Gravity.CENTER, 0, 0);
-            theToast.show();
-            return;
+
         }
     }
 
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        //Quando altera a orientação do ecrã
-        resultsListView.setAdapter(adapter);
-        super.onConfigurationChanged(newConfig);
-
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-
-    }
 
     private class performSearch extends AsyncTask<String, Void, Document> {
+
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
@@ -222,11 +248,16 @@ public class SearchFragment extends Fragment {
         protected void onPostExecute(Document resultDocument) {
             super.onPostExecute(resultDocument);
 
-            Elements resultProductCards = resultDocument.getElementById("divSearchResults").getElementsByClass("item"); //Todos os resultados em "cards"
+            Elements resultProductCards = new Elements(0);
+
+            if (resultDocument != null) {
+                resultProductCards = resultDocument.getElementById("divSearchResults").getElementsByClass("item"); //Todos os resultados em "cards"
+            }
+
             //#divSearchResults > div:nth-child(1) > div:nth-child(1)
             //Log.i("Sergio>>>", "onPostExecute: " + resultProductCards);
 
-            if (resultProductCards.size() < 1) {
+            if (resultProductCards.size() == 0) {
                 ArrayList item = new ArrayList();
                 item.add("No Results");
                 ArrayAdapter noAdapter = new ArrayAdapter(mActivity, android.R.layout.simple_list_item_1, item);
@@ -282,7 +313,6 @@ public class SearchFragment extends Fragment {
                             pptList_SSB.setSpan(new ImageSpan(drawable), pptList_SSB.length() - drawableStr.length(), pptList_SSB.length(),
                                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                             pptList_SSB.append(" " + pptList.get(m).text() + "\n");
-
                         }
                     }
 
@@ -313,6 +343,7 @@ public class SearchFragment extends Fragment {
                     //arrayListProductCards.clear();
                 }
             }
+            horizontalProgressBar.setVisibility(View.GONE);
         }
     }
 
@@ -340,7 +371,7 @@ public class SearchFragment extends Fragment {
             ImageView productImageView = (ImageView) view.findViewById(R.id.product_image);
             String imgURL = product.imgURL;
 
-            if (imgURL.contains(".jpg") || imgURL.contains(".jpeg") || imgURL.contains(".bmp") || imgURL.contains(".png")) {
+            if (imgURL != null && (imgURL.contains(".jpg") || imgURL.contains(".jpeg") || imgURL.contains(".bmp") || imgURL.contains(".png"))) {
                 Glide.with(mActivity).load(imgURL).into(productImageView);
             } else {
                 //failed getting product image

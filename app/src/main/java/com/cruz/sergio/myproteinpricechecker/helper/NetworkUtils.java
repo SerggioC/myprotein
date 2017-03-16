@@ -5,12 +5,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
+import android.view.View;
 import android.widget.Toast;
 
 import java.io.IOException;
@@ -34,7 +35,7 @@ public class NetworkUtils {
     }
 
     public static void createBroadcast(final Activity mActivity) {
-        noNetworkSnackBar = Snackbar.make(mActivity.findViewById(android.R.id.content), "No Network Connection", Snackbar.LENGTH_INDEFINITE);
+        makeNoNetworkSnackBar(mActivity);
 
         BCReceiver = new BroadcastReceiver() {
             @Override
@@ -43,21 +44,29 @@ public class NetworkUtils {
                 NetworkInfo info = extras.getParcelable("networkInfo");
                 NetworkInfo.State state = info.getState();
 
-                Log.i("Sergio>>>", "onReceive: noNetworkSnackBar.isShownOrQueued() " + noNetworkSnackBar.isShown());
                 if (noNetworkSnackBar.isShown()) noNetworkSnackBar.dismiss();
                 if (state == NetworkInfo.State.CONNECTED) {
                     Toast toast1 = Toast.makeText(mActivity, "Connected to Network", Toast.LENGTH_SHORT);
                     toast1.show();
                 } else {
                     noNetworkSnackBar.show();
-                    Log.i("Sergio>>>", "onReceive: noNetworkSnackBar.isShown() " + noNetworkSnackBar.isShown());
-
                 }
             }
         };
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
         mActivity.registerReceiver(BCReceiver, intentFilter);
+    }
+
+    public static void makeNoNetworkSnackBar(Activity mActivity) {
+        noNetworkSnackBar = Snackbar.make(mActivity.getWindow().findViewById(android.R.id.content), "No Network Connection", Snackbar.LENGTH_INDEFINITE)
+                .setActionTextColor(Color.RED)
+                .setAction("Dismiss", new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        noNetworkSnackBar.dismiss();
+                    }
+                });
     }
 
     public static boolean hasActiveNetworkConnection(Activity mActivity) {

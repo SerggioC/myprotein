@@ -17,8 +17,8 @@
 
         <ImageView
             android:id="@+id/img_profile"
-            android:layout_width="150dp"
-            android:layout_height="150dp"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
             android:layout_gravity="center"
             android:layout_marginTop="45dp"
             android:contentDescription="icon"
@@ -30,7 +30,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_marginTop="-15dp"
-            android:text="My Whey Price Checker"
+            android:text="@string/app_name"
             android:textAlignment="center"
             android:textColor="@color/white"
             android:textSize="20sp"

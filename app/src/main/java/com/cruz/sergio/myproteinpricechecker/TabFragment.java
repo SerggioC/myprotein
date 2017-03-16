@@ -23,45 +23,56 @@ public class TabFragment extends Fragment {
 
     public static TabLayout tabLayout;
     public static ViewPager viewPager;
-    public static int NUMBER_OF_TABS = 4;
     Bundle extras;
     MenuItem menuItem;
-    int[] tab_icons = {R.drawable.ic_view_statelist, R.drawable.ic_search_statelist, R.drawable.ic_graph_statelist, R.drawable.ic_voucher_statelist};
-    String[] tab_text = {"Watching Items", "Search Product", "Price Graphs", "Voucher Codes"};
-
+    int[] tab_icons;
+    String[] tab_text;
+    int numberOfTabs;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         extras = getArguments();
+        tab_text = new String[] {
+                getString(R.string.tab_text_watching),
+                getString(R.string.tab_text_search),
+                getString(R.string.tab_text_graph),
+                getString(R.string.tab_text_voucher)
+        };
+        tab_icons = new int[] {
+                R.drawable.ic_view_statelist,
+                R.drawable.ic_search_statelist,
+                R.drawable.ic_graph_statelist,
+                R.drawable.ic_voucher_statelist
+        };
+        numberOfTabs = tab_text.length;
     }
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        /**
-         *Inflate tab_layout and setup Views.
-         */
+
+        /*** Inflate tab_layout and setup Views. */
         View tabLayout = inflater.inflate(R.layout.tab_layout, null);
         TabFragment.tabLayout = (TabLayout) tabLayout.findViewById(R.id.tabs);
         viewPager = (ViewPager) tabLayout.findViewById(R.id.viewpager);
 
-        /**
-         *Set an Adapter for the View Pager
-         */
+        /*** Set an Adapter for the View Pager */
         viewPager.setAdapter(new MyAdapter(getChildFragmentManager()));
+        //Manter o conteudo das tabs ao passar de uma para a outra
+        viewPager.setOffscreenPageLimit(numberOfTabs);
 
         /**
-         * Now , this is a workaround ,
-         * The setupWithViewPager dose't works without the runnable .
-         * Maybe a Support Library Bug .
+         * This is a workaround,
+         * The setupWithViewPager dose't works without the runnable.
+         * Maybe a Support Library Bug.
          */
         TabFragment.tabLayout.post(new Runnable() {
             @Override
             public void run() {
                 TabFragment.tabLayout.setupWithViewPager(viewPager);
 
-                for (int i = 0; i < NUMBER_OF_TABS; i++) {
+                for (int i = 0; i < numberOfTabs; i++) {
                     View one_tab = LayoutInflater.from(getContext()).inflate(R.layout.one_tab_layout, null);
                     TabFragment.tabLayout.getTabAt(i).setCustomView(one_tab);
                     TextView textView = (TextView) one_tab.findViewById(R.id.tabText);
@@ -95,6 +106,9 @@ public class TabFragment extends Fragment {
                         break;
                     case 2:
                         menuItem = menulateral.findItem(R.id.nav_item_graphs);
+                        break;
+                    case 3:
+                        menuItem = menulateral.findItem(R.id.nav_item_voucher);
                         break;
                 }
                 lastMenuItem.setChecked(false);
@@ -132,14 +146,14 @@ public class TabFragment extends Fragment {
                 case 2:
                     return new GraphsFragment();
                 case 3:
-                    return new GraphsFragment();
+                    return new VoucherFragment();
             }
             return null;
         }
 
         @Override
         public int getCount() {
-            return NUMBER_OF_TABS;
+            return numberOfTabs;
         }
 
         // This method returns the title of the tab according to the position.

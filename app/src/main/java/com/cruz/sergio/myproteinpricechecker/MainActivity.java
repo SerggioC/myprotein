@@ -13,8 +13,11 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+
+import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
 
 import static com.cruz.sergio.myproteinpricechecker.TabFragment.viewPager;
 
@@ -28,6 +31,40 @@ public class MainActivity extends AppCompatActivity {
     Handler mHandler;
     Bundle indexBundle;
     int index = 0;
+
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        NetworkUtils.createBroadcast(mActivity);
+        Log.d("Sergio>>>", "Starting MainActivity and createBroadcast");
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        NetworkUtils.UnregisterBroadcastReceiver(mActivity);
+        Log.d("Sergio>>>", "Pausing MainActivity and UnregisterBroadcastReceiver");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.d("Sergio>>>", "Stoping MainActivity");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d("Sergio>>>", "Resuming MainActivity");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        NetworkUtils.UnregisterBroadcastReceiver(mActivity);
+        Log.e("Sergio>>>", "Destroying MainActivity and UnregisterBroadcastReceiver");
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -44,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
          */
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawerLayout);
         mNavigationView = (NavigationView) findViewById(R.id.nav_view);
+        mNavigationView.setItemIconTintList(null);
 
         /**
          * Lets inflate the very first fragment
@@ -61,6 +99,8 @@ public class MainActivity extends AppCompatActivity {
         MenuItem firstMenuItem = mNavigationView.getMenu().findItem(R.id.nav_item_watching);
         firstMenuItem.setChecked(true);
         TheMenuItem.lastMenuItem = firstMenuItem;
+
+
 
         /**
          * Setup click events on the Navigation View Items.
@@ -84,6 +124,9 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case R.id.nav_item_graphs:
                         index = 2;
+                        break;
+                    case R.id.nav_item_voucher:
+                        index = 3;
                         break;
                     case R.id.nav_item_settings:
                         Intent intent = new Intent(mActivity, SettingsActivity.class);
@@ -125,6 +168,7 @@ public class MainActivity extends AppCompatActivity {
         // Sets the Toolbar to act as the ActionBar for this Activity window.
         // Make sure the toolbar exists in the activity and is not null
         setSupportActionBar(toolbar);
+
 
         ActionBarDrawerToggle mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, toolbar, R.string.app_name, R.string.app_name);
         mDrawerLayout.setDrawerListener(mDrawerToggle);
