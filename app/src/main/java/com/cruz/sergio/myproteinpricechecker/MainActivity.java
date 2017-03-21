@@ -13,7 +13,6 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -37,33 +36,33 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         NetworkUtils.createBroadcast(mActivity);
-        Log.d("Sergio>>>", "Starting MainActivity and createBroadcast");
+        //Log.d("Sergio>>>", "Starting MainActivity and createBroadcast");
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         NetworkUtils.UnregisterBroadcastReceiver(mActivity);
-        Log.d("Sergio>>>", "Pausing MainActivity and UnregisterBroadcastReceiver");
+        //Log.d("Sergio>>>", "Pausing MainActivity and UnregisterBroadcastReceiver");
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        Log.d("Sergio>>>", "Stoping MainActivity");
+        //Log.d("Sergio>>>", "Stoping MainActivity");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d("Sergio>>>", "Resuming MainActivity");
+        //Log.d("Sergio>>>", "Resuming MainActivity");
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         NetworkUtils.UnregisterBroadcastReceiver(mActivity);
-        Log.e("Sergio>>>", "Destroying MainActivity and UnregisterBroadcastReceiver");
+        //Log.e("Sergio>>>", "Destroying MainActivity and UnregisterBroadcastReceiver");
     }
 
     @Override

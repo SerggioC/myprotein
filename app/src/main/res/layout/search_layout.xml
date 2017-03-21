@@ -28,7 +28,6 @@
                 android:id="@+id/searchTextView"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/edittextsize"
-                android:layout_marginBottom="2dp"
                 android:layout_marginLeft="@dimen/inner_fragment_margin"
                 android:layout_marginRight="@dimen/inner_fragment_margin"
                 android:layout_marginTop="@dimen/inner_fragment_margin"

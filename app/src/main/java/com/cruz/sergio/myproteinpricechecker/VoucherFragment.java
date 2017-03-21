@@ -11,7 +11,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -56,14 +55,12 @@ public class VoucherFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         return inflater.inflate(R.layout.voucher_fragment_layout, null);
-
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
     }
-
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
@@ -73,22 +70,21 @@ public class VoucherFragment extends Fragment {
                 new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {
-
-                        int childCount = ll_scroll.getChildCount();
-                        if (childCount > 1) {
-                            ll_scroll.removeViews(1, childCount - 1);
-                        }
-
-                        AsyncTask<Void, Void, Boolean> internetAsyncTask = new checkInternetAsyncTask();
-                        internetAsyncTask.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR);
+                        getVouchers();
                     }
                 }
         );
-
-        //voucherListView = (ListView) mActivity.findViewById(android.R.id.list);
-
         ll_scroll = (LinearLayout) mActivity.findViewById(R.id.ll_scroll);
+        getVouchers();
+    }
 
+    public void getVouchers() {
+        int childCount = ll_scroll.getChildCount();
+        if (childCount > 1) {
+            ll_scroll.removeViews(1, childCount - 1);
+        }
+        AsyncTask<Void, Void, Boolean> internetAsyncTask = new checkInternetAsyncTask();
+        internetAsyncTask.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR);
     }
 
     public class checkInternetAsyncTask extends AsyncTask<Void, Void, Boolean> {
@@ -121,7 +117,7 @@ public class VoucherFragment extends Fragment {
 
                 String voucher_url = MP_Domain + voucher_url_sufix;
 
-                Log.i("Sergio>>>", "voucher_url=" + voucher_url);
+                //Log.i("Sergio>>>", "voucher_url=" + voucher_url);
 
                 AsyncTask<String, Void, Document> getVouchersAsync = new GetVouchersAsync();
                 getVouchersAsync.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, voucher_url);
@@ -136,9 +132,7 @@ public class VoucherFragment extends Fragment {
                 }
             }
         }
-
     }
-
 
     class GetVouchersAsync extends AsyncTask<String, Void, Document> {
         @Override
@@ -157,7 +151,6 @@ public class VoucherFragment extends Fragment {
             return resultDocument;
         }
 
-
         @Override
         protected void onPostExecute(Document document) {
             super.onPostExecute(document);
@@ -166,7 +159,8 @@ public class VoucherFragment extends Fragment {
             if (document != null) {
                 voucherElements = document.getElementsByClass("voucher-info-wrapper");
             }
-            Log.i("Sergio>>>", "onPostExecute: voucherElements= " + voucherElements);
+            //Todos os html elements dos vouchers
+            //Log.i("Sergio>>>", "onPostExecute: voucherElements= " + voucherElements);
 
             if (voucherElements.size() == 0) {
 
@@ -184,7 +178,7 @@ public class VoucherFragment extends Fragment {
                     String voucherText = singlevoucherElement.html();
                     //items.add(voucherText);
                     set_webView(voucherText);
-                    Log.d("Sergio>>>", "voucherText= " + voucherText);
+                    //Log.d("Sergio>>>", "voucherText= " + voucherText);
                 }
 
 //                ArrayAdapter webviewAdapter = new postToWebviewAdapter(mActivity, R.layout.voucher_webview, items);
@@ -238,6 +232,5 @@ public class VoucherFragment extends Fragment {
 
         }
     }
-
 
 }

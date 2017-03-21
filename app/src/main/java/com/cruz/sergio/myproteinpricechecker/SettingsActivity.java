@@ -162,17 +162,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     public void setContentView(@LayoutRes int layoutResID) {
         super.setContentView(layoutResID);
 
-        //Mete a toolbar no rootview at index 0
-//        LinearLayout root = (LinearLayout) findViewById(android.R.id.list).getParent().getParent().getParent();
-//        Toolbar toolbar = (Toolbar) LayoutInflater.from(this).inflate(R.layout.toolbar, root, false);
-//        root.addView(toolbar, 0); // insert at top
-//        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                finish();
-//            }
-//        });
-
         // To fit bellow the statusbar
         View decorView = getWindow().getDecorView();
         decorView.setFitsSystemWindows(false);
@@ -182,19 +171,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
         }
-
-
-//        // Hide the status bar.
-//        if (Build.VERSION.SDK_INT < 16) {
-//            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-//        } else {
-//            View decorView = getWindow().getDecorView();
-//            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
-//
-//            decorView.setFitsSystemWindows(false);
-//            decorView.requestFitSystemWindows();
-//            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-//        }
     }
 
     @Override
@@ -223,25 +199,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     @Override
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public void onBuildHeaders(List<Header> target) {
-
-        //ListView listview = (ListView) findViewById(android.R.id.list);
-        //Log.i("Sergio>>>", "listview childCount= " + listview.getChildCount());
-        //View root = (View) getActivity().getWindow().getDecorView().getRootView();
-        //Toolbar toolbar = (Toolbar) listview.findViewById(R.id.settings_toolbar);
-        //Toolbar toolbar = (Toolbar) listview.getChildAt(0);
-        //Log.i("Sergio>>>", "onViewCreated: toolbar= " + toolbar);
-//
-//        if (toolbar != null) {
-//            //toolbar.setNavigationIcon("homeAsUpIndicator);
-//            toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-//                @Override
-//                public void onClick(View v) {
-//                    onBackPressed();
-//                    Log.i("Sergio>>>", "onClick: back");
-//                    //NavUtils.navigateUpFromSameTask(SettingsActivity.this);
-//                }
-//            });
-//        }
 
         int screenSize = getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK;
         if (screenSize >= SCREENLAYOUT_SIZE_XLARGE) {
@@ -275,10 +232,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             addPreferencesFromResource(R.xml.pref_all);
             settingsActivity = getActivity();
 
-            //getActivity().setContentView(R.layout.activity_settings);
-            //setHasOptionsMenu(true);
-            //put_ToolBar();
-
             // Bind the summaries of EditText/List/Dialog/Ringtone preferences
             // to their values. When their values change, their summaries are
             // updated to reflect the new value, per the Android Design guidelines.
@@ -292,64 +245,21 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-            View view = inflater.inflate(R.layout.activity_settings, container, false);
-
-//            FitWindowsLinearLayout ab_root = (FitWindowsLinearLayout) view.findViewById(action_bar_root);
-//            Log.i("Sergio>>>", "onCreateView: ab_root= " + ab_root);
-//            Activity mActivity = getActivity();
-//
-//            Toolbar toolbar = (Toolbar) LayoutInflater.from(mActivity).inflate(R.layout.toolbar, ab_root, true);
-//            ab_root.addView(toolbar, 0); // insert at top
-//
-            return view;
+            return inflater.inflate(R.layout.activity_settings, container, false);
         }
 
         @Override
         public void onViewCreated(View view, Bundle savedInstanceState) {
             super.onViewCreated(view, savedInstanceState);
-
             Toolbar toolbar = (Toolbar) settingsActivity.findViewById(R.id.settings_toolbar);
             toolbar.setNavigationOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     settingsActivity.finish();
-                    Log.d("Sergio>>>", "onClick: click");
                 }
             });
-
-/*
-            FitWindowsLinearLayout ab_root = (FitWindowsLinearLayout) getActivity().findViewById(R.id.action_bar_root);
-            Log.i("Sergio>>>", "onViewCreated: view.getId()= " + view.getId() + "\n" +
-                    "abroot= " + ab_root);
-
-            Toolbar toolbar = (Toolbar) LayoutInflater.from(getActivity()).inflate(R.layout.toolbar, ab_root, false);
-            ab_root.addView(toolbar); // insert at top
-            toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    //finish();
-                    Log.d("Sergio>>>", "onClick: click");
-                }
-            });*/
-
         }
-
-
-
-/*         private void put_ToolBar() {
-            //Mete a toolbar no rootview at index 0
-            LinearLayout root = (LinearLayout) rootview.findViewById(R.id.action_bar_root).getParent().getParent().getParent();
-            Toolbar toolbar = (Toolbar) LayoutInflater.from(this).inflate(R.layout.toolbar, root, false);
-            root.addView(toolbar, 0); // insert at top
-            toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    finish();
-                }
-            });
-        }*/
     }
-
 
     /**
      * This fragment shows general preferences only. It is used when the

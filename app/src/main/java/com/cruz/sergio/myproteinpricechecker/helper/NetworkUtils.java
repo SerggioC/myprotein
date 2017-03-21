@@ -77,7 +77,7 @@ public class NetworkUtils {
         if (isConnected) {
             if (noNetworkSnackBar != null && noNetworkSnackBar.isShownOrQueued()) noNetworkSnackBar.dismiss(); // Tem network connection
             try {
-                if (ping(PING_URL)) {
+                if (ping()) {
                     return true;
                 }
             } catch (InterruptedException e) {
@@ -91,8 +91,8 @@ public class NetworkUtils {
         return false;
     }
 
-    private static boolean ping(String hostAddr) throws InterruptedException, IOException {
-        String command = "ping -c 1 " + hostAddr;
+    private static boolean ping() throws InterruptedException, IOException {
+        String command = "ping -c 1 " + PING_URL;
         return (Runtime.getRuntime().exec(command).waitFor() == 0);
     }
 }

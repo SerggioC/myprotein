@@ -9,12 +9,10 @@ import android.util.Log;
  * Created by Sergio on 12/03/2017.
  */
 
-
-
 public class DBHelper extends SQLiteOpenHelper {
 
     // If you change the database schema, you must increment the database version.
-    private static final int DATABASE_VERSION = 4;
+    private static final int DATABASE_VERSION = 7;
 
     static final String DATABASE_NAME = "pricetracker.db";
 
@@ -27,38 +25,49 @@ public class DBHelper extends SQLiteOpenHelper {
 
         final String SQL_CREATE_PRODUCT_TABLE = "CREATE TABLE " + ProductsContract.ProductsEntry.TABLE_NAME + " (" +
                 ProductsContract.ProductsEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID + " TEXT NOT NULL, " +                 //++
-                ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME + " TEXT NOT NULL, " +               //++
-                ProductsContract.ProductsEntry.COLUMN_PRODUCT_SUBTITLE + " TEXT NOT NULL, " +           //++
-                ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION + " TEXT NOT NULL, " +        //++
-                ProductsContract.ProductsEntry.COLUMN_WEBSTORE_NAME + " TEXT NOT NULL, " +              //++
-                ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL + " TEXT NOT NULL, " +           //++
-                ProductsContract.ProductsEntry.COLUMN_MP_WEBSTORE_BASE_DOMAIN + " TEXT NOT NULL, " +    //++
-                ProductsContract.ProductsEntry.COLUMN_MP_SHIPPING_LOCATION + " TEXT NOT NULL, " +       //++
-                ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY + " TEXT NOT NULL, " +                //++
-                ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS + " TEXT NOT NULL, " +        //++
-                ProductsContract.ProductsEntry.COLUMN_MP_VARIATION1 + " TEXT NOT NULL, " +              //++
-                ProductsContract.ProductsEntry.COLUMN_MP_VARIATION2 + " TEXT NOT NULL, " +              //++
-                ProductsContract.ProductsEntry.COLUMN_MP_VARIATION3 + " TEXT NOT NULL, " +              //++
-                ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS1 + " TEXT NOT NULL, " +                //++
-                ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS2 + " TEXT NOT NULL, " +                //++
-                ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS3 + " TEXT NOT NULL, " +                //++
-                ProductsContract.ProductsEntry.COLUMN_MP_BASE_IMG_URL + " TEXT NOT NULL, " +            //++
-                ProductsContract.ProductsEntry.COLUMN_MP_ZOOM_IMG_URL + " TEXT NOT NULL, " +            //++
-                ProductsContract.ProductsEntry.COLUMN_MAX_PRICE + " TEXT NOT NULL, " +
-                ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE + " INTEGER NOT NULL, " +
-                ProductsContract.ProductsEntry.COLUMN_MIN_PRICE + " TEXT NOT NULL, " +
-                ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE + " INTEGER NOT NULL, " +
-
-                " FOREIGN KEY (" + ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID + ") REFERENCES " +
-                ProductsContract.PriceEntry.TABLE_NAME + " (" + ProductsContract.PriceEntry._ID + ") " +
+                ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID + " TEXT NOT NULL, " +
+                ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME + " TEXT NOT NULL, " +
+                ProductsContract.ProductsEntry.COLUMN_PRODUCT_SUBTITLE + " TEXT NOT NULL, " +
+                ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION + " TEXT NOT NULL, " +
+                ProductsContract.ProductsEntry.COLUMN_WEBSTORE_NAME + " TEXT NOT NULL, " +
+                ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL + " TEXT NOT NULL, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_WEBSTORE_DOMAIN_URL + " TEXT NOT NULL, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_SHIPPING_LOCATION + " TEXT NOT NULL, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY + " TEXT NOT NULL, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL + " TEXT NOT NULL, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_LOCALE + " TEXT NOT NULL, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_VARIATION1 + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_VARIATION2 + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_VARIATION3 + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS1 + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS2 + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS3 + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_BASE_IMG_URL + " TEXT NOT NULL, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_ZOOM_IMG_URL + " TEXT NOT NULL, " +
+                ProductsContract.ProductsEntry.COLUMN_MAX_PRICE + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE + " INTEGER, " +
+                ProductsContract.ProductsEntry.COLUMN_MIN_PRICE + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE + " INTEGER, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_VARIATION_NAME1 + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_VARIATION_NAME2 + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_VARIATION_NAME3 + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME1 + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME2 + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME3 + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID + " TEXT NOT NULL" +
+//                " FOREIGN KEY (" + ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID + ") REFERENCES " +
+//                ProductsContract.PriceEntry.TABLE_NAME + " (" + ProductsContract.PriceEntry._ID + ") " +
                 " );";
 
         final String SQL_CREATE_PRICES_TABLE = "CREATE TABLE " + ProductsContract.PriceEntry.TABLE_NAME + " (" +
-                ProductsContract.PriceEntry._ID + " INTEGER PRIMARY KEY, " +
-                ProductsContract.PriceEntry.COLUMN_PRODUCT_ID + " TEXT NOT NULL, " + // " TEXT UNIQUE NOT NULL, " +
-                ProductsContract.PriceEntry.COLUMN_PRODUCT_PRICE + " REAL NOT NULL, " +
-                ProductsContract.PriceEntry.COLUMN_PRODUCT_PRICE_DATE + " INTEGER NOT NULL " +
+                ProductsContract.PriceEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                ProductsContract.PriceEntry.COLUMN_ID_PRODUCTS + " INTEGER NOT NULL, " + // igual a _ID da Products_Table
+                ProductsContract.PriceEntry.COLUMN_PRODUCT_PRICE + " TEXT NOT NULL, " +
+                ProductsContract.PriceEntry.COLUMN_PRODUCT_PRICE_VALUE + " REAL NOT NULL, " +
+                ProductsContract.PriceEntry.COLUMN_PRODUCT_PRICE_DATE + " INTEGER NOT NULL, " +
+                " FOREIGN KEY (" + ProductsContract.PriceEntry.COLUMN_ID_PRODUCTS + ") REFERENCES " +
+                ProductsContract.ProductsEntry.TABLE_NAME + " (" + ProductsContract.ProductsEntry._ID + ") " +
                 " );";
 
         Log.i("Sergio>>>", "SQL_CREATE_PRODUCT_TABLE= " + SQL_CREATE_PRODUCT_TABLE);

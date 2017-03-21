@@ -4,28 +4,6 @@
                 android:layout_height="match_parent"
                 android:orientation="vertical">
 
-    <!--<LinearLayout-->
-    <!--android:id="@+id/ll_top"-->
-    <!--android:layout_width="match_parent"-->
-    <!--android:layout_height="wrap_content"-->
-    <!--android:gravity="center_horizontal"-->
-    <!--android:orientation="horizontal">-->
-
-    <!--<ImageView-->
-    <!--android:layout_width="40dp"-->
-    <!--android:layout_height="40dp"-->
-    <!--android:src="@drawable/voucher"/>-->
-
-    <!--<TextView-->
-    <!--android:id="@+id/textView"-->
-    <!--android:layout_width="wrap_content"-->
-    <!--android:layout_height="wrap_content"-->
-    <!--android:layout_gravity="center_vertical"-->
-    <!--android:text="Voucher Codes"-->
-    <!--android:textColor="@android:color/holo_red_light"-->
-    <!--android:textSize="20sp"/>-->
-    <!--</LinearLayout>-->
-
     <android.support.v4.widget.SwipeRefreshLayout
         xmlns:android="http://schemas.android.com/apk/res/android"
         android:id="@+id/swiperefresh"
@@ -59,24 +37,26 @@
                         android:id="@+id/image_voucher"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
+                        android:layout_centerVertical="true"
                         android:src="@drawable/voucher"/>
 
                     <TextView
                         android:id="@+id/textView1_voucher"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_toRightOf="@id/image_voucher"
-                        android:layout_gravity="center_vertical"
                         android:text="Latest Voucher Codes"
                         android:textColor="@android:color/holo_red_light"
+                        android:textAlignment="center"
                         android:textSize="20sp"/>
 
                     <TextView
-                        android:layout_toRightOf="@id/image_voucher"
-                        android:layout_below="@id/textView1_voucher"
                         android:id="@+id/textview2_voucher"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_below="@id/textView1_voucher"
+                        android:layout_toRightOf="@id/image_voucher"
+                        android:textAlignment="center"
                         android:text="Swipe down to Refresh"/>
 
                 </RelativeLayout>

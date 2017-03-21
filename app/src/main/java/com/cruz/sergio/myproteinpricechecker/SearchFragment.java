@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
-import android.database.sqlite.SQLiteDatabase;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -34,10 +33,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
-import com.cruz.sergio.myproteinpricechecker.helper.DBHelper;
 import com.cruz.sergio.myproteinpricechecker.helper.MyProteinDomain;
 import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
-import com.cruz.sergio.myproteinpricechecker.helper.ProductsContract;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -61,23 +58,13 @@ public class SearchFragment extends Fragment {
     ListView resultsListView;
     ProgressBar horizontalProgressBar;
     String queryStr = "";
+    Boolean hasAsyncTaskRuning = false;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mActivity = getActivity();
         thisSearchFragment = this;
-
-        //reset_DataBase();
-
-    }
-
-    private void reset_DataBase() {
-        DBHelper dbHelper = new DBHelper(getContext());
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.ProductsEntry.TABLE_NAME);
-        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.PriceEntry.TABLE_NAME);
-        dbHelper.onCreate(db);
     }
 
     @Nullable
@@ -96,13 +83,7 @@ public class SearchFragment extends Fragment {
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_SEARCH) { //search no keyboard
                     String querystr = searchTextView.getText().toString();
-                    if (!querystr.equals("")) {
-                        performSearch(querystr);
-                    } else if (querystr.equals("")) {
-                        Toast theToast = Toast.makeText(getContext(), "Nothing to search", Toast.LENGTH_SHORT);
-                        theToast.setGravity(Gravity.CENTER, 0, 0);
-                        theToast.show();
-                    }
+                    performSearch(querystr);
                     return true;
                 }
                 return false;
@@ -114,7 +95,6 @@ public class SearchFragment extends Fragment {
             public void onClick(View v) {
                 String querystr = searchTextView.getText().toString();
                 performSearch(querystr);
-
             }
         });
         mActivity.findViewById(R.id.btn_clear).setOnClickListener(new View.OnClickListener() {
@@ -129,7 +109,6 @@ public class SearchFragment extends Fragment {
 
     }
 
-
     private void hideKeyBoard() {
         try {
             InputMethodManager imm = (InputMethodManager) mActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -141,17 +120,18 @@ public class SearchFragment extends Fragment {
 
     public void performSearch(String searchString) {
         hideKeyBoard();
-        if (!searchString.equals("")) {
-            horizontalProgressBar.setVisibility(View.VISIBLE);
+        if (hasAsyncTaskRuning) {
+            DetailsFragment.showCustomToast(mActivity, "Ongoing search...", R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_SHORT);
+        } else {
+            if (!searchString.equals("")) {
+                horizontalProgressBar.setVisibility(View.VISIBLE);
 
-            AsyncTask<String, Void, Boolean> internetAsyncTask = new checkInternetAsyncTask();
-            internetAsyncTask.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, searchString);
+                AsyncTask<String, Void, Boolean> internetAsyncTask = new checkInternetAsyncTask();
+                internetAsyncTask.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, searchString);
 
-        } else if (searchString.equals("")) {
-            Toast theToast = Toast.makeText(getContext(), "Nothing to search", Toast.LENGTH_SHORT);
-            theToast.setGravity(Gravity.CENTER, 0, 0);
-            theToast.show();
-            return;
+            } else if (searchString.equals("")) {
+                DetailsFragment.showCustomToast(mActivity, "Ongoing search...", R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_SHORT);
+            }
         }
     }
 
@@ -167,9 +147,14 @@ public class SearchFragment extends Fragment {
         super.onDestroy();
     }
 
-
     public class checkInternetAsyncTask extends AsyncTask<String, Void, Boolean> {
         String searchString;
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            hasAsyncTaskRuning = true;
+        }
 
         @Override
         protected Boolean doInBackground(String... params) {
@@ -210,17 +195,17 @@ public class SearchFragment extends Fragment {
                 } else {
                     makeNoNetworkSnackBar(mActivity);
                 }
+                hasAsyncTaskRuning = false;
             }
-
         }
     }
-
 
     private class performSearch extends AsyncTask<String, Void, Document> {
 
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+            hasAsyncTaskRuning = true;
         }
 
         @Override
@@ -262,6 +247,8 @@ public class SearchFragment extends Fragment {
                 item.add("No Results");
                 ArrayAdapter noAdapter = new ArrayAdapter(mActivity, android.R.layout.simple_list_item_1, item);
                 resultsListView.setAdapter(noAdapter);
+                horizontalProgressBar.setVisibility(View.GONE);
+                hasAsyncTaskRuning = false;
             } else if (resultProductCards.size() > 0) {
 
                 for (Element singleProductCard : resultProductCards) { // Selecionar um único "Card" Produto
@@ -340,10 +327,10 @@ public class SearchFragment extends Fragment {
 
                     adapter = new ProductAdapter(mActivity, R.layout.product_card, arrayListProductCards);
                     resultsListView.setAdapter(adapter);
-                    //arrayListProductCards.clear();
+                    horizontalProgressBar.setVisibility(View.GONE);
+                    hasAsyncTaskRuning = false;
                 }
             }
-            horizontalProgressBar.setVisibility(View.GONE);
         }
     }
 
@@ -382,21 +369,19 @@ public class SearchFragment extends Fragment {
                 @Override
                 public void onClick(View v) {
 
-                    Bundle urlBundle = new Bundle();
-                    urlBundle.putString("url", product.productHref);
-                    //urlBundle.putString("description", product.pptListStr.toString());
-                    urlBundle.putStringArrayList("description", product.pptList_stringarray);
-                    urlBundle.putString("productID", product.productID);
+                    Bundle productBundle = new Bundle();
+                    productBundle.putString("url", product.productHref);
+                    productBundle.putStringArrayList("description", product.pptList_stringarray);
+                    productBundle.putString("productID", product.productID);
                     DetailsFragment detailsFragment = new DetailsFragment();
-                    detailsFragment.setArguments(urlBundle);
+                    detailsFragment.setArguments(productBundle);
 
                     FragmentTransaction ft = MainActivity.mFragmentManager.beginTransaction();
                     ft.hide(getParentFragment());
-                    ft.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
-                    ft.add(R.id.containerView, detailsFragment);
+                    ft.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out);
+                    ft.add(android.R.id.content, detailsFragment);
                     ft.addToBackStack(null);
                     ft.commit();
-
                 }
             });
             ((TextView) view.findViewById(R.id.titleTextView)).setText(product.productTitleStr);
@@ -486,7 +471,6 @@ public class SearchFragment extends Fragment {
         }
 
     }
-
 
 }
 

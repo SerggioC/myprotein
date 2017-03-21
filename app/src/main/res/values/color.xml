@@ -9,5 +9,7 @@
     <color name="transparent">#00ffffff</color>
     <color name="cardsColor">#ffffff</color>
     <color name="appBackground">#f2f1f1</color>
+    <color name="green">#7dbb00</color>
+    <color name="red">#d32f2f</color>
 
 </resources>

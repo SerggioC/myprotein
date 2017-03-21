@@ -24,9 +24,9 @@ public class ProductsContract {
 
     // Possible paths (appended to base content URI for possible URI's)
     // For instance, content://com.cruz.sergio.myproteinpricechecker/products/ is a valid path for
-    // looking at weather data. content://com.cruz.sergio.myproteinpricechecker/givemeroot/ will fail,
+    // looking at products data. content://com.cruz.sergio.myproteinpricechecker/givemeroot/ will fail,
     // as the ContentProvider hasn't been given any information on what to do with "givemeroot".
-    // At least, let's hope not.  Don't be that dev, reader.  Don't be that dev.
+    // At least, let's hope not.
     public static final String PATH_PRODUCTS = "products";
     public static final String PATH_PRICES = "prices";
     public static final String PATH_MINMAX = "minmax";
@@ -43,10 +43,21 @@ public class ProductsContract {
 
     public static final class ProductsEntry implements BaseColumns {
 
+        // CONTENT_URI = content://com.cruz.sergio.myproteinpricechecker/products
         public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_PRODUCTS).build();
 
-        public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_PRODUCTS;
+        // CONTENT_DIR_TYPE = vnd.android.cursor.dir/com.cruz.sergio.myproteinpricechecker/products
+        // MIME type para a tabela
+        public static final String CONTENT_DIR_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_PRODUCTS;
+
+        // CONTENT_ITEM_TYPE = vnd.android.cursor.item/com.cruz.sergio.myproteinpricechecker/products
+        // MIME type para uma row
         public static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_PRODUCTS;
+
+        //Para uma row especifica
+        public static Uri buildProductsUri(long id) {
+            return ContentUris.withAppendedId(CONTENT_URI, id);
+        }
 
         // Products table
         public static final String TABLE_NAME = "products_table";
@@ -56,9 +67,11 @@ public class ProductsContract {
         public static final String COLUMN_PRODUCT_DESCRIPTION = "product_description";
         public static final String COLUMN_WEBSTORE_NAME = "webstore_name";
         public static final String COLUMN_PRODUCT_BASE_URL = "product_base_url";
-        public static final String COLUMN_MP_WEBSTORE_BASE_DOMAIN = "mp_webstore_location"; // from shared prefs
+        public static final String COLUMN_MP_WEBSTORE_DOMAIN_URL = "mp_webstore_domain"; // from shared prefs
         public static final String COLUMN_MP_SHIPPING_LOCATION = "mp_shipping_location"; // from shared prefs
-        public static final String COLUMN_MP_CURRENCY = "mp_currency"; // from shared prefs
+        public static final String COLUMN_MP_CURRENCY = "mp_currency";                  // from shared prefs
+        public static final String COLUMN_MP_CURRENCY_SYMBOL = "mp_currency_symbol";    // from shared prefs
+        public static final String COLUMN_MP_LOCALE = "mp_locale";                      // from shared prefs
         public static final String COLUMN_MP_JSON_URL_DETAILS = "json_url_Details";
         public static final String COLUMN_MP_VARIATION1 = "mp_variation1";
         public static final String COLUMN_MP_VARIATION2 = "mp_variation2";
@@ -72,27 +85,74 @@ public class ProductsContract {
         public static final String COLUMN_MIN_PRICE_DATE = "min_price_date";
         public static final String COLUMN_MAX_PRICE = "max_price";
         public static final String COLUMN_MAX_PRICE_DATE = "max_price_date";
+        public static final String COLUMN_MP_VARIATION_NAME1 = "mp_variation_name1";
+        public static final String COLUMN_MP_VARIATION_NAME2 = "mp_variation_name2";
+        public static final String COLUMN_MP_VARIATION_NAME3 = "mp_variation_name3";
+        public static final String COLUMN_MP_OPTIONS_NAME1 = "mp_options_name1";
+        public static final String COLUMN_MP_OPTIONS_NAME2 = "mp_options_name2";
+        public static final String COLUMN_MP_OPTIONS_NAME3 = "mp_options_name3";
+        public static final String COLUMN_CUSTOM_PRODUCT_ID = "mp_custom_product_id";
 
-        public static Uri buildProductsUri(long id) {
-            return ContentUris.withAppendedId(CONTENT_URI, id);
-        }
+        public static final String[] ALL_PRODUCT_COLUMNS_PROJECTION = new String[]{ //Todas as colunas da tabela
+                ProductsEntry._ID,
+                ProductsEntry.COLUMN_PRODUCT_ID,
+                ProductsEntry.COLUMN_PRODUCT_NAME,
+                ProductsEntry.COLUMN_PRODUCT_SUBTITLE,
+                ProductsEntry.COLUMN_PRODUCT_DESCRIPTION,
+                ProductsEntry.COLUMN_WEBSTORE_NAME,
+                ProductsEntry.COLUMN_PRODUCT_BASE_URL,
+                ProductsEntry.COLUMN_MP_WEBSTORE_DOMAIN_URL,
+                ProductsEntry.COLUMN_MP_SHIPPING_LOCATION,
+                ProductsEntry.COLUMN_MP_CURRENCY,
+                ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL,
+                ProductsEntry.COLUMN_MP_LOCALE,
+                ProductsEntry.COLUMN_MP_JSON_URL_DETAILS,
+                ProductsEntry.COLUMN_MP_VARIATION1,
+                ProductsEntry.COLUMN_MP_VARIATION2,
+                ProductsEntry.COLUMN_MP_VARIATION3,
+                ProductsEntry.COLUMN_MP_OPTIONS1,
+                ProductsEntry.COLUMN_MP_OPTIONS2,
+                ProductsEntry.COLUMN_MP_OPTIONS3,
+                ProductsEntry.COLUMN_MP_BASE_IMG_URL,
+                ProductsEntry.COLUMN_MP_ZOOM_IMG_URL,
+                ProductsEntry.COLUMN_MIN_PRICE,
+                ProductsEntry.COLUMN_MIN_PRICE_DATE,
+                ProductsEntry.COLUMN_MAX_PRICE,
+                ProductsEntry.COLUMN_MAX_PRICE_DATE,
+                ProductsEntry.COLUMN_MP_VARIATION_NAME1,
+                ProductsEntry.COLUMN_MP_VARIATION_NAME2,
+                ProductsEntry.COLUMN_MP_VARIATION_NAME3,
+                ProductsEntry.COLUMN_MP_OPTIONS_NAME1,
+                ProductsEntry.COLUMN_MP_OPTIONS_NAME2,
+                ProductsEntry.COLUMN_MP_OPTIONS_NAME3,
+                ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID
+        };
     }
 
     public static final class PriceEntry implements BaseColumns {
         public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_PRICES).build();
 
-        public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_PRICES;
+        public static final String CONTENT_DIR_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_PRICES;
         public static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_PRICES;
 
         // Prices table
         public static final String TABLE_NAME = "prices_table";
-        public static final String COLUMN_PRODUCT_ID = "product_id"; // foreign key
+        public static final String COLUMN_ID_PRODUCTS = "_id_products"; // foreign key = _ID
         public static final String COLUMN_PRODUCT_PRICE = "product_price";
+        public static final String COLUMN_PRODUCT_PRICE_VALUE = "product_price_value";
         public static final String COLUMN_PRODUCT_PRICE_DATE = "product_price_date";
 
         public static Uri buildPricesUri(long id) {
             return ContentUris.withAppendedId(CONTENT_URI, id);
         }
+
+        public static final String[] ALL_PRICE_COLUMNS_PROJECTION = new String[]{
+                PriceEntry._ID,
+                PriceEntry.COLUMN_ID_PRODUCTS,
+                PriceEntry.COLUMN_PRODUCT_PRICE,
+                PriceEntry.COLUMN_PRODUCT_PRICE_VALUE,
+                PriceEntry.COLUMN_PRODUCT_PRICE_DATE
+        };
     }
 
     public static final class MinMaxEntry implements BaseColumns {
