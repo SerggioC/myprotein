@@ -23,6 +23,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.cruz.sergio.myproteinpricechecker.helper.ProductsContract;
 
 import static android.database.DatabaseUtils.dumpCursorToString;
@@ -37,7 +38,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     SwipeRefreshLayout watchingSwipeRefreshLayout;
     cursorDBAdapter cursorDBAdapter;
     ListView listViewItems;
-    private int mPosition = ListView.INVALID_POSITION;
 
     public static class ViewHolder {
         public final ImageView iconView;
@@ -51,7 +51,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             titleView = (TextView) view.findViewById(R.id.item_title_textview);
             highestPriceView = (TextView) view.findViewById(R.id.item_highest_price_textview);
             lowestPriceView = (TextView) view.findViewById(R.id.item_lowest_price_textview);
-            currentPriceView = (TextView) view.findViewById(R.id.item_current_price_textview);;
+            currentPriceView = (TextView) view.findViewById(R.id.item_current_price_textview);
+            ;
         }
     }
 
@@ -92,7 +93,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                     //((Callback) mActivity).onItemSelected("Altamente");
                     Log.i("Sergio>>>", this + " onItemClick: callback dumpCursorToString= " + dumpCursorToString(cursor));
                 }
-                mPosition = position;
             }
         });
 
@@ -184,12 +184,26 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         // such as setting the text on a TextView.
         @Override
         public void bindView(View view, Context context, Cursor cursor) {
-            Log.i("Sergio>", this + " bindView: cursor=\n" + dumpCursorToString(cursor));
             ViewHolder viewHolder = (ViewHolder) view.getTag();
+            Log.i("Sergio>", this + " bindView: cursor=\n" + dumpCursorToString(cursor));
 
             String prod_name = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME));
-            viewHolder.titleView.setText(prod_name);
+            String img_url = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_BASE_IMG_URL));
+            String max_price = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE));
+            String min_price = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE));
+            String current_price = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE));
+            String options_sabor = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME1));
+            String options_caixa = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME2));
+            String options_quant = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME3));
+            if (options_sabor == null) options_sabor = "";
+            if (options_caixa == null) options_caixa = "";
+            if (options_quant == null) options_quant = "";
 
+            viewHolder.titleView.setText(prod_name + " " + options_sabor + " " + options_caixa + " " + options_quant);
+            Glide.with(mActivity).load(img_url).into(viewHolder.iconView);
+            viewHolder.highestPriceView.setText(max_price);
+            viewHolder.lowestPriceView.setText(min_price);
+            viewHolder.currentPriceView.setText(current_price);
 
             Log.i("Sergio>>>", this + " bindView: prod_name= " + prod_name);
         }

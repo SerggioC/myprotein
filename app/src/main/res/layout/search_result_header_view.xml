@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/relativeLayout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_centerHorizontal="true"
+    android:gravity="center_horizontal"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:id="@+id/frame_search"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical|center_horizontal">
+
+        <EditText
+            android:id="@+id/searchTextView"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/edittextsize"
+            android:layout_gravity="center_horizontal|top"
+            android:background="@drawable/edittextstyle"
+            android:hint="@string/lets_find_a_deal"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:maxLines="1"
+            android:text="Impact Whey Protein 5kg"
+            android:textAlignment="center"/>
+
+        <Button
+            android:id="@+id/btn_search"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center_vertical|left"
+            android:layout_marginLeft="12dp"
+            android:background="@drawable/ic_search_statelist"/>
+
+        <Button
+            android:id="@+id/btn_clear"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center_vertical|right"
+            android:layout_marginRight="12dp"
+            android:background="@drawable/clear_icon_statelist"/>
+    </FrameLayout>
+
+    <ProgressBar
+        android:id="@+id/progressBarHorizontal"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/frame_search"
+        android:indeterminate="true"
+        android:visibility="gone"/>
+
+</RelativeLayout>

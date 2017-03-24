@@ -7,8 +7,9 @@
     android:layout_height="wrap_content"
     app:cardBackgroundColor="@color/cardsColor"
     app:cardCornerRadius="2dp"
-    app:cardElevation="3dp"
+    app:cardElevation="2dp"
     app:cardPreventCornerOverlap="true">
+
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -17,14 +18,14 @@
 
         <ImageView
             android:id="@+id/item_icon"
-            android:layout_width="70dp"
-            android:layout_height="70dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
             android:layout_gravity="center_vertical"/>
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
+            android:layout_gravity="top"
             android:layout_weight="1"
             android:orientation="vertical">
 
@@ -34,11 +35,14 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="start"
                 android:layout_marginLeft="4dp"
+                android:layout_marginTop="4dp"
                 android:textAlignment="textStart"/>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginLeft="4dp"
                 android:orientation="horizontal">
 
                 <TextView
@@ -69,9 +73,11 @@
 
         <ImageView
             android:id="@+id/list_item_go"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
+            android:layout_marginRight="8dp"
+            android:layout_marginLeft="4dp"
             android:src="@drawable/arrow"/>
 
     </LinearLayout>

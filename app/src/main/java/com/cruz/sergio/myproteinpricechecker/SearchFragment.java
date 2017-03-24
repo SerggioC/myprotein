@@ -77,7 +77,10 @@ public class SearchFragment extends Fragment {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        final EditText searchTextView = (EditText) getActivity().findViewById(R.id.searchTextView);
+        resultsListView = (ListView) mActivity.findViewById(R.id.results);
+        resultsListView.addHeaderView(View.inflate(mActivity, R.layout.search_result_header_view, null));
+
+        final EditText searchTextView = (EditText) resultsListView.findViewById(R.id.searchTextView);
         searchTextView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
@@ -90,22 +93,25 @@ public class SearchFragment extends Fragment {
             }
         });
 
-        mActivity.findViewById(R.id.btn_search).setOnClickListener(new View.OnClickListener() {
+        resultsListView.findViewById(R.id.btn_search).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String querystr = searchTextView.getText().toString();
                 performSearch(querystr);
             }
         });
-        mActivity.findViewById(R.id.btn_clear).setOnClickListener(new View.OnClickListener() {
+        resultsListView.findViewById(R.id.btn_clear).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 searchTextView.setText("");
             }
         });
-        resultsListView = (ListView) mActivity.findViewById(R.id.results);
+        ArrayList item = new ArrayList(1);
+        item.add("");
+        ArrayAdapter noAdapter = new ArrayAdapter(mActivity, android.R.layout.simple_list_item_1, item);
+        resultsListView.setAdapter(noAdapter);
 
-        horizontalProgressBar = (ProgressBar) mActivity.findViewById(R.id.progressBarHorizontal);
+        horizontalProgressBar = (ProgressBar) resultsListView.findViewById(R.id.progressBarHorizontal);
 
     }
 
@@ -130,7 +136,7 @@ public class SearchFragment extends Fragment {
                 internetAsyncTask.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, searchString);
 
             } else if (searchString.equals("")) {
-                DetailsFragment.showCustomToast(mActivity, "Ongoing search...", R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_SHORT);
+                DetailsFragment.showCustomToast(mActivity, "Nothing to search...", R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_SHORT);
             }
         }
     }

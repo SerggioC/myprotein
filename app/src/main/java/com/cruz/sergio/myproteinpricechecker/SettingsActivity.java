@@ -53,7 +53,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         super.onCreate(savedInstanceState);
         //setupActionBar();
         Locale local = getCurrentLocale();
-        Log.i("Sergio>>>", "onCreate: local= " + local);
+        Log.i("Sergio>", this + "onCreate: local= " + local);
     }
 
 //    /*** Set up the {@link android.app.ActionBar}, if the API is available.     */
