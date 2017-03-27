@@ -8,6 +8,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -55,6 +56,8 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -82,6 +85,8 @@ public class DetailsFragment extends Fragment {
     String url;
     String URL_suffix;
     TextView priceTV;
+    Long startTime = System.nanoTime();
+    ;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -103,9 +108,7 @@ public class DetailsFragment extends Fragment {
     public int getStatusBarHeight() {
         int height = 0;
         int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (resourceId > 0) {
-            height = getResources().getDimensionPixelSize(resourceId);
-        }
+        if (resourceId > 0) height = getResources().getDimensionPixelSize(resourceId);
         return height;
     }
 
@@ -120,7 +123,6 @@ public class DetailsFragment extends Fragment {
 
         Toolbar toolbar = (Toolbar) mActivity.findViewById(R.id.details_toolbar);
         toolbar.setPadding(0, getStatusBarHeight(), 0, 0);
-        Log.i("Sergio>>>", this + " onViewCreated: details_toolbar\n" + toolbar);
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -152,6 +154,7 @@ public class DetailsFragment extends Fragment {
         Bundle extras = getArguments();
         if (extras != null) {
             url = extras.getString("url");
+            Log.i("Sergio>", this + " onViewCreated: url=\n" + url);
             productID = extras.getString("productID");
             description = extras.getStringArrayList("description");
             customProductID = "loc" + pref_MP_Locale + "pid" + productID;
@@ -171,22 +174,22 @@ public class DetailsFragment extends Fragment {
                 pptList_SSB.append(" " + description.get(i) + "\n");
                 description_DB += description.get(i) + "\n";
             }
+            description_DB = description_DB.substring(0, description_DB.length() - 1); //Remover ultimo caractere \n
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION, description_DB);
 
-            //Lista da descrição enviado da activity anterior (SearchFragment.java)
+            //Lista da descrição enviado da activity anterior (SearchFragment.java) com imagens à esquerda
             ((TextView) mActivity.findViewById(R.id.p_description)).setText(pptList_SSB);
 
-            if (NetworkUtils.hasActiveNetworkConnection(mActivity)) {
-                // Aqui saca a página do produto em html para depois aplicar o parse com jsoup
-                AsyncTask<String, Void, Document> getProductPage = new getProductPage();
-                getProductPage.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url);
-            } else {
-                if (noNetworkSnackBar != null && !noNetworkSnackBar.isShown()) {
-                    noNetworkSnackBar.show();
-                } else {
-                    makeNoNetworkSnackBar(mActivity);
-                }
-            }
+//            AsyncTask<Void, Void, Boolean> internetAsyncTask = new checkInternetAsync();
+//            internetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+
+            AsyncTask<String, Void, Boolean> get_product_page = new checkInternetAsyncMethods("getProductPage");
+            get_product_page.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url);
+
+
+        } else {
+            showCustomToast(mActivity, "Error getting product details. Try again.", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
+            MainActivity.mFragmentManager.popBackStack();
         }
 
         priceTV = (TextView) mActivity.findViewById(R.id.price_tv);
@@ -228,7 +231,6 @@ public class DetailsFragment extends Fragment {
                 Cursor exists_CustomPID = db.rawQuery("SELECT 1 FROM " +
                         ProductsContract.ProductsEntry.TABLE_NAME + " WHERE " +
                         ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID + " = '" + customProductID + "' LIMIT 1", null); //Atenção à single quote (')
-
 //                Cursor exists_CustomPID = db.query(ProductsContract.ProductsEntry.TABLE_NAME,
 //                        new String[] {ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID},
 //                        ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID + " = '" + customProductID + "' LIMIT 1", //Atenção à single quote (')
@@ -238,7 +240,7 @@ public class DetailsFragment extends Fragment {
                 exists_CustomPID.close();
 //                Log.d(" Sergio>>>", this + " onClick: dumpCursorToString(exists_CustomPID) = " + dumpCursorToString(exists_CustomPID) +
 //                        " exists_CustomPID.getCount()= " + numEntries);
-                if (numEntries > 0) isInDataBase = true; // Nunca será > 1, maa
+                if (numEntries > 0) isInDataBase = true; // Nunca será > 1, mas ok
 //                String[] colunas = new String[]{
 //                        ProductsContract.ProductsEntry._ID,
 //                        ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID,
@@ -256,16 +258,16 @@ public class DetailsFragment extends Fragment {
 //                        ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID + " = " + productID, // WHERE COLUMN_CUSTOM_PRODUCT_ID = customProductID (linhas a apresentar)
 //                        null, null, null, null
 //                );
-/*
-                Cursor cursor_exist_product_id = db.rawQuery("SELECT " +
-                        ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID + " , " +
-                        ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS1 + " , " +
-                        ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS2 + " , " +
-                        ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS3 +
-                        " FROM " + ProductsContract.ProductsEntry.TABLE_NAME +
-                        " WHERE " + ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID + " = " + productID
-                        , null);
-*/
+//
+//                Cursor cursor_exist_product_id = db.rawQuery("SELECT " +
+//                        ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID + " , " +
+//                        ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS1 + " , " +
+//                        ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS2 + " , " +
+//                        ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS3 +
+//                        " FROM " + ProductsContract.ProductsEntry.TABLE_NAME +
+//                        " WHERE " + ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID + " = " + productID
+//                        , null);
+
 //
 //                Log.i("Sergio>>>", "cursor_exist_product_id.getCount()= " + cursor_exist_product_id.getCount());
 //                Log.i("Sergio>>>", this + " dumpCursorToString cursor_exist_product_id= \n" + dumpCursorToString(cursor_exist_product_id));
@@ -301,20 +303,26 @@ public class DetailsFragment extends Fragment {
 //                cursor_exist_product_id.close();
                 //}
                 if (isInDataBase) {
-                    showCustomToast(mActivity, "Product already in DataBase!", R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_LONG);
+                    showCustomToast(mActivity, "Product already in DataBase!",
+                            R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_LONG);
                 } else {
                     long productRowID = db.insert(ProductsContract.ProductsEntry.TABLE_NAME, null, productContentValues);
                     if (productRowID < 0L) {
-                        showCustomToast(mActivity, "Error inserting product to DataBase " + ProductsContract.ProductsEntry.TABLE_NAME + "! Try again.", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
+                        showCustomToast(mActivity, "Error inserting product to DataBase " +
+                                        ProductsContract.ProductsEntry.TABLE_NAME + "! Try again.",
+                                R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
                     }
                     // A _ID do produto vai entrar na Tabela dos preços com o nome de _ID_PRODUCTS
                     // Podem existir vários _ID_PRODUCTS iguais na tabela de preços
                     priceContentValues.put(ProductsContract.PriceEntry.COLUMN_ID_PRODUCTS, productRowID);
                     long priceRowId = db.insert(ProductsContract.PriceEntry.TABLE_NAME, null, priceContentValues);
                     if (priceRowId < 0L) {
-                        showCustomToast(mActivity, "Error inserting product to DataBase " + ProductsContract.PriceEntry.TABLE_NAME + "! Try again.", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
+                        showCustomToast(mActivity, "Error inserting product to DataBase " +
+                                        ProductsContract.PriceEntry.TABLE_NAME + "! Try again.",
+                                R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
                     } else {
-                        showCustomToast(mActivity, "Now following product price!", R.mipmap.ic_ok2, R.color.green, Toast.LENGTH_LONG);
+                        showCustomToast(mActivity, "Now following product price!",
+                                R.mipmap.ic_ok2, R.color.green, Toast.LENGTH_LONG);
                     }
                     Log.w("Sergio>>>", this + " onClick: db= " + db);
                     Log.i("Sergio>>>", this + " onClick: productRowID= " + productRowID);
@@ -331,6 +339,31 @@ public class DetailsFragment extends Fragment {
                 Reset_DataBase();
             }
         });
+    }
+
+    public class checkInternetAsync extends AsyncTask<Void, Void, Boolean> {
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            return NetworkUtils.hasActiveNetworkConnection(mActivity);
+        }
+
+        @Override
+        protected void onPostExecute(Boolean hasInternet) {
+            super.onPostExecute(hasInternet);
+
+            if (hasInternet) {
+                // Aqui saca a página do produto em html para depois aplicar o parse com jsoup
+                AsyncTask<String, Void, Document> getProductPage = new getProductPage();
+                getProductPage.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url);
+            } else {
+                if (noNetworkSnackBar != null && !noNetworkSnackBar.isShown()) {
+                    noNetworkSnackBar.show();
+                } else {
+                    makeNoNetworkSnackBar(mActivity);
+                }
+            }
+
+        }
     }
 
     public void outputFull_PricesDB_toLog() {
@@ -446,7 +479,7 @@ public class DetailsFragment extends Fragment {
             try {
                 resultDocument = Jsoup.connect(params[0])
                         .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
-                        .timeout(0)
+                        .timeout(0) //sem limite de tempo
                         .maxBodySize(0) //sem limite de tamanho do doc recebido
                         .get();
             } catch (IOException e) {
@@ -488,12 +521,28 @@ public class DetailsFragment extends Fragment {
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_BASE_IMG_URL, url_img480);
 
                 //Imagem do produto
-                ImageView productImageView = (ImageView) mActivity.findViewById(R.id.p_details_image);
+                final Bitmap[] theBitmap480 = new Bitmap[1];
+                theBitmap480[0] = null;
+                final ImageView productImageView = (ImageView) mActivity.findViewById(R.id.p_details_image);
                 if (url_img480 != null && (url_img480.contains(".jpg") || url_img480.contains(".bmp") || url_img480.contains(".png") || url_img480.contains(".jpeg"))) {
+
                     Glide.with(mActivity).load(url_img480).into(productImageView);
+                    //Glide.with(mActivity).load(url_img480).crossFade().placeholder(R.drawable.noimage).into(productImageView);
+//
+//                    Glide.with(mActivity)
+//                            .load(url_img480)
+//                            .asBitmap()
+//                            .into(new SimpleTarget<Bitmap>() {
+//                                @Override
+//                                public void onResourceReady(Bitmap bitmap, GlideAnimation<? super Bitmap> glideAnimation) {
+//                                    theBitmap480[0] = bitmap;
+//                                }
+//                            });
+
                 } else {
                     //failed getting product image
                     Glide.with(mActivity).load(R.drawable.noimage).into(productImageView);
+                    theBitmap480[0] = null;
                 }
 
                 //Imagem para aplicar o zoom
@@ -515,7 +564,15 @@ public class DetailsFragment extends Fragment {
                 final ArrayList<HashMap> arraylistHashMap = new ArrayList<>(3);
                 final ArrayList<String> opts_id = new ArrayList<>(3);
                 Elements productVariations = resultDocument.getElementsByClass("productVariations__select");
-                for (Element option : productVariations) {
+                int pv_size = productVariations.size();
+                if (pv_size > 0) {
+
+                }
+
+                for (int i = 0; i < pv_size; i++) {
+                    Element option = productVariations.get(i);
+//                }
+//                for (Element option : productVariations) {
                     //Log.i("Sergio>>>", "onPostExecute: " + option.attr("id"));
                     opts_id.add(option.attr("id").replace("opts-", ""));
                     Elements optionBoxes = option.getElementsByAttribute("value");
@@ -569,6 +626,9 @@ public class DetailsFragment extends Fragment {
                     oneSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                         @Override
                         public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                            startTime = System.nanoTime();
+                            priceTV.setVisibility(View.GONE);
+                            mActivity.findViewById(R.id.priceProgressBarRound).setVisibility(View.VISIBLE);
                             getPriceMethod(arrayArrayKeys, linearLayoutSpiners, opts_id);
                         }
 
@@ -588,8 +648,10 @@ public class DetailsFragment extends Fragment {
                 mActivity.findViewById(R.id.ll_description).setVisibility(View.VISIBLE);
 
                 if (arraylistHashMap.size() > 0) { // Tem opções ou variações
+                    refresh_Available_Options();
                     getPriceMethod(arrayArrayKeys, linearLayoutSpiners, opts_id);
                 } else {
+                    // Sem opções de sabor, embalagem, tamanho para selecionar
                     String price = resultDocument.getElementsByClass("priceBlock_current_price").text();
                     Pattern regex = Pattern.compile("[.,\\d]+"); // matches . , e números de 0 a 9
                     Matcher match = regex.matcher(price);
@@ -603,10 +665,191 @@ public class DetailsFragment extends Fragment {
                 }
 
             } else {
+                Toast.makeText(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT).show();
+            }
+
+        }
+    }
+
+    private void refresh_Available_Options() {
+        String full_JSON_URL = MP_Domain + "variations.json?productId=" + productID + URL_suffix;
+        Log.i("Sergio>", this + " refresh_Available_Options: full_JSON_URL=\n" + full_JSON_URL);
+
+        AsyncTask<String, Void, Boolean> checkinternetAsyncTask = new checkInternetAsyncMethods("refresh_available_options");
+        checkinternetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, full_JSON_URL);
+
+    }
+
+    public class checkInternetAsyncMethods extends AsyncTask<String, Void, Boolean> {
+        String method;
+        String backGround_param;
+
+        checkInternetAsyncMethods(String method) {
+            this.method = method;
+            Log.i("Sergio>", this + " checkInternetAsyncMethods: method=\n" + method);
+        }
+
+        @Override
+        protected Boolean doInBackground(String... params) {
+            backGround_param = params[0];
+            return NetworkUtils.hasActiveNetworkConnection(mActivity);
+        }
+
+        @Override
+        protected void onPostExecute(Boolean hasInternet) {
+            super.onPostExecute(hasInternet);
+
+            if (hasInternet) {
+                switch (method) {
+                    case "refresh_available_options": {
+                        AsyncTask<String, Void, JSONObject> getDetailsFromJSON = new GetDetailsFromJSON();
+                        getDetailsFromJSON.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, backGround_param);
+                        break;
+                    }
+                    case "getPriceMethod": {
+                        AsyncTask<String, Void, JSONObject> GetPriceFromJSON = new GetPriceFromJSON();
+                        GetPriceFromJSON.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, backGround_param);
+                        break;
+                    }
+                    case "getProductPage": {
+                        Log.i("Sergio>", this + " onPostExecute: getProductPage=\n");
+                        AsyncTask<String, Void, Document> getProductPage = new getProductPage();
+                        getProductPage.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, backGround_param);
+                        break;
+                    }
+                    default: {
+                        Log.w("Sergio>", this + " onPostExecute: invalid method given no switch");
+                        break;
+                    }
+                }
+
+            } else {
+                if (noNetworkSnackBar != null && !noNetworkSnackBar.isShown()) {
+                    noNetworkSnackBar.show();
+                } else {
+                    makeNoNetworkSnackBar(mActivity);
+                }
+            }
+            mActivity.findViewById(R.id.priceProgressBarRound).setVisibility(View.GONE);
+            priceTV.setVisibility(View.VISIBLE);
+        }
+
+    }
+
+    private class GetDetailsFromJSON extends AsyncTask<String, Void, JSONObject> {
+        @Override
+        protected JSONObject doInBackground(String... url_param) {
+            Document resultDocument = null;
+            try {
+                resultDocument = Jsoup.connect(url_param[0])
+                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
+                        .timeout(0) //sem limite de tempo para receber a página
+                        .ignoreContentType(true) // ignorar o tipo de conteúdo
+                        .maxBodySize(0) //sem limite de tamanho do doc recebido
+                        .get();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            JSONObject jsonObject = null;
+            try {
+                if (resultDocument == null) {
+                    jsonObject = null;
+                } else {
+                    jsonObject = new JSONObject(resultDocument.text());
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            return jsonObject;
+        }
+
+        @Override
+        protected void onPostExecute(JSONObject json) {
+            super.onPostExecute(json);
+            if (thisFragment.isVisible()) {
+
+                if (json != null) {
+                    try {
+
+                        JSONArray variations_Array = json.getJSONArray("variations");
+
+                        Log.i("Sergio>", this + " onPostExecute: " +
+                                "\n variations_Object= " + variations_Array +
+                                "\n variations_Array.length= " + variations_Array.length());
+
+                        ArrayList<HashMap<Integer, String>> arrayList_variation_map = new ArrayList<>();
+                        ArrayList<HashMap<Integer, String>> arrayList_options_map = new ArrayList<>();
+                        for (int i = 0; i < variations_Array.length(); i++) {
+                            HashMap<Integer, String> variation_map = new HashMap<>();
+                            JSONObject variation_i = (JSONObject) variations_Array.get(i);
+                            int variation_id = variation_i.getInt("id");
+                            String variation_name = variation_i.getString("variation");
+                            Log.d("Sergio>", this + " onPostExecute: " +
+                                    "\n variation_i= " + variation_i +
+                                    "\n variation_id= " + variation_id +
+                                    "\n variation_name=" + variation_name);
+                            variation_map.put(variation_id, variation_name);
+                            arrayList_variation_map.add(variation_map);
+
+                            HashMap<Integer, String> options_map = new HashMap<>();
+
+                            JSONArray variation_options = variation_i.getJSONArray("options");
+                            for (int j = 0; j < variation_options.length(); j++) {
+                                JSONObject option_i = (JSONObject) variation_options.get(j);
+                                int option_id = option_i.getInt("id");
+                                String option_name = option_i.getString("name");
+                                String option_value = option_i.getString("value"); // não necessário
+                                Log.i("Sergio>", this + " onPostExecute: " +
+                                        "\n option_id= " + option_id +
+                                        "\n option_name= " + option_name +
+                                        "\n option_value= " + option_value);
+                                options_map.put(option_id, option_value);
+                            }
+                            arrayList_options_map.add(options_map);
+                        }
+
+                        ArrayList<ArrayList<HashMap<String, String>>> imagens_json = new ArrayList<>(2);
+                        HashMap<String, String> image_hmap = new HashMap<>();
+                        JSONArray json_images = json.getJSONArray("images");
+                        int image_index = 0;
+                        for (int i = 0; i < json_images.length(); i++) {
+                            ArrayList<HashMap<String, String>> images_hashmaps = new ArrayList<>();
+                            JSONObject image_i = (JSONObject) json_images.get(i);
+                            int current_img_index = image_i.getInt("index");
+                            String image_type = image_i.getString("type");
+                            String image_url = "https://s4.thcdn.com/" + image_i.getString("name");
+                            image_hmap.put(image_type, image_url);
+                            images_hashmaps.add(image_hmap);
+
+                            if (image_index == current_img_index) {
+                                imagens_json.add(images_hashmaps);
+                            } else {
+                                image_index = current_img_index;
+                            }
+                        }
+                        Log.i("Sergio>", this + " onPostExecute: imagens_json= " + imagens_json);
+
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        Log.w("Sergio>", this + " onPostExecute: falhou ao fazer o parse do json ");
+                    }
+                } else {
+                    Log.w("Sergio>", this + " onPostExecute: falhou ao sacar o json ");
+                }
+
+
+                mActivity.findViewById(R.id.priceProgressBarRound).setVisibility(View.GONE);
+                priceTV.setVisibility(View.VISIBLE);
+                mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
+
+            } else {
                 Toast.makeText(mActivity, "Details Fragment Terminated", Toast.LENGTH_SHORT).show();
             }
 
         }
+
+
     }
 
     private void getPriceMethod(ArrayList<ArrayList<String>> arrayArrayKeys, LinearLayout linearLayoutSpiners, ArrayList<String> opts_id) {
@@ -664,18 +907,57 @@ public class DetailsFragment extends Fragment {
         cursor.close();
         db.close();
 
-        if (NetworkUtils.hasActiveNetworkConnection(mActivity)) {
-            // Aqui saca o JSON com o preço e outros detalhes do produto
-            AsyncTask<String, Void, JSONObject> GetPriceFromJSON = new GetPriceFromJSON();
-            GetPriceFromJSON.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, JSON_URL_Details);
-        } else {
-            if (noNetworkSnackBar != null && !noNetworkSnackBar.isShown()) {
-                noNetworkSnackBar.show();
-            } else {
-                makeNoNetworkSnackBar(mActivity);
-            }
+        AsyncTask<String, Void, Boolean> checkinternetAsyncTask = new checkInternetAsyncMethods("getPriceMethod");
+        checkinternetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, JSON_URL_Details);
+//
+//        AsyncTask<String, Void, Boolean> checkinternetAsyncTask = new checkInternetPriceMethodAsync();
+//        checkinternetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, JSON_URL_Details);
+
+//
+//        if (NetworkUtils.hasActiveNetworkConnection(mActivity)) {
+//            // Aqui saca o JSON com o preço e outros detalhes do produto
+//            AsyncTask<String, Void, JSONObject> GetPriceFromJSON = new GetPriceFromJSON();
+//            GetPriceFromJSON.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, JSON_URL_Details);
+//        } else {
+//            if (noNetworkSnackBar != null && !noNetworkSnackBar.isShown()) {
+//                noNetworkSnackBar.show();
+//            } else {
+//                makeNoNetworkSnackBar(mActivity);
+//            }
+//            mActivity.findViewById(R.id.priceProgressBarRound).setVisibility(View.GONE);
+//            priceTV.setVisibility(View.VISIBLE);
+//        }
+
+    }
+
+
+    public class checkInternetPriceMethodAsync extends AsyncTask<String, Void, Boolean> {
+        String json_url;
+
+        @Override
+        protected Boolean doInBackground(String... params) {
+            json_url = params[0];
+            return NetworkUtils.hasActiveNetworkConnection(mActivity);
         }
 
+        @Override
+        protected void onPostExecute(Boolean hasInternet) {
+            super.onPostExecute(hasInternet);
+
+            if (hasInternet) {
+                // Aqui saca a página do produto em html para depois aplicar o parse com jsoup
+                AsyncTask<String, Void, JSONObject> GetPriceFromJSON = new GetPriceFromJSON();
+                GetPriceFromJSON.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, json_url);
+            } else {
+                if (noNetworkSnackBar != null && !noNetworkSnackBar.isShown()) {
+                    noNetworkSnackBar.show();
+                } else {
+                    makeNoNetworkSnackBar(mActivity);
+                }
+            }
+            mActivity.findViewById(R.id.priceProgressBarRound).setVisibility(View.GONE);
+            priceTV.setVisibility(View.VISIBLE);
+        }
     }
 
     public class GetPriceFromJSON extends AsyncTask<String, Void, JSONObject> {
@@ -683,18 +965,18 @@ public class DetailsFragment extends Fragment {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            mActivity.findViewById(R.id.priceProgressBarRound).setVisibility(View.VISIBLE);
-            priceTV.setVisibility(View.GONE);
+//            priceTV.setVisibility(View.GONE);
+//            mActivity.findViewById(R.id.priceProgressBarRound).setVisibility(View.VISIBLE);
         }
 
         @Override
-        protected JSONObject doInBackground(String... url) {
+        protected JSONObject doInBackground(String... url_param) {
             Document resultDocument = null;
             try {
-                resultDocument = Jsoup.connect(url[0])
+                resultDocument = Jsoup.connect(url_param[0])
                         .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
-                        .timeout(5000)
-                        .ignoreContentType(true)
+                        .timeout(0) //sem limite de tempo para receber a página
+                        .ignoreContentType(true) // ignorar o tipo de conteúdo
                         .maxBodySize(0) //sem limite de tamanho do doc recebido
                         .get();
             } catch (IOException e) {
@@ -702,7 +984,11 @@ public class DetailsFragment extends Fragment {
             }
             JSONObject jsonObject = null;
             try {
-                jsonObject = new JSONObject(resultDocument.text());
+                if (resultDocument == null) {
+                    jsonObject = null;
+                } else {
+                    jsonObject = new JSONObject(resultDocument.text());
+                }
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -714,13 +1000,20 @@ public class DetailsFragment extends Fragment {
             super.onPostExecute(json);
             if (thisFragment.isVisible()) {
                 String priceJson = null;
-                try {
-                    priceJson = (String) json.get("price");
-                } catch (JSONException e) {
-                    e.printStackTrace();
+
+                if (json != null) {
+                    try {
+                        priceJson = (String) json.get("price");
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        priceTV.setText("N/A");
+                        gotPrice = false;
+                    }
+                } else {
                     priceTV.setText("N/A");
                     gotPrice = false;
                 }
+
                 if (priceJson != null) {
                     priceTV.setText(priceJson);
                     gotPrice = true;
@@ -732,9 +1025,13 @@ public class DetailsFragment extends Fragment {
                 } else {
                     gotPrice = false;
                 }
-                priceTV.setVisibility(View.VISIBLE);
                 mActivity.findViewById(R.id.priceProgressBarRound).setVisibility(View.GONE);
+                priceTV.setVisibility(View.VISIBLE);
                 mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
+
+                NumberFormat formatter1 = new DecimalFormat("#.####");
+                String elapsed = "Elapsed Time:" + " " + formatter1.format((System.nanoTime() - startTime) / 1000000000.0) + "s";
+                Toast.makeText(mActivity, elapsed, Toast.LENGTH_SHORT).show();
 
             } else {
                 Toast.makeText(mActivity, "Details Fragment Terminated", Toast.LENGTH_SHORT).show();
@@ -743,13 +1040,13 @@ public class DetailsFragment extends Fragment {
         }
     }
 
-    public static void showCustomToast(Activity cActivity, String toastText, int icon_RID, int color_RID, int duration) {
+    public static void showCustomToast(Activity cActivity, String toastText, int icon_RID, int text_color_RID, int duration) {
         LayoutInflater inflater = cActivity.getLayoutInflater();
         View layout = inflater.inflate(R.layout.custom_toast, (ViewGroup) cActivity.findViewById(R.id.toast_layout_root));
 
         TextView text = (TextView) layout.findViewById(R.id.toast_layout_text);
         text.setText(toastText);
-        text.setTextColor(ContextCompat.getColor(cActivity, color_RID));
+        text.setTextColor(ContextCompat.getColor(cActivity, text_color_RID));
 
         ImageView imageV = (ImageView) layout.findViewById(R.id.toast_img);
         imageV.setImageResource(icon_RID);
@@ -772,7 +1069,7 @@ public class DetailsFragment extends Fragment {
             try {
                 resultDocument = Jsoup.connect(params[0])
                         .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
-                        .timeout(5000)
+                        .timeout(0)
                         .ignoreContentType(true)
                         .maxBodySize(0) //sem limite de tamanho do doc recebido
                         .get();

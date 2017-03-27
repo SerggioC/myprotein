@@ -34,7 +34,7 @@ public class NetworkUtils {
         Toast.makeText(mActivity, "Unregistering Broadcast Receiver", Toast.LENGTH_SHORT).show();
     }
 
-    public static void createBroadcast(final Activity mActivity) {
+    public static final void createBroadcast(final Activity mActivity) {
         makeNoNetworkSnackBar(mActivity);
 
         BCReceiver = new BroadcastReceiver() {

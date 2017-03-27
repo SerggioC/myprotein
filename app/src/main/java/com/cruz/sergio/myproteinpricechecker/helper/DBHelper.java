@@ -55,7 +55,8 @@ public class DBHelper extends SQLiteOpenHelper {
                 ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME1 + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME2 + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME3 + " TEXT, " +
-                ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID + " TEXT NOT NULL" +
+                ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID + " TEXT NOT NULL," +
+                ProductsContract.ProductsEntry.COLUMN_IMAGE_BLOB + " BLOB" +
 //                " FOREIGN KEY (" + ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID + ") REFERENCES " +
 //                ProductsContract.PriceEntry.TABLE_NAME + " (" + ProductsContract.PriceEntry._ID + ") " +
                 " );";

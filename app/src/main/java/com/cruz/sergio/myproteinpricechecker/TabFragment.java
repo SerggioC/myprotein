@@ -73,7 +73,7 @@ public class TabFragment extends Fragment {
                 TabFragment.tabLayout.setupWithViewPager(viewPager);
 
                 for (int i = 0; i < numberOfTabs; i++) {
-                    View one_tab = LayoutInflater.from(getContext()).inflate(R.layout.one_tab_layout, null);
+                    View one_tab = LayoutInflater.from(getActivity()).inflate(R.layout.one_tab_layout, null);
                     TabFragment.tabLayout.getTabAt(i).setCustomView(one_tab);
                     TextView textView = (TextView) one_tab.findViewById(R.id.tabText);
                     textView.setText(tab_text[i]);

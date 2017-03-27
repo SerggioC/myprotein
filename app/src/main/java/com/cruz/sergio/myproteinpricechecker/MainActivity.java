@@ -49,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
+        NetworkUtils.UnregisterBroadcastReceiver(mActivity);
         //Log.d("Sergio>>>", "Stoping MainActivity");
     }
 
