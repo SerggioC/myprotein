@@ -2,6 +2,7 @@ package com.cruz.sergio.myproteinpricechecker;
 
 import android.app.Activity;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
@@ -9,6 +10,7 @@ import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -19,6 +21,7 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.view.ViewCompat;
@@ -42,6 +45,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.request.animation.GlideAnimation;
+import com.bumptech.glide.request.target.SimpleTarget;
 import com.cruz.sergio.myproteinpricechecker.helper.DBHelper;
 import com.cruz.sergio.myproteinpricechecker.helper.MyProteinDomain;
 import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
@@ -55,19 +61,17 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static android.database.DatabaseUtils.dumpCursorToString;
-import static com.cruz.sergio.myproteinpricechecker.R.id.button_add_to_db;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.normalizeDate;
 
@@ -85,8 +89,37 @@ public class DetailsFragment extends Fragment {
     String url;
     String URL_suffix;
     TextView priceTV;
-    Long startTime = System.nanoTime();
-    ;
+    LinearLayout ll_variations;
+    LinearLayout linearLayoutSpiners;
+    Boolean addedNewProduct = false;
+    ImageView productImageView;
+    Boolean gotImages = false;
+    ArrayList<HashMap<String, String>> arrayListHashMap_Images;
+
+    final static String[] MP_IMAGE_TYPES = new String[]{
+            "extrasmall",   // 20/20
+            "small",        // 50/50
+            "smallthumb",   // 60/60
+            "thumbnail",    // 70/70
+            "smallprod",    // 100/100
+            "product",      // 130/130
+            "large",        // 180/180
+            "list",         // 200/200
+            "raw",          // 270/270
+            "largeproduct", // 300/300
+            "quickview",    // 350/350
+            "carousel",     // 480/480
+            "extralarge",   // 600/600
+            "zoom",         // 960/960
+            "magnify"};    // 1600/1600
+
+
+    final static String[] MP_IMAGE_TYPES2 = new String[]{
+            "extrasmall",   // 20/20
+            "magnify"};    // 1600/1600
+
+
+    int image_sizes = 0;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -103,6 +136,15 @@ public class DetailsFragment extends Fragment {
         ft.hide(getParentFragment());
         ft.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
         ft.show(SearchFragment.thisSearchFragment);
+        if (addedNewProduct) {
+            WatchingFragment.loaderManager.forceLoad();
+            Log.d("Sergio>", this + "onPause:\nI paused and forceloaded because addedNewProduct= " + addedNewProduct);
+        }
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.details_fragment_layout, container, false);
     }
 
     public int getStatusBarHeight() {
@@ -110,11 +152,6 @@ public class DetailsFragment extends Fragment {
         int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
         if (resourceId > 0) height = getResources().getDimensionPixelSize(resourceId);
         return height;
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.details_fragment_layout, container, false);
     }
 
     @Override
@@ -130,7 +167,7 @@ public class DetailsFragment extends Fragment {
             }
         });
         Resources resources = getResources();
-        int dpvalue = 5;
+        int dpvalue = 6;
         float pixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dpvalue, resources.getDisplayMetrics());
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             toolbar.setElevation(pixels);
@@ -151,16 +188,27 @@ public class DetailsFragment extends Fragment {
         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY, currency);
         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_WEBSTORE_NAME, "MyProtein");
 
+        ll_variations = (LinearLayout) mActivity.findViewById(R.id.ll_variations);
+        linearLayoutSpiners = (LinearLayout) mActivity.findViewById(R.id.spiners);
+        productImageView = (ImageView) mActivity.findViewById(R.id.p_details_image);
+        productImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(mActivity, "Clicked Image", Toast.LENGTH_SHORT).show();
+            }
+        });
         Bundle extras = getArguments();
         if (extras != null) {
             url = extras.getString("url");
             Log.i("Sergio>", this + " onViewCreated: url=\n" + url);
             productID = extras.getString("productID");
             description = extras.getStringArrayList("description");
+            String imgURL = extras.getString("image_url");
             customProductID = "loc" + pref_MP_Locale + "pid" + productID;
 
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID, customProductID);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL, url);
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_BASE_IMG_URL, imgURL);
 
             Drawable drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.tick, null);
             SpannableStringBuilder pptList_SSB = new SpannableStringBuilder();
@@ -174,18 +222,22 @@ public class DetailsFragment extends Fragment {
                 pptList_SSB.append(" " + description.get(i) + "\n");
                 description_DB += description.get(i) + "\n";
             }
-            description_DB = description_DB.substring(0, description_DB.length() - 1); //Remover ultimo caractere \n
+            if (description_DB.length() > 0) {
+                description_DB = description_DB.substring(0, description_DB.length() - 1); //Remover ultimo caractere \n
+            }
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION, description_DB);
 
             //Lista da descrição enviado da activity anterior (SearchFragment.java) com imagens à esquerda
             ((TextView) mActivity.findViewById(R.id.p_description)).setText(pptList_SSB);
 
-//            AsyncTask<Void, Void, Boolean> internetAsyncTask = new checkInternetAsync();
-//            internetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            if (imgURL != null) {
+                Glide.with(mActivity).load(imgURL).into(productImageView);
+            } else {
+                Glide.with(mActivity).load(R.drawable.noimage).into(productImageView);
+            }
 
             AsyncTask<String, Void, Boolean> get_product_page = new checkInternetAsyncMethods("getProductPage");
             get_product_page.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url);
-
 
         } else {
             showCustomToast(mActivity, "Error getting product details. Try again.", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
@@ -204,7 +256,7 @@ public class DetailsFragment extends Fragment {
         });
 
         //Guardar produto na DB ao clicar no botão
-        mActivity.findViewById(button_add_to_db).setOnClickListener(new View.OnClickListener() {
+        mActivity.findViewById(R.id.button_add_to_db).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 ContentValues priceContentValues = new ContentValues();
@@ -221,13 +273,21 @@ public class DetailsFragment extends Fragment {
                 priceContentValues.put(ProductsContract.PriceEntry.COLUMN_PRODUCT_PRICE_DATE, normalizeDate(System.currentTimeMillis()));
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID, productID);
 
+                for (int i = 0; i < arrayListHashMap_Images.size(); i++) {
+                    HashMap hashMap_Index_i = arrayListHashMap_Images.get(i);
+
+                    for (int k = 0; k < MP_IMAGE_TYPES.length; k++) {
+                        if (hashMap_Index_i.containsKey(MP_IMAGE_TYPES[k])) {
+                            String s = i + MP_IMAGE_TYPES[k];
+                            saveImageWithGlide(hashMap_Index_i.get(MP_IMAGE_TYPES[k]).toString(), s); //guarda as imagens todas. index_i=variação index_k=tamanho
+                            image_sizes++;
+                        }
+                    }
+                }
+
                 DBHelper dbHelper = new DBHelper(getContext());
                 SQLiteDatabase db = dbHelper.getWritableDatabase();
 
-//              long numRows = DatabaseUtils.queryNumEntries(db, ProductsContract.ProductsEntry.TABLE_NAME);
-//              if (numRows > 0L) {
-
-                Boolean isInDataBase = false;
                 Cursor exists_CustomPID = db.rawQuery("SELECT 1 FROM " +
                         ProductsContract.ProductsEntry.TABLE_NAME + " WHERE " +
                         ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID + " = '" + customProductID + "' LIMIT 1", null); //Atenção à single quote (')
@@ -238,9 +298,6 @@ public class DetailsFragment extends Fragment {
 //                        );
                 int numEntries = exists_CustomPID.getCount();
                 exists_CustomPID.close();
-//                Log.d(" Sergio>>>", this + " onClick: dumpCursorToString(exists_CustomPID) = " + dumpCursorToString(exists_CustomPID) +
-//                        " exists_CustomPID.getCount()= " + numEntries);
-                if (numEntries > 0) isInDataBase = true; // Nunca será > 1, mas ok
 //                String[] colunas = new String[]{
 //                        ProductsContract.ProductsEntry._ID,
 //                        ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID,
@@ -302,7 +359,7 @@ public class DetailsFragment extends Fragment {
 //                }
 //                cursor_exist_product_id.close();
                 //}
-                if (isInDataBase) {
+                if (numEntries >= 1) { // Só poderá haver uma entrada
                     showCustomToast(mActivity, "Product already in DataBase!",
                             R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_LONG);
                 } else {
@@ -311,23 +368,25 @@ public class DetailsFragment extends Fragment {
                         showCustomToast(mActivity, "Error inserting product to DataBase " +
                                         ProductsContract.ProductsEntry.TABLE_NAME + "! Try again.",
                                 R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
-                    }
-                    // A _ID do produto vai entrar na Tabela dos preços com o nome de _ID_PRODUCTS
-                    // Podem existir vários _ID_PRODUCTS iguais na tabela de preços
-                    priceContentValues.put(ProductsContract.PriceEntry.COLUMN_ID_PRODUCTS, productRowID);
-                    long priceRowId = db.insert(ProductsContract.PriceEntry.TABLE_NAME, null, priceContentValues);
-                    if (priceRowId < 0L) {
-                        showCustomToast(mActivity, "Error inserting product to DataBase " +
-                                        ProductsContract.PriceEntry.TABLE_NAME + "! Try again.",
-                                R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
                     } else {
-                        showCustomToast(mActivity, "Now following product price!",
-                                R.mipmap.ic_ok2, R.color.green, Toast.LENGTH_LONG);
+                        // A _ID do produto vai entrar na Tabela dos preços com o nome de _ID_PRODUCTS
+                        // Podem existir vários _ID_PRODUCTS iguais na tabela de preços
+                        priceContentValues.put(ProductsContract.PriceEntry.COLUMN_ID_PRODUCTS, productRowID);
+                        long priceRowId = db.insert(ProductsContract.PriceEntry.TABLE_NAME, null, priceContentValues);
+                        if (priceRowId < 0L) {
+                            showCustomToast(mActivity, "Error inserting product to DataBase " +
+                                            ProductsContract.PriceEntry.TABLE_NAME + "! Try again.",
+                                    R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
+                        } else {
+                            showCustomToast(mActivity, "Now following product price!",
+                                    R.mipmap.ic_ok2, R.color.green, Toast.LENGTH_LONG);
+                            addedNewProduct = true;
+                        }
+                        Log.w("Sergio>>>", this + " onClick: db= " + db);
+                        Log.i("Sergio>>>", this + " onClick: productRowID= " + productRowID);
+                        Log.i("Sergio>>>", this + " onClick: PriceRowId= " + priceRowId);
+                        Log.d("Sergio>>>", this + " onClick: productContentValues= " + productContentValues);
                     }
-                    Log.w("Sergio>>>", this + " onClick: db= " + db);
-                    Log.i("Sergio>>>", this + " onClick: productRowID= " + productRowID);
-                    Log.i("Sergio>>>", this + " onClick: PriceRowId= " + priceRowId);
-                    Log.d("Sergio>>>", this + " onClick: productContentValues= " + productContentValues);
                 }
                 db.close();
             }
@@ -339,7 +398,730 @@ public class DetailsFragment extends Fragment {
                 Reset_DataBase();
             }
         });
+
     }
+
+    public void saveImageWithGlide(String image, final String index_i) {
+        Log.i("Sergio>", this + "saveImageWithGlide:\nimage=\n" + image);
+        Glide.with(mActivity)
+                .load(image)
+                .asBitmap()
+                .toBytes(Bitmap.CompressFormat.JPEG, 100)
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .skipMemoryCache(true)
+                .dontAnimate()
+                .dontTransform()
+                .into(new SimpleTarget<byte[]>() {
+                    @Override
+                    public void onResourceReady(final byte[] resource, GlideAnimation<? super byte[]> glideAnimation) {
+                        new AsyncTask<Void, Void, Void>() {
+                            @Override
+                            protected Void doInBackground(Void... params) {
+                                FileOutputStream outputStream;
+                                String file;
+                                try {
+                                    file = customProductID + "_indexi_" + index_i + ".jpg";
+                                    outputStream = mActivity.openFileOutput(file, Context.MODE_PRIVATE);
+                                    outputStream.write(resource);
+                                    outputStream.flush();
+                                    outputStream.close();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                                return null;
+                            }
+                        }.execute();
+                    }
+                });
+    }
+
+    public class SaveBitmapFromURL extends AsyncTaskLoader {
+
+        public SaveBitmapFromURL(Context context) {
+            super(context);
+        }
+
+        @Override
+        public Bitmap loadInBackground() {
+            try {
+                URL url = new URL("https://s2.thcdn.com/productimg/600/600/10530943-1874454249804175.jpg");
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setDoInput(true);
+                connection.connect();
+                InputStream input = connection.getInputStream();
+                Bitmap myBitmap = BitmapFactory.decodeStream(input);
+                connection.disconnect();
+                input.close();
+                return myBitmap;
+            } catch (IOException e) {
+                // Log exception
+                return null;
+            }
+        }
+
+        @Override
+        public void deliverResult(Object data) {
+            super.deliverResult(data);
+        }
+    }
+
+
+    public void Reset_DataBase() {
+        DBHelper dbHelper = new DBHelper(getContext());
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.ProductsEntry.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.PriceEntry.TABLE_NAME);
+        dbHelper.onCreate(db);
+        db.close();
+    }
+
+    private class getProductPage extends AsyncTask<String, Void, Document> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            mActivity.findViewById(R.id.progressBarRound).setVisibility(View.VISIBLE);
+        }
+
+        @Override
+        protected Document doInBackground(String... params) {
+            Document resultDocument = null;
+            try {
+                resultDocument = Jsoup.connect(params[0])
+                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
+                        .timeout(0) //sem limite de tempo
+                        .maxBodySize(0) //sem limite de tamanho do doc recebido
+                        .get();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return resultDocument;
+        }
+
+        @Override
+        protected void onPostExecute(Document resultDocument) {
+            super.onPostExecute(resultDocument);
+
+            if (thisFragment.isVisible()) {
+                Element titleElem = resultDocument.getElementsByClass("product-title").first();  // Titulo ou nome do produto
+                String title;
+                if (titleElem == null) {
+                    title = "N/A";
+                } else {
+                    title = titleElem.text();
+                }
+                ((TextView) mActivity.findViewById(R.id.title_tv)).append(title);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME, title);
+
+                Elements subtitle_element = resultDocument.getElementsByClass("product-sub-name");
+                String subtitle;
+                if (subtitle_element == null) {
+                    subtitle = "N/A";
+                } else {
+                    subtitle = subtitle_element.text(); //Subtitulo
+                }
+                ((TextView) mActivity.findViewById(R.id.p_subtitle)).append(subtitle);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_SUBTITLE, subtitle);
+//
+//                Element first_prod_img = resultDocument.getElementsByClass("product-img").first();
+//                String url_img480 = null;
+//                if (first_prod_img != null) {
+//                    url_img480 = first_prod_img.attr("src"); // https://s1.thcdn.com/ às vezes retorna apenas isto ou spacer gif
+//                    if (url_img480 != null && !(url_img480.contains(".jpg") || url_img480.contains(".jpeg") || url_img480.contains(".png") || url_img480.contains(".bmp"))) {
+//                        url_img480 = null;
+//                    }
+//                }
+//                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_ZOOM_IMG_URL, url_img480);
+//                //Imagem do produto
+//                final Bitmap[] theBitmap480 = new Bitmap[1];
+//                theBitmap480[0] = null;
+//                if (url_img480 != null) {
+//                    Glide.with(mActivity).load(url_img480).into(productImageView);
+//                    //Glide.with(mActivity).load(url_img480).crossFade().placeholder(R.drawable.noimage).into(productImageView);
+////
+////                    Glide.with(mActivity)
+////                            .load(url_img480)
+////                            .asBitmap()
+////                            .into(new SimpleTarget<Bitmap>() {
+////                                @Override
+////                                public void onResourceReady(Bitmap bitmap, GlideAnimation<? super Bitmap> glideAnimation) {
+////                                    theBitmap480[0] = bitmap;
+////                                }
+////                            });
+//
+//                } else {
+//                    //failed getting product image
+//                    Glide.with(mActivity).load(R.drawable.noimage).into(productImageView);
+//                    theBitmap480[0] = null;
+//                }
+
+                //Imagem para aplicar o zoom
+                Element first_img_zoom_action = resultDocument.getElementsByClass("product-img-zoom-action").first();
+                String url_img600 = null;
+                if (first_img_zoom_action != null) {
+                    url_img600 = first_img_zoom_action.attr("href");
+                    if (url_img600 != null && !(url_img600.contains(".jpg") || url_img600.contains(".jpeg") || url_img600.contains(".png") || url_img600.contains(".bmp"))) {
+                        url_img600 = null;
+                    }
+                }
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_ZOOM_IMG_URL, url_img600);
+
+                //Log.i("Sergio>>>", "onPostExecute: url_img600= " + url_img600);
+
+
+                // Labels: Sabor, Quantidade, Embalagem
+                Elements productVariationsLabels = resultDocument.getElementsByClass("productVariations__label");
+                int pvl_size = productVariationsLabels.size();
+                if (pvl_size > 0) {
+                    for (int i = 0; i < pvl_size; i++) {
+                        String variationText = productVariationsLabels.get(i).text();
+                        TextView textView_Variations = (TextView) ll_variations.getChildAt(i);
+                        textView_Variations.setText(variationText);
+                        textView_Variations.setVisibility(View.VISIBLE);
+                        RelativeLayout rL_Spiners = (RelativeLayout) linearLayoutSpiners.getChildAt(i);
+                        rL_Spiners.setVisibility(View.VISIBLE);
+                        int vIndex = i + 1;
+                        productContentValues.put("mp_variation_name" + vIndex, variationText);
+                    }
+                    get_Available_Options();
+
+                } else {
+                    // Sem opções de sabor, embalagem, tamanho para selecionar
+                    String price = resultDocument.getElementsByClass("priceBlock_current_price").text();
+                    Pattern regex = Pattern.compile("[.,\\d]+"); // matches . , e números de 0 a 9
+                    Matcher match = regex.matcher(price);
+                    String currency_symbol = match.replaceAll("");
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL, currency_symbol);
+
+                    priceTV.setText(price);
+                    gotPrice = true;
+                    mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
+                    mActivity.findViewById(R.id.button_add_to_db).setEnabled(true);
+                    mActivity.findViewById(R.id.ll_description).setVisibility(View.VISIBLE);
+
+                }
+//                for (Element variation : productVariationsLabels) {
+//                    variationLabels.add(variation.text());
+//                    // Labels Sabor, Quantidade, Embalagem
+//                }
+
+//                final ArrayList<HashMap> arraylistHashMap = new ArrayList<>(3);
+//                final ArrayList<String> opts_id = new ArrayList<>(3);
+//                Elements productVariations = resultDocument.getElementsByClass("productVariations__select");
+//                int pv_size = productVariations.size();
+//                for (int i = 0; i < pv_size; i++) {
+//                    Element option = productVariations.get(i);
+////                }
+////                for (Element option : productVariations) {
+//                    //Log.i("Sergio>>>", "onPostExecute: " + option.attr("id"));
+//                    opts_id.add(option.attr("id").replace("opts-", ""));
+//                    Elements optionBoxes = option.getElementsByAttribute("value");
+//                    LinkedHashMap<String, String> hmap = new LinkedHashMap<>();
+//                    for (Element optionBox_i : optionBoxes) {
+//                        //Log.i("Sergio>>>", "onPostExecute: " + optionBox_i.attr("value") + "= " + optionBox_i.text());
+//                        hmap.put(optionBox_i.attr("value"), optionBox_i.text());
+//                    }
+//                    arraylistHashMap.add(hmap);
+//                }
+
+
+//                if (arraylistHashMap.size() > 0) { // Tem opções ou variações
+//                    get_Available_Options();
+//                    getPriceMethod(arrayArrayKeys, linearLayoutSpiners, opts_id);
+//                } else {
+//                    // Sem opções de sabor, embalagem, tamanho para selecionar
+//                    String price = resultDocument.getElementsByClass("priceBlock_current_price").text();
+//                    Pattern regex = Pattern.compile("[.,\\d]+"); // matches . , e números de 0 a 9
+//                    Matcher match = regex.matcher(price);
+//                    String currency_symbol = match.replaceAll("");
+//                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL, currency_symbol);
+//
+//                    priceTV.setText(price);
+//                    gotPrice = true;
+//                    mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
+//                    mActivity.findViewById(R.id.button_add_to_db).setEnabled(true);
+//                }
+            } else {
+                Toast.makeText(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT).show();
+            }
+
+        }
+    }
+
+    private void get_Available_Options() {
+        String full_JSON_URL = MP_Domain + "variations.json?productId=" + productID + URL_suffix;
+        AsyncTask<String, Void, Boolean> checkinternetAsyncTask = new checkInternetAsyncMethods("get_Available_Options");
+        checkinternetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, full_JSON_URL);
+
+        Log.i("Sergio>", this + " get_Available_Options: \nfull_JSON_URL=\n" + full_JSON_URL);
+    }
+
+    public class checkInternetAsyncMethods extends AsyncTask<String, Void, Boolean> {
+        String method;
+        String backGround_param;
+
+        checkInternetAsyncMethods(String method) {
+            this.method = method;
+        }
+
+        @Override
+        protected Boolean doInBackground(String... params) {
+            backGround_param = params[0];
+            return NetworkUtils.hasActiveNetworkConnection(mActivity);
+        }
+
+        @Override
+        protected void onPostExecute(Boolean hasInternet) {
+            super.onPostExecute(hasInternet);
+
+            if (hasInternet) {
+                switch (method) {
+                    case "get_Available_Options": {
+                        AsyncTask<String, Void, JSONObject> getDetailsFromJSON = new GetDetailsFromJSON();
+                        getDetailsFromJSON.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, backGround_param);
+                        break;
+                    }
+                    case "GetPriceFromJSON": {
+                        AsyncTask<String, Void, JSONObject> GetPriceFromJSON = new GetPriceFromJSON();
+                        GetPriceFromJSON.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, backGround_param);
+                        break;
+                    }
+                    case "getProductPage": {
+                        AsyncTask<String, Void, Document> getProductPage = new getProductPage();
+                        getProductPage.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, backGround_param);
+                        break;
+                    }
+                    default: {
+                        Log.w("Sergio>", this + " onPostExecute: invalid method given in switch");
+                        break;
+                    }
+                }
+
+            } else {
+                if (noNetworkSnackBar != null && !noNetworkSnackBar.isShown()) {
+                    noNetworkSnackBar.show();
+                    Log.w("Sergio>", this + " onPostExecute: \n" + "noNetworkSnackBar is null or not shown=\n" + noNetworkSnackBar);
+                } else {
+                    makeNoNetworkSnackBar(mActivity);
+                }
+            }
+        }
+    }
+
+    private class GetDetailsFromJSON extends AsyncTask<String, Void, JSONObject> {
+        @Override
+        protected JSONObject doInBackground(String... url_param) {
+            Document resultDocument = null;
+            try {
+                resultDocument = Jsoup.connect(url_param[0])
+                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
+                        .timeout(0) //sem limite de tempo para receber a página
+                        .ignoreContentType(true) // ignorar o tipo de conteúdo
+                        .maxBodySize(0) //sem limite de tamanho do doc recebido
+                        .get();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            JSONObject jsonObject = null;
+            try {
+                if (resultDocument == null) {
+                    jsonObject = null;
+                } else {
+                    jsonObject = new JSONObject(resultDocument.text());
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            return jsonObject;
+        }
+
+        @Override
+        protected void onPostExecute(JSONObject json) {
+            super.onPostExecute(json);
+            if (thisFragment.isVisible()) {
+
+                if (json != null) {
+                    try {
+                        JSONArray variations_Array = json.getJSONArray("variations"); //3
+
+                        //ArrayList<HashMap<Integer, String>> arrayList_variation_map = new ArrayList<>();
+                        //ArrayList<HashMap<Integer, String>> arrayList_options_map = new ArrayList<>();
+                        final ArrayList<String> variation_ids = new ArrayList<>();
+                        final ArrayList<ArrayList<String>> arrayArray_opt_ids = new ArrayList<>();
+                        ArrayList<ArrayList<String>> arrayArray_opt_names = new ArrayList<>();
+                        for (int i = 0; i < variations_Array.length(); i++) {
+                            //HashMap<Integer, String> variation_map = new HashMap<>();
+                            JSONObject variation_i = (JSONObject) variations_Array.get(i);
+                            String variation_id = String.valueOf(variation_i.getInt("id"));
+                            variation_ids.add(variation_id);
+
+                            //String variation_name = variation_i.getString("variation");
+//                            Log.d("Sergio>", this + " onPostExecute: " +
+//                                    "\n variation_i= " + variation_i +
+//                                    "\n variation_id= " + variation_id +
+//                                    "\n variation_name=" + variation_name);
+                            //variation_map.put(variation_id, variation_name);
+                            //arrayList_variation_map.add(variation_map);
+
+                            //HashMap<String, String> options_map = new HashMap<>();
+                            ArrayList<String> arraylist_options_ids = new ArrayList<>();
+                            ArrayList<String> arraylist_options_names = new ArrayList<>();
+
+                            JSONArray variation_options = variation_i.getJSONArray("options");
+                            for (int j = 0; j < variation_options.length(); j++) {
+                                JSONObject option_i = (JSONObject) variation_options.get(j);
+                                String option_id = String.valueOf(option_i.getInt("id"));
+                                String option_name = option_i.getString("name");
+                                arraylist_options_ids.add(option_id);
+                                arraylist_options_names.add(option_name);
+//                                String option_value = option_i.getString("value"); // não necessário
+//                                Log.i("Sergio>", this + " onPostExecute: " +
+//                                        "\n option_id= " + option_id +
+//                                        "\n option_name= " + option_name +
+//                                        "\n option_value= " + option_value);
+                                //options_map.put(option_id, option_name);
+                            }
+                            arrayArray_opt_ids.add(arraylist_options_ids);
+                            arrayArray_opt_names.add(arraylist_options_names);
+                            //arrayList_options_map.add(options_map);
+
+                            final RelativeLayout relativeLayoutSpiners = (RelativeLayout) linearLayoutSpiners.getChildAt(i);
+                            final Spinner oneSpinner = (Spinner) relativeLayoutSpiners.getChildAt(0);
+
+                            ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<>(
+                                    mActivity,
+                                    R.layout.simple_spinner_item,
+                                    arraylist_options_names);
+                            spinnerArrayAdapter.setDropDownViewResource(R.layout.simple_spinner_dropdown_item);
+                            oneSpinner.setAdapter(spinnerArrayAdapter);
+                            oneSpinner.setSelection(0, false);
+                            oneSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                                @Override
+                                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                                    gotImages = false;
+                                    addedNewProduct = false;
+                                    getPriceMethod(arrayArray_opt_ids, variation_ids);
+                                }
+
+                                @Override
+                                public void onNothingSelected(AdapterView<?> parent) {
+                                }
+                            });
+                        }
+                        Log.d("Sergio>", this + " onPostExecute: \nvariation_ids=\n" + variation_ids);
+                        Log.d("Sergio>", this + " onPostExecute: \narrayArray_opt_ids=\n" + arrayArray_opt_ids);
+                        Log.d("Sergio>", this + " onPostExecute: \narraylist_options_names=\n" + arrayArray_opt_names);
+
+                        getPriceMethod(arrayArray_opt_ids, variation_ids);
+
+                        mActivity.findViewById(R.id.ll_description).setVisibility(View.VISIBLE);
+
+
+                    } catch (JSONException erro) {
+                        erro.printStackTrace();
+                        Log.w("Sergio>", this + " onPostExecute: falhou ao fazer o parse do json \n exception = " + erro);
+                    }
+                } else {
+                    Log.w("Sergio>", this + " onPostExecute: falhou ao sacar o json ");
+                    mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
+                }
+
+            } else {
+                Toast.makeText(mActivity, "Details Fragment Terminated", Toast.LENGTH_SHORT).show();
+            }
+
+        }
+
+    }
+
+    private void getPriceMethod(ArrayList<ArrayList<String>> arrayArrayKeys, ArrayList<String> opts_id) {
+        mActivity.findViewById(R.id.button_add_to_db).setEnabled(false);
+        String options = "&selected=3";
+        customProductID = "loc" + pref_MP_Locale + "pid" + productID;
+
+        for (int j = 0; j < arrayArrayKeys.size(); j++) {
+            Spinner spinner = (Spinner) ((RelativeLayout) linearLayoutSpiners.getChildAt(j)).getChildAt(0);
+            int selecteditemposition = spinner.getSelectedItemPosition();
+            String spinnerValue = spinner.getSelectedItem().toString();
+            arrayArrayKeys.get(j);
+            opts_id.get(j);
+            String index = String.valueOf(j + 1);
+            options += "&variation" + index + "=" + opts_id.get(j) + "&option" + index + "=" + arrayArrayKeys.get(j).get(selecteditemposition);
+            productContentValues.put("mp_variation" + index, opts_id.get(j));
+            productContentValues.put("mp_options" + index, arrayArrayKeys.get(j).get(selecteditemposition));
+            productContentValues.put("mp_options_name" + index, spinnerValue);
+            customProductID += "vid" + index + opts_id.get(j) + "oid" + index + arrayArrayKeys.get(j).get(selecteditemposition);
+        }
+        // vid = variation id / oid = option id
+        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID, customProductID);
+        Log.d(" Sergio>>>", this + " getPriceMethod: customProductID =" + customProductID);
+
+        String JSON_URL_Details = MP_Domain + "variations.json?productId=" + productID + options + URL_suffix;
+        //String jsonurl = "https://pt.myprotein.com/variations.json?productId=10530943";
+        //String options = "&selected=3 &variation1=5 &option1=2413 &variation2=6 &option2=2407 &variation3=7 &option3=5935"
+        //String mais = "&settingsSaved=Y&shippingcountry=PT&switchcurrency=GBP&countrySelected=Y"
+
+        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS, JSON_URL_Details);
+
+        Log.i("Sergio>>>", "getPriceMethod: \nJSON_URL_Details=\n" + JSON_URL_Details);
+
+        DBHelper dbHelper = new DBHelper(getContext());
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + ProductsContract.ProductsEntry.TABLE_NAME, null);
+
+        int rows = 0;
+        if (cursor.getCount() > 0) {
+            //rows = cursor.getInt(0);
+        }
+
+        if (rows < 2) {
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, 0);
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, 0);
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, 0);
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, 0);
+        } else {
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, 0);
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, 0);
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, 0);
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, 0);
+        }
+
+        cursor.close();
+        db.close();
+
+        AsyncTask<String, Void, Boolean> checkinternetAsyncTask = new checkInternetAsyncMethods("GetPriceFromJSON");
+        checkinternetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, JSON_URL_Details);
+
+    }
+
+    public class GetPriceFromJSON extends AsyncTask<String, Void, JSONObject> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            priceTV.setVisibility(View.GONE);
+            mActivity.findViewById(R.id.priceProgressBarRound).setVisibility(View.VISIBLE);
+        }
+
+        @Override
+        protected JSONObject doInBackground(String... url_param) {
+            Document resultDocument = null;
+            try {
+                resultDocument = Jsoup.connect(url_param[0])
+                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
+                        .timeout(0) //sem limite de tempo para receber a página
+                        .ignoreContentType(true) // ignorar o tipo de conteúdo
+                        .maxBodySize(0) //sem limite de tamanho do doc recebido
+                        .get();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            JSONObject jsonObject = null;
+            try {
+                if (resultDocument == null) {
+                    jsonObject = null;
+                } else {
+                    jsonObject = new JSONObject(resultDocument.text());
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            return jsonObject;
+        }
+
+        @Override
+        protected void onPostExecute(JSONObject json) {
+            super.onPostExecute(json);
+            if (thisFragment.isVisible()) {
+                String priceJson = null;
+                if (json != null) {
+                    try {
+                        priceJson = (String) json.get("price");
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        priceTV.setText("N/A");
+                        gotPrice = false;
+                    }
+                } else {
+                    priceTV.setText("N/A");
+                    gotPrice = false;
+                }
+
+                if (priceJson != null) {
+                    priceTV.setText(priceJson);
+                    gotPrice = true;
+                    mActivity.findViewById(R.id.button_add_to_db).setEnabled(true);
+                    Pattern regex = Pattern.compile("[.,\\d]+"); // matches . , e números de 0 a 9
+                    Matcher match = regex.matcher(priceJson);
+                    String currency_symbol = match.replaceAll("");
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL, currency_symbol);
+                } else {
+                    gotPrice = false;
+                }
+
+                try {
+                    // Parse do url das imagens se existirem no json
+                    JSONArray json_images = json.getJSONArray("images");
+
+                    arrayListHashMap_Images = new ArrayList<>();
+                    HashMap<String, String> image_hmap = new HashMap<>();
+
+                    int image_index = 0;
+                    for (int i = 0; i < json_images.length(); i++) {
+                        JSONObject image_i = (JSONObject) json_images.get(i);
+
+                        int current_img_index = image_i.getInt("index");                        // 0, 1, 2...
+                        String image_type = image_i.getString("type");                          // tamanho
+                        String image_url = "https://s4.thcdn.com/" + image_i.getString("name"); // url
+
+                        if (current_img_index == image_index) {
+                            image_hmap.put(image_type, image_url);
+                        } else {
+                            arrayListHashMap_Images.add(image_hmap);
+                            image_hmap = new HashMap<>();
+                            image_index = current_img_index;
+                        }
+                    }
+                    arrayListHashMap_Images.add(image_hmap);
+
+                    gotImages = true;
+                    //TODO Carrousel de imagens
+                    Log.i("Sergio>", this + "onPostExecute:\narrayListHashMap_Images=\n" + arrayListHashMap_Images);
+
+
+                } catch (JSONException erro) {
+                    erro.printStackTrace();
+                    if (erro.toString().contains("No value for images")) {
+                        gotImages = false;
+                    }
+                    Log.w("Sergio>", this + " onPostExecute: falhou ao fazer o parse do json \n exception = " + erro);
+                }
+
+                mActivity.findViewById(R.id.priceProgressBarRound).setVisibility(View.GONE);
+                priceTV.setVisibility(View.VISIBLE);
+                mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
+
+            } else {
+                Toast.makeText(mActivity, "Details Fragment Terminated", Toast.LENGTH_SHORT).show();
+            }
+
+        }
+    }
+
+
+    public static void showCustomToast(Activity cActivity, String toastText, int icon_RID, int text_color_RID, int duration) {
+        LayoutInflater inflater = cActivity.getLayoutInflater();
+        View layout = inflater.inflate(R.layout.custom_toast, (ViewGroup) cActivity.findViewById(R.id.toast_layout_root));
+
+        TextView text = (TextView) layout.findViewById(R.id.toast_layout_text);
+        text.setText(toastText);
+        text.setTextColor(ContextCompat.getColor(cActivity, text_color_RID));
+
+        ImageView imageV = (ImageView) layout.findViewById(R.id.toast_img);
+        imageV.setImageResource(icon_RID);
+
+        Toast theCustomToast = new Toast(cActivity);
+        theCustomToast.setGravity(Gravity.CENTER_VERTICAL, 0, 0);
+        theCustomToast.setDuration(duration);
+        theCustomToast.setView(layout);
+        theCustomToast.show();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+    }
+
+    //JSON SEARCH
+    // https://pt.myprotein.com/pt_PT/EUR/elysium.searchjson?search=impact+whey+protein
+    private class getProductJSON extends AsyncTask<String, Void, JSONObject> {
+
+        @Override
+        protected JSONObject doInBackground(String... params) {
+            Document resultDocument = null;
+            try {
+                resultDocument = Jsoup.connect(params[0])
+                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
+                        .timeout(0)
+                        .ignoreContentType(true)
+                        .maxBodySize(0) //sem limite de tamanho do doc recebido
+                        .get();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            JSONObject jsonObject = null;
+            try {
+                jsonObject = new JSONObject(resultDocument.text());
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            return jsonObject;
+        }
+
+        @Override
+        protected void onPostExecute(JSONObject json) {
+            super.onPostExecute(json);
+            //Log.i("Sergio>>>", "onPostExecute: json= " + json);
+
+            try {
+                Log.d("Sergio>>>", "variations = " + json.getJSONArray("variations"));
+
+                final ArrayList<VariationsObj> variationsObjArrayList = new ArrayList<>();
+                for (int i = 0; i < json.getJSONArray("variations").length(); i++) {
+                    JSONObject variation_i = (JSONObject) json.getJSONArray("variations").get(i);
+
+                    Log.i("Sergio>>>", "id: " + variation_i.getInt("id"));
+                    Log.i("Sergio>>>", "variation: " + variation_i.getString("variation"));
+                    Log.d("Sergio>>>", "json.getJSONArray(variations).get(" + i + ") " + variation_i);
+
+                    // As várias opções
+                    ArrayList<String> options_id = new ArrayList<>();
+                    ArrayList<String> options_name = new ArrayList<>();
+                    JSONArray optionsArray = variation_i.getJSONArray("options");
+                    for (int j = 0; j < optionsArray.length(); j++) {
+                        JSONObject option = optionsArray.getJSONObject(j);
+                        Log.i("Sergio>>>", "id = " + option.getInt("id") + "\n name= " + option.getString("name") + "\n value= " + option.getString("value"));
+                        options_id.add(String.valueOf(option.getInt("id")));
+                        options_name.add(option.getString("name"));
+                    }
+
+                    VariationsObj variationsObj = new VariationsObj(String.valueOf(variation_i.getInt("id")), variation_i.getString("variation"), options_id, options_name);
+                    variationsObjArrayList.add(variationsObj);
+                }
+
+                for (int i = 0; i < variationsObjArrayList.size(); i++) {
+                    LinearLayout ll_variations = (LinearLayout) mActivity.findViewById(R.id.ll_variations);
+                    TextView textView_Variations = (TextView) ll_variations.getChildAt(i);
+                    textView_Variations.setText(variationsObjArrayList.get(i).variation_name);
+                }
+
+                final LinearLayout linearLayoutSpiners = (LinearLayout) mActivity.findViewById(R.id.spiners);
+
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } catch (IndexOutOfBoundsException e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
+    class VariationsObj {
+        String variation_ID;
+        String variation_name;
+        ArrayList<String> options_id;
+        ArrayList<String> options_name;
+
+        VariationsObj(String variation_ID, String variation_name, ArrayList<String> options_id, ArrayList<String> options_name) {
+            this.variation_ID = variation_ID;
+            this.variation_name = variation_name;
+            this.options_id = options_id;
+            this.options_name = options_name;
+        }
+
+    }
+
 
     public class checkInternetAsync extends AsyncTask<Void, Void, Boolean> {
         @Override
@@ -457,480 +1239,6 @@ public class DetailsFragment extends Fragment {
         fullDB.close();
     }
 
-    public void Reset_DataBase() {
-        DBHelper dbHelper = new DBHelper(getContext());
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.ProductsEntry.TABLE_NAME);
-        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.PriceEntry.TABLE_NAME);
-        dbHelper.onCreate(db);
-        db.close();
-    }
-
-    private class getProductPage extends AsyncTask<String, Void, Document> {
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            mActivity.findViewById(R.id.progressBarRound).setVisibility(View.VISIBLE);
-        }
-
-        @Override
-        protected Document doInBackground(String... params) {
-            Document resultDocument = null;
-            try {
-                resultDocument = Jsoup.connect(params[0])
-                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
-                        .timeout(0) //sem limite de tempo
-                        .maxBodySize(0) //sem limite de tamanho do doc recebido
-                        .get();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return resultDocument;
-        }
-
-        @Override
-        protected void onPostExecute(Document resultDocument) {
-            super.onPostExecute(resultDocument);
-
-            if (thisFragment.isVisible()) {
-                Element titleElem = resultDocument.getElementsByClass("product-title").first();  // Titulo ou nome do produto
-                String title;
-                if (titleElem == null) {
-                    title = "N/A";
-                } else {
-                    title = titleElem.text();
-                }
-                ((TextView) mActivity.findViewById(R.id.title_tv)).append(title);
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME, title);
-
-                Elements subtitle_element = resultDocument.getElementsByClass("product-sub-name");
-                String subtitle;
-                if (subtitle_element == null) {
-                    subtitle = "N/A";
-                } else {
-                    subtitle = subtitle_element.text(); //Subtitulo
-                }
-                ((TextView) mActivity.findViewById(R.id.p_subtitle)).append(subtitle);
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_SUBTITLE, subtitle);
-
-                Element first_prod_img = resultDocument.getElementsByClass("product-img").first();
-                String url_img480 = null;
-                if (first_prod_img != null) {
-                    url_img480 = first_prod_img.attr("src");
-                }
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_BASE_IMG_URL, url_img480);
-
-                //Imagem do produto
-                final Bitmap[] theBitmap480 = new Bitmap[1];
-                theBitmap480[0] = null;
-                final ImageView productImageView = (ImageView) mActivity.findViewById(R.id.p_details_image);
-                if (url_img480 != null && (url_img480.contains(".jpg") || url_img480.contains(".bmp") || url_img480.contains(".png") || url_img480.contains(".jpeg"))) {
-
-                    Glide.with(mActivity).load(url_img480).into(productImageView);
-                    //Glide.with(mActivity).load(url_img480).crossFade().placeholder(R.drawable.noimage).into(productImageView);
-//
-//                    Glide.with(mActivity)
-//                            .load(url_img480)
-//                            .asBitmap()
-//                            .into(new SimpleTarget<Bitmap>() {
-//                                @Override
-//                                public void onResourceReady(Bitmap bitmap, GlideAnimation<? super Bitmap> glideAnimation) {
-//                                    theBitmap480[0] = bitmap;
-//                                }
-//                            });
-
-                } else {
-                    //failed getting product image
-                    Glide.with(mActivity).load(R.drawable.noimage).into(productImageView);
-                    theBitmap480[0] = null;
-                }
-
-                //Imagem para aplicar o zoom
-                Element first_img_zoom_action = resultDocument.getElementsByClass("product-img-zoom-action").first();
-                String url_img600 = null;
-                if (first_img_zoom_action != null) {
-                    url_img600 = first_img_zoom_action.attr("href");
-                }
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_ZOOM_IMG_URL, url_img600);
-
-                //Log.i("Sergio>>>", "onPostExecute: url_img600= " + url_img600);
-                productImageView.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Toast.makeText(mActivity, "Clicked Image", Toast.LENGTH_SHORT).show();
-                    }
-                });
-
-                final ArrayList<HashMap> arraylistHashMap = new ArrayList<>(3);
-                final ArrayList<String> opts_id = new ArrayList<>(3);
-                Elements productVariations = resultDocument.getElementsByClass("productVariations__select");
-                int pv_size = productVariations.size();
-                if (pv_size > 0) {
-
-                }
-
-                for (int i = 0; i < pv_size; i++) {
-                    Element option = productVariations.get(i);
-//                }
-//                for (Element option : productVariations) {
-                    //Log.i("Sergio>>>", "onPostExecute: " + option.attr("id"));
-                    opts_id.add(option.attr("id").replace("opts-", ""));
-                    Elements optionBoxes = option.getElementsByAttribute("value");
-                    LinkedHashMap<String, String> hmap = new LinkedHashMap<>();
-                    for (Element optionBox_i : optionBoxes) {
-                        //Log.i("Sergio>>>", "onPostExecute: " + optionBox_i.attr("value") + "= " + optionBox_i.text());
-                        hmap.put(optionBox_i.attr("value"), optionBox_i.text());
-                    }
-                    arraylistHashMap.add(hmap);
-                }
-
-                ArrayList<String> variationLabels = new ArrayList<>();
-                Elements productVariationsLabels = resultDocument.getElementsByClass("productVariations__label");
-                for (Element variation : productVariationsLabels) {
-                    //Log.i("Sergio>>>", "onPostExecute: " + variation.text());
-                    variationLabels.add(variation.text());
-                    // Labels Sabor, Quantidade, Embalagem
-                }
-
-                LinearLayout ll_variations = (LinearLayout) mActivity.findViewById(R.id.ll_variations);
-
-                //Log.w("Sergio>>>", "onPostExecute: arraylistHashMap" + arraylistHashMap);
-
-                int i = 0;
-                final LinearLayout linearLayoutSpiners = (LinearLayout) mActivity.findViewById(R.id.spiners);
-                final ArrayList<ArrayList<String>> arrayArrayKeys = new ArrayList<>();
-                for (HashMap map : arraylistHashMap) {
-                    final ArrayList<String> spinnerArrayValues = new ArrayList();
-                    final ArrayList<String> spinnerArrayKeys = new ArrayList();
-                    Iterator it = map.entrySet().iterator();
-                    while (it.hasNext()) {
-                        Map.Entry pair = (Map.Entry) it.next();
-                        spinnerArrayValues.add(pair.getValue().toString());
-                        spinnerArrayKeys.add(pair.getKey().toString());     //id's
-                        it.remove(); // avoids a ConcurrentModificationException
-                    }
-                    arrayArrayKeys.add(spinnerArrayKeys);
-                    //Log.w("Sergio>>>", "onPostExecute: arrayArrayKeys= " + arrayArrayKeys);
-
-                    final RelativeLayout relativeLayoutSpiners = (RelativeLayout) linearLayoutSpiners.getChildAt(i);
-                    relativeLayoutSpiners.setVisibility(View.VISIBLE);
-                    final Spinner oneSpinner = (Spinner) relativeLayoutSpiners.getChildAt(0);
-
-                    ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<>(
-                            mActivity,
-                            R.layout.simple_spinner_item,
-                            spinnerArrayValues);
-                    spinnerArrayAdapter.setDropDownViewResource(R.layout.simple_spinner_dropdown_item);
-                    oneSpinner.setAdapter(spinnerArrayAdapter);
-                    oneSpinner.setSelection(0, false);
-                    oneSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                        @Override
-                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                            startTime = System.nanoTime();
-                            priceTV.setVisibility(View.GONE);
-                            mActivity.findViewById(R.id.priceProgressBarRound).setVisibility(View.VISIBLE);
-                            getPriceMethod(arrayArrayKeys, linearLayoutSpiners, opts_id);
-                        }
-
-                        @Override
-                        public void onNothingSelected(AdapterView<?> parent) {
-                        }
-                    });
-
-                    TextView textView_Variations = (TextView) ll_variations.getChildAt(i);
-                    textView_Variations.setText(variationLabels.get(i));
-                    textView_Variations.setVisibility(View.VISIBLE);
-                    int vIndex = i + 1;
-                    productContentValues.put("mp_variation_name" + vIndex, variationLabels.get(i)); //sabor, embalagem, quantidade
-                    i++;
-                }
-
-                mActivity.findViewById(R.id.ll_description).setVisibility(View.VISIBLE);
-
-                if (arraylistHashMap.size() > 0) { // Tem opções ou variações
-                    refresh_Available_Options();
-                    getPriceMethod(arrayArrayKeys, linearLayoutSpiners, opts_id);
-                } else {
-                    // Sem opções de sabor, embalagem, tamanho para selecionar
-                    String price = resultDocument.getElementsByClass("priceBlock_current_price").text();
-                    Pattern regex = Pattern.compile("[.,\\d]+"); // matches . , e números de 0 a 9
-                    Matcher match = regex.matcher(price);
-                    String currency_symbol = match.replaceAll("");
-                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL, currency_symbol);
-
-                    priceTV.setText(price);
-                    gotPrice = true;
-                    mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
-                    mActivity.findViewById(R.id.button_add_to_db).setEnabled(true);
-                }
-
-            } else {
-                Toast.makeText(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT).show();
-            }
-
-        }
-    }
-
-    private void refresh_Available_Options() {
-        String full_JSON_URL = MP_Domain + "variations.json?productId=" + productID + URL_suffix;
-        Log.i("Sergio>", this + " refresh_Available_Options: full_JSON_URL=\n" + full_JSON_URL);
-
-        AsyncTask<String, Void, Boolean> checkinternetAsyncTask = new checkInternetAsyncMethods("refresh_available_options");
-        checkinternetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, full_JSON_URL);
-
-    }
-
-    public class checkInternetAsyncMethods extends AsyncTask<String, Void, Boolean> {
-        String method;
-        String backGround_param;
-
-        checkInternetAsyncMethods(String method) {
-            this.method = method;
-            Log.i("Sergio>", this + " checkInternetAsyncMethods: method=\n" + method);
-        }
-
-        @Override
-        protected Boolean doInBackground(String... params) {
-            backGround_param = params[0];
-            return NetworkUtils.hasActiveNetworkConnection(mActivity);
-        }
-
-        @Override
-        protected void onPostExecute(Boolean hasInternet) {
-            super.onPostExecute(hasInternet);
-
-            if (hasInternet) {
-                switch (method) {
-                    case "refresh_available_options": {
-                        AsyncTask<String, Void, JSONObject> getDetailsFromJSON = new GetDetailsFromJSON();
-                        getDetailsFromJSON.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, backGround_param);
-                        break;
-                    }
-                    case "getPriceMethod": {
-                        AsyncTask<String, Void, JSONObject> GetPriceFromJSON = new GetPriceFromJSON();
-                        GetPriceFromJSON.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, backGround_param);
-                        break;
-                    }
-                    case "getProductPage": {
-                        Log.i("Sergio>", this + " onPostExecute: getProductPage=\n");
-                        AsyncTask<String, Void, Document> getProductPage = new getProductPage();
-                        getProductPage.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, backGround_param);
-                        break;
-                    }
-                    default: {
-                        Log.w("Sergio>", this + " onPostExecute: invalid method given no switch");
-                        break;
-                    }
-                }
-
-            } else {
-                if (noNetworkSnackBar != null && !noNetworkSnackBar.isShown()) {
-                    noNetworkSnackBar.show();
-                } else {
-                    makeNoNetworkSnackBar(mActivity);
-                }
-            }
-            mActivity.findViewById(R.id.priceProgressBarRound).setVisibility(View.GONE);
-            priceTV.setVisibility(View.VISIBLE);
-        }
-
-    }
-
-    private class GetDetailsFromJSON extends AsyncTask<String, Void, JSONObject> {
-        @Override
-        protected JSONObject doInBackground(String... url_param) {
-            Document resultDocument = null;
-            try {
-                resultDocument = Jsoup.connect(url_param[0])
-                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
-                        .timeout(0) //sem limite de tempo para receber a página
-                        .ignoreContentType(true) // ignorar o tipo de conteúdo
-                        .maxBodySize(0) //sem limite de tamanho do doc recebido
-                        .get();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            JSONObject jsonObject = null;
-            try {
-                if (resultDocument == null) {
-                    jsonObject = null;
-                } else {
-                    jsonObject = new JSONObject(resultDocument.text());
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            return jsonObject;
-        }
-
-        @Override
-        protected void onPostExecute(JSONObject json) {
-            super.onPostExecute(json);
-            if (thisFragment.isVisible()) {
-
-                if (json != null) {
-                    try {
-
-                        JSONArray variations_Array = json.getJSONArray("variations");
-
-                        Log.i("Sergio>", this + " onPostExecute: " +
-                                "\n variations_Object= " + variations_Array +
-                                "\n variations_Array.length= " + variations_Array.length());
-
-                        ArrayList<HashMap<Integer, String>> arrayList_variation_map = new ArrayList<>();
-                        ArrayList<HashMap<Integer, String>> arrayList_options_map = new ArrayList<>();
-                        for (int i = 0; i < variations_Array.length(); i++) {
-                            HashMap<Integer, String> variation_map = new HashMap<>();
-                            JSONObject variation_i = (JSONObject) variations_Array.get(i);
-                            int variation_id = variation_i.getInt("id");
-                            String variation_name = variation_i.getString("variation");
-                            Log.d("Sergio>", this + " onPostExecute: " +
-                                    "\n variation_i= " + variation_i +
-                                    "\n variation_id= " + variation_id +
-                                    "\n variation_name=" + variation_name);
-                            variation_map.put(variation_id, variation_name);
-                            arrayList_variation_map.add(variation_map);
-
-                            HashMap<Integer, String> options_map = new HashMap<>();
-
-                            JSONArray variation_options = variation_i.getJSONArray("options");
-                            for (int j = 0; j < variation_options.length(); j++) {
-                                JSONObject option_i = (JSONObject) variation_options.get(j);
-                                int option_id = option_i.getInt("id");
-                                String option_name = option_i.getString("name");
-                                String option_value = option_i.getString("value"); // não necessário
-                                Log.i("Sergio>", this + " onPostExecute: " +
-                                        "\n option_id= " + option_id +
-                                        "\n option_name= " + option_name +
-                                        "\n option_value= " + option_value);
-                                options_map.put(option_id, option_value);
-                            }
-                            arrayList_options_map.add(options_map);
-                        }
-
-                        ArrayList<ArrayList<HashMap<String, String>>> imagens_json = new ArrayList<>(2);
-                        HashMap<String, String> image_hmap = new HashMap<>();
-                        JSONArray json_images = json.getJSONArray("images");
-                        int image_index = 0;
-                        for (int i = 0; i < json_images.length(); i++) {
-                            ArrayList<HashMap<String, String>> images_hashmaps = new ArrayList<>();
-                            JSONObject image_i = (JSONObject) json_images.get(i);
-                            int current_img_index = image_i.getInt("index");
-                            String image_type = image_i.getString("type");
-                            String image_url = "https://s4.thcdn.com/" + image_i.getString("name");
-                            image_hmap.put(image_type, image_url);
-                            images_hashmaps.add(image_hmap);
-
-                            if (image_index == current_img_index) {
-                                imagens_json.add(images_hashmaps);
-                            } else {
-                                image_index = current_img_index;
-                            }
-                        }
-                        Log.i("Sergio>", this + " onPostExecute: imagens_json= " + imagens_json);
-
-
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                        Log.w("Sergio>", this + " onPostExecute: falhou ao fazer o parse do json ");
-                    }
-                } else {
-                    Log.w("Sergio>", this + " onPostExecute: falhou ao sacar o json ");
-                }
-
-
-                mActivity.findViewById(R.id.priceProgressBarRound).setVisibility(View.GONE);
-                priceTV.setVisibility(View.VISIBLE);
-                mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
-
-            } else {
-                Toast.makeText(mActivity, "Details Fragment Terminated", Toast.LENGTH_SHORT).show();
-            }
-
-        }
-
-
-    }
-
-    private void getPriceMethod(ArrayList<ArrayList<String>> arrayArrayKeys, LinearLayout linearLayoutSpiners, ArrayList<String> opts_id) {
-        mActivity.findViewById(R.id.button_add_to_db).setEnabled(false);
-        String options = "&selected=3";
-        customProductID = "loc" + pref_MP_Locale + "pid" + productID;
-
-        for (int j = 0; j < arrayArrayKeys.size(); j++) {
-            Spinner spinner = (Spinner) ((RelativeLayout) linearLayoutSpiners.getChildAt(j)).getChildAt(0);
-            int selecteditemposition = spinner.getSelectedItemPosition();
-            String spinnerValue = spinner.getSelectedItem().toString();
-            arrayArrayKeys.get(j);
-            opts_id.get(j);
-            String index = String.valueOf(j + 1);
-            options += "&variation" + index + "=" + opts_id.get(j) + "&option" + index + "=" + arrayArrayKeys.get(j).get(selecteditemposition);
-            productContentValues.put("mp_variation" + index, opts_id.get(j));
-            productContentValues.put("mp_options" + index, arrayArrayKeys.get(j).get(selecteditemposition));
-            productContentValues.put("mp_options_name" + index, spinnerValue);
-            customProductID += "vid" + index + opts_id.get(j) + "oid" + index + arrayArrayKeys.get(j).get(selecteditemposition);
-        }
-        // vid = variation id / oid = option id
-        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID, customProductID);
-        Log.d(" Sergio>>>", this + " getPriceMethod: customProductID =" + customProductID);
-
-        String JSON_URL_Details = MP_Domain + "variations.json?productId=" + productID + options + URL_suffix;
-        //String jsonurl = "https://pt.myprotein.com/variations.json?productId=10530943";
-        //String options = "&selected=3 &variation1=5 &option1=2413 &variation2=6 &option2=2407 &variation3=7 &option3=5935"
-        //String mais = "&settingsSaved=Y&shippingcountry=PT&switchcurrency=GBP&countrySelected=Y"
-
-        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS, JSON_URL_Details);
-
-        Log.d("Sergio>>>", "getPriceMethod: JSON_URL_Details " + JSON_URL_Details);
-
-        DBHelper dbHelper = new DBHelper(getContext());
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + ProductsContract.ProductsEntry.TABLE_NAME, null);
-
-        int rows = 0;
-        if (cursor.getCount() > 0) {
-            //rows = cursor.getInt(0);
-        }
-
-        if (rows < 2) {
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, 0);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, 0);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, 0);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, 0);
-        } else {
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, 0);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, 0);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, 0);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, 0);
-        }
-
-        cursor.close();
-        db.close();
-
-        AsyncTask<String, Void, Boolean> checkinternetAsyncTask = new checkInternetAsyncMethods("getPriceMethod");
-        checkinternetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, JSON_URL_Details);
-//
-//        AsyncTask<String, Void, Boolean> checkinternetAsyncTask = new checkInternetPriceMethodAsync();
-//        checkinternetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, JSON_URL_Details);
-
-//
-//        if (NetworkUtils.hasActiveNetworkConnection(mActivity)) {
-//            // Aqui saca o JSON com o preço e outros detalhes do produto
-//            AsyncTask<String, Void, JSONObject> GetPriceFromJSON = new GetPriceFromJSON();
-//            GetPriceFromJSON.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, JSON_URL_Details);
-//        } else {
-//            if (noNetworkSnackBar != null && !noNetworkSnackBar.isShown()) {
-//                noNetworkSnackBar.show();
-//            } else {
-//                makeNoNetworkSnackBar(mActivity);
-//            }
-//            mActivity.findViewById(R.id.priceProgressBarRound).setVisibility(View.GONE);
-//            priceTV.setVisibility(View.VISIBLE);
-//        }
-
-    }
-
-
     public class checkInternetPriceMethodAsync extends AsyncTask<String, Void, Boolean> {
         String json_url;
 
@@ -959,202 +1267,6 @@ public class DetailsFragment extends Fragment {
             priceTV.setVisibility(View.VISIBLE);
         }
     }
-
-    public class GetPriceFromJSON extends AsyncTask<String, Void, JSONObject> {
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-//            priceTV.setVisibility(View.GONE);
-//            mActivity.findViewById(R.id.priceProgressBarRound).setVisibility(View.VISIBLE);
-        }
-
-        @Override
-        protected JSONObject doInBackground(String... url_param) {
-            Document resultDocument = null;
-            try {
-                resultDocument = Jsoup.connect(url_param[0])
-                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
-                        .timeout(0) //sem limite de tempo para receber a página
-                        .ignoreContentType(true) // ignorar o tipo de conteúdo
-                        .maxBodySize(0) //sem limite de tamanho do doc recebido
-                        .get();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            JSONObject jsonObject = null;
-            try {
-                if (resultDocument == null) {
-                    jsonObject = null;
-                } else {
-                    jsonObject = new JSONObject(resultDocument.text());
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            return jsonObject;
-        }
-
-        @Override
-        protected void onPostExecute(JSONObject json) {
-            super.onPostExecute(json);
-            if (thisFragment.isVisible()) {
-                String priceJson = null;
-
-                if (json != null) {
-                    try {
-                        priceJson = (String) json.get("price");
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                        priceTV.setText("N/A");
-                        gotPrice = false;
-                    }
-                } else {
-                    priceTV.setText("N/A");
-                    gotPrice = false;
-                }
-
-                if (priceJson != null) {
-                    priceTV.setText(priceJson);
-                    gotPrice = true;
-                    mActivity.findViewById(R.id.button_add_to_db).setEnabled(true);
-                    Pattern regex = Pattern.compile("[.,\\d]+"); // matches . , e números de 0 a 9
-                    Matcher match = regex.matcher(priceJson);
-                    String currency_symbol = match.replaceAll("");
-                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL, currency_symbol);
-                } else {
-                    gotPrice = false;
-                }
-                mActivity.findViewById(R.id.priceProgressBarRound).setVisibility(View.GONE);
-                priceTV.setVisibility(View.VISIBLE);
-                mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
-
-                NumberFormat formatter1 = new DecimalFormat("#.####");
-                String elapsed = "Elapsed Time:" + " " + formatter1.format((System.nanoTime() - startTime) / 1000000000.0) + "s";
-                Toast.makeText(mActivity, elapsed, Toast.LENGTH_SHORT).show();
-
-            } else {
-                Toast.makeText(mActivity, "Details Fragment Terminated", Toast.LENGTH_SHORT).show();
-            }
-
-        }
-    }
-
-    public static void showCustomToast(Activity cActivity, String toastText, int icon_RID, int text_color_RID, int duration) {
-        LayoutInflater inflater = cActivity.getLayoutInflater();
-        View layout = inflater.inflate(R.layout.custom_toast, (ViewGroup) cActivity.findViewById(R.id.toast_layout_root));
-
-        TextView text = (TextView) layout.findViewById(R.id.toast_layout_text);
-        text.setText(toastText);
-        text.setTextColor(ContextCompat.getColor(cActivity, text_color_RID));
-
-        ImageView imageV = (ImageView) layout.findViewById(R.id.toast_img);
-        imageV.setImageResource(icon_RID);
-
-        Toast theCustomToast = new Toast(cActivity);
-        theCustomToast.setGravity(Gravity.CENTER_VERTICAL, 0, 0);
-        theCustomToast.setDuration(duration);
-        theCustomToast.setView(layout);
-        theCustomToast.show();
-    }
-
-    //JSON SEARCH
-    // https://pt.myprotein.com/pt_PT/EUR/elysium.searchjson?search=impact+whey+protein
-    //
-    private class getProductJSON extends AsyncTask<String, Void, JSONObject> {
-
-        @Override
-        protected JSONObject doInBackground(String... params) {
-            Document resultDocument = null;
-            try {
-                resultDocument = Jsoup.connect(params[0])
-                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
-                        .timeout(0)
-                        .ignoreContentType(true)
-                        .maxBodySize(0) //sem limite de tamanho do doc recebido
-                        .get();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            JSONObject jsonObject = null;
-            try {
-                jsonObject = new JSONObject(resultDocument.text());
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            return jsonObject;
-        }
-
-        @Override
-        protected void onPostExecute(JSONObject json) {
-            super.onPostExecute(json);
-            //Log.i("Sergio>>>", "onPostExecute: json= " + json);
-
-            try {
-                Log.d("Sergio>>>", "variations = " + json.getJSONArray("variations"));
-
-                final ArrayList<VariationsObj> variationsObjArrayList = new ArrayList<>();
-                for (int i = 0; i < json.getJSONArray("variations").length(); i++) {
-                    JSONObject variation_i = (JSONObject) json.getJSONArray("variations").get(i);
-
-                    Log.i("Sergio>>>", "id: " + variation_i.getInt("id"));
-                    Log.i("Sergio>>>", "variation: " + variation_i.getString("variation"));
-                    Log.d("Sergio>>>", "json.getJSONArray(variations).get(" + i + ") " + variation_i);
-
-                    // As várias opções
-                    ArrayList<String> options_id = new ArrayList<>();
-                    ArrayList<String> options_name = new ArrayList<>();
-                    JSONArray optionsArray = variation_i.getJSONArray("options");
-                    for (int j = 0; j < optionsArray.length(); j++) {
-                        JSONObject option = optionsArray.getJSONObject(j);
-                        Log.i("Sergio>>>", "id = " + option.getInt("id") + "\n name= " + option.getString("name") + "\n value= " + option.getString("value"));
-                        options_id.add(String.valueOf(option.getInt("id")));
-                        options_name.add(option.getString("name"));
-                    }
-
-                    VariationsObj variationsObj = new VariationsObj(String.valueOf(variation_i.getInt("id")), variation_i.getString("variation"), options_id, options_name);
-                    variationsObjArrayList.add(variationsObj);
-                }
-
-                for (int i = 0; i < variationsObjArrayList.size(); i++) {
-                    LinearLayout ll_variations = (LinearLayout) mActivity.findViewById(R.id.ll_variations);
-                    TextView textView_Variations = (TextView) ll_variations.getChildAt(i);
-                    textView_Variations.setText(variationsObjArrayList.get(i).variation_name);
-                }
-
-                final LinearLayout linearLayoutSpiners = (LinearLayout) mActivity.findViewById(R.id.spiners);
-
-
-            } catch (JSONException e) {
-                e.printStackTrace();
-            } catch (IndexOutOfBoundsException e) {
-                e.printStackTrace();
-            }
-
-        }
-    }
-
-    class VariationsObj {
-        String variation_ID;
-        String variation_name;
-        ArrayList<String> options_id;
-        ArrayList<String> options_name;
-
-        VariationsObj(String variation_ID, String variation_name, ArrayList<String> options_id, ArrayList<String> options_name) {
-            this.variation_ID = variation_ID;
-            this.variation_name = variation_name;
-            this.options_id = options_id;
-            this.options_name = options_name;
-        }
-
-    }
-
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-    }
-
 }
 
 

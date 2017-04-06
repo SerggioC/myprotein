@@ -13,6 +13,7 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -30,7 +31,8 @@ public class MainActivity extends AppCompatActivity {
     Handler mHandler;
     Bundle indexBundle;
     int index = 0;
-
+    public static String DETAILS_FRAGMENT_TAG = "DETAILS_FRAGMENT";
+    Boolean addedNewProduct = false;
 
     @Override
     protected void onStart() {
@@ -76,17 +78,13 @@ public class MainActivity extends AppCompatActivity {
         mActivity = this;
         sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
 
-        /**
-         *Setup the DrawerLayout and NavigationView
-         */
+        /** Setup the DrawerLayout and NavigationView **/
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawerLayout);
         mNavigationView = (NavigationView) findViewById(R.id.nav_view);
         mNavigationView.setItemIconTintList(null);
 
-        /**
-         * Lets inflate the very first fragment
-         * Here , we are inflating the TabFragment as the first Fragment
-         */
+        /** Lets inflate the very first fragment
+         * Here , we are inflating the TabFragment as the first Fragment*/
         final TabFragment tabFragment = new TabFragment();
         indexBundle = new Bundle();
         indexBundle.putInt("index", 0);
@@ -100,11 +98,7 @@ public class MainActivity extends AppCompatActivity {
         firstMenuItem.setChecked(true);
         TheMenuItem.lastMenuItem = firstMenuItem;
 
-
-
-        /**
-         * Setup click events on the Navigation View Items.
-         */
+        /** Setup click events on the Navigation View Items. **/
         mNavigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(MenuItem menuItem) {
@@ -139,7 +133,6 @@ public class MainActivity extends AppCompatActivity {
                         break;
                 }
 
-
                 if (tabFragment.isAdded()) {
                     viewPager.setCurrentItem(index);
                 } else {
@@ -149,7 +142,6 @@ public class MainActivity extends AppCompatActivity {
                     fragmentTransaction.replace(R.id.containerView, tabFragment);
                     fragmentTransaction.commit();
                 }
-
                 TheMenuItem.lastMenuItem = menuItem;
 
                 return true;
@@ -157,11 +149,7 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
-
-        /**
-         * Setup Drawer Toggle on the Toolbar ? triple parallel lines on the left
-         */
-
+        /** Setup Drawer Toggle on the Toolbar ? triple parallel lines on the left **/
         android.support.v7.widget.Toolbar toolbar = (android.support.v7.widget.Toolbar) findViewById(R.id.toolbar);
 
         // Menu icons are inflated just as they were with actionbar
@@ -169,14 +157,11 @@ public class MainActivity extends AppCompatActivity {
         // Make sure the toolbar exists in the activity and is not null
         setSupportActionBar(toolbar);
 
-
         ActionBarDrawerToggle mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, toolbar, R.string.app_name, R.string.app_name);
         mDrawerLayout.setDrawerListener(mDrawerToggle);
 
         mDrawerToggle.syncState();
-
     }
-
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
@@ -194,10 +179,15 @@ public class MainActivity extends AppCompatActivity {
         } else if (!drawerOpen || count == 0) {
             super.onBackPressed();
         } else {
+            Log.i("Sergio>", this + "onBackPressed:\naddedNewProduct= " + addedNewProduct);
+            Log.i("Sergio>", this + "onBackPressed:\ngetFragmentManager().findFragmentByTag(DETAILS_FRAGMENT_TAG) != null && addedNewProduct=\n" + getFragmentManager().findFragmentByTag(DETAILS_FRAGMENT_TAG) + " added= " + addedNewProduct);
             getFragmentManager().popBackStack();
-            //customviewpager.popFromBackStack(true);
-        }
+            if (getFragmentManager().findFragmentByTag(DETAILS_FRAGMENT_TAG) != null && addedNewProduct) {
+                WatchingFragment.loaderManager.forceLoad();
+                Log.i("Sergio>", this + "onBackPressed:\naddedNewProduct= " + addedNewProduct);
+            }
 
+        }
     }
 
     @Override

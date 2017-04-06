@@ -33,11 +33,12 @@ import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.Prod
 
 
 public class WatchingFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
-    private static final int LOADER_ID = 0;
+    public static final int LOADER_ID = 0;
     Activity mActivity;
     SwipeRefreshLayout watchingSwipeRefreshLayout;
-    cursorDBAdapter cursorDBAdapter;
+    static cursorDBAdapter cursorDBAdapter;
     ListView listViewItems;
+    static Loader<Cursor> loaderManager;
 
     public static class ViewHolder {
         public final ImageView iconView;
@@ -52,7 +53,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             highestPriceView = (TextView) view.findViewById(R.id.item_highest_price_textview);
             lowestPriceView = (TextView) view.findViewById(R.id.item_lowest_price_textview);
             currentPriceView = (TextView) view.findViewById(R.id.item_current_price_textview);
-            ;
         }
     }
 
@@ -74,7 +74,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View rootview = inflater.inflate(R.layout.watching_fragment, null);
-        getLoaderManager().initLoader(LOADER_ID, null, this);
+        loaderManager = getLoaderManager().initLoader(LOADER_ID, null, this);
+
 
 /*        DBHelper dbHelper = new DBHelper(mActivity);
         SQLiteDatabase db = dbHelper.getReadableDatabase();
@@ -116,7 +117,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        //getWatchingProducts();
     }
 
     @Override
@@ -185,7 +185,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         @Override
         public void bindView(View view, Context context, Cursor cursor) {
             ViewHolder viewHolder = (ViewHolder) view.getTag();
-            Log.i("Sergio>", this + " bindView: cursor=\n" + dumpCursorToString(cursor));
+            //Log.i("Sergio>", this + " bindView: cursor=\n" + dumpCursorToString(cursor));
 
             String prod_name = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME));
             String img_url = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_BASE_IMG_URL));
@@ -198,9 +198,16 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             if (options_sabor == null) options_sabor = "";
             if (options_caixa == null) options_caixa = "";
             if (options_quant == null) options_quant = "";
+            if (max_price == null || max_price.equals("0")) max_price = "-";
+            if (min_price == null || min_price.equals("0")) min_price = "-";
+            if (current_price == null || current_price.equals("0")) current_price = "-";
 
+            if (img_url != null) {
+                Glide.with(mActivity).load(img_url).into(viewHolder.iconView);
+            } else {
+                Glide.with(mActivity).load(R.drawable.noimage).into(viewHolder.iconView);
+            }
             viewHolder.titleView.setText(prod_name + " " + options_sabor + " " + options_caixa + " " + options_quant);
-            Glide.with(mActivity).load(img_url).into(viewHolder.iconView);
             viewHolder.highestPriceView.setText(max_price);
             viewHolder.lowestPriceView.setText(min_price);
             viewHolder.currentPriceView.setText(current_price);
@@ -209,7 +216,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         }
     }
 
-    private void getWatchingProducts() {
+    public void getWatchingProducts() {
 /*        DBHelper dbHelper = new DBHelper(mActivity);
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 

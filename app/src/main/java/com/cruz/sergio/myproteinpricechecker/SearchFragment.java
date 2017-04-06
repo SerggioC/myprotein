@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.DETAILS_FRAGMENT_TAG;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetworkSnackBar;
 
@@ -248,18 +249,19 @@ public class SearchFragment extends Fragment {
             //#divSearchResults > div:nth-child(1) > div:nth-child(1)
             //Log.i("Sergio>>>", "onPostExecute: " + resultProductCards);
 
-            if (resultProductCards.size() == 0) {
+            int rpc_size = resultProductCards.size();
+            if (rpc_size == 0) {
                 ArrayList item = new ArrayList();
                 item.add("No Results");
                 ArrayAdapter noAdapter = new ArrayAdapter(mActivity, android.R.layout.simple_list_item_1, item);
                 resultsListView.setAdapter(noAdapter);
                 horizontalProgressBar.setVisibility(View.GONE);
                 hasAsyncTaskRuning = false;
-            } else if (resultProductCards.size() > 0) {
-
-                for (Element singleProductCard : resultProductCards) { // Selecionar um único "Card" Produto
-                    //Log.d("Sergio>>>", "Product Card= "+ singleProductCard);
-
+            } else if (rpc_size > 0) {
+                //for (Element singleProductCard : resultProductCards) { // Selecionar um único "Card" Produto
+                //Log.d("Sergio>>>", "Product Card= "+ singleProductCard);
+                for (int i = 0; i < rpc_size; i++) {
+                    Element singleProductCard = resultProductCards.get(i);
                     Element productTitle = singleProductCard.getElementsByClass("product-title").first();
                     String productTitleStr;
                     String productHref;
@@ -282,10 +284,12 @@ public class SearchFragment extends Fragment {
                     //Log.i("Sergio>>>", "productID= " + productID2);
 
                     Element productImage = singleProductCard.select("img").first();
-                    String imgURL = "";
-
+                    String imgURL = null;
                     if (productImage != null) {
-                        imgURL = productImage.attr("src");
+                        imgURL = productImage.attr("src"); // https://s1.thcdn.com/ às vezes retorna apenas isto
+                        if (imgURL != null && !(imgURL.contains(".jpg") || imgURL.contains(".jpeg") || imgURL.contains(".png") || imgURL.contains(".bmp"))) {
+                            imgURL = null;
+                        }
                     }
 
                     Drawable drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.tick, null);
@@ -363,11 +367,9 @@ public class SearchFragment extends Fragment {
 
             ImageView productImageView = (ImageView) view.findViewById(R.id.product_image);
             String imgURL = product.imgURL;
-
-            if (imgURL != null && (imgURL.contains(".jpg") || imgURL.contains(".jpeg") || imgURL.contains(".bmp") || imgURL.contains(".png"))) {
+            if (imgURL != null) {
                 Glide.with(mActivity).load(imgURL).into(productImageView);
             } else {
-                //failed getting product image
                 Glide.with(mActivity).load(R.drawable.noimage).into(productImageView);
             }
 
@@ -379,13 +381,14 @@ public class SearchFragment extends Fragment {
                     productBundle.putString("url", product.productHref);
                     productBundle.putStringArrayList("description", product.pptList_stringarray);
                     productBundle.putString("productID", product.productID);
+                    productBundle.putString("image_url", product.imgURL);
                     DetailsFragment detailsFragment = new DetailsFragment();
                     detailsFragment.setArguments(productBundle);
 
                     FragmentTransaction ft = MainActivity.mFragmentManager.beginTransaction();
                     ft.hide(getParentFragment());
                     ft.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out);
-                    ft.add(android.R.id.content, detailsFragment);
+                    ft.add(android.R.id.content, detailsFragment, DETAILS_FRAGMENT_TAG);
                     ft.addToBackStack(null);
                     ft.commit();
                 }

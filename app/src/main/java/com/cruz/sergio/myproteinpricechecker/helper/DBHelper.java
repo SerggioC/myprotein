@@ -43,8 +43,8 @@ public class DBHelper extends SQLiteOpenHelper {
                 ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS1 + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS2 + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS3 + " TEXT, " +
-                ProductsContract.ProductsEntry.COLUMN_MP_BASE_IMG_URL + " TEXT NOT NULL, " +
-                ProductsContract.ProductsEntry.COLUMN_MP_ZOOM_IMG_URL + " TEXT NOT NULL, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_BASE_IMG_URL + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_ZOOM_IMG_URL + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MAX_PRICE + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE + " INTEGER, " +
                 ProductsContract.ProductsEntry.COLUMN_MIN_PRICE + " TEXT, " +
@@ -55,8 +55,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME1 + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME2 + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME3 + " TEXT, " +
-                ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID + " TEXT NOT NULL," +
-                ProductsContract.ProductsEntry.COLUMN_IMAGE_BLOB + " BLOB" +
+                ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID + " TEXT NOT NULL" +
 //                " FOREIGN KEY (" + ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID + ") REFERENCES " +
 //                ProductsContract.PriceEntry.TABLE_NAME + " (" + ProductsContract.PriceEntry._ID + ") " +
                 " );";

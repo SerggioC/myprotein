@@ -11,6 +11,7 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
@@ -44,13 +45,11 @@ public class NetworkUtils {
                 NetworkInfo info = extras.getParcelable("networkInfo");
                 NetworkInfo.State state = info.getState();
 
-                if (noNetworkSnackBar.isShown()) noNetworkSnackBar.dismiss();
-                if (state == NetworkInfo.State.CONNECTED) {
-                    Toast toast1 = Toast.makeText(mActivity, "Connected to Network", Toast.LENGTH_SHORT);
-                    toast1.show();
-                } else {
+                if (noNetworkSnackBar.isShown())
+                    noNetworkSnackBar.dismiss();
+                if (state != NetworkInfo.State.CONNECTED)
                     noNetworkSnackBar.show();
-                }
+                Log.w("Sergio>", this + "onReceive:\nnoNetworkSnackBarisShown()=\n" + noNetworkSnackBar.isShown());
             }
         };
         final IntentFilter intentFilter = new IntentFilter();
@@ -58,7 +57,7 @@ public class NetworkUtils {
         mActivity.registerReceiver(BCReceiver, intentFilter);
     }
 
-    public static void makeNoNetworkSnackBar(Activity mActivity) {
+    public static final void makeNoNetworkSnackBar(Activity mActivity) {
         noNetworkSnackBar = Snackbar.make(mActivity.getWindow().findViewById(android.R.id.content), "No Network Connection", Snackbar.LENGTH_INDEFINITE)
                 .setActionTextColor(Color.RED)
                 .setAction("Dismiss", new View.OnClickListener() {
