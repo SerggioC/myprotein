@@ -92,6 +92,8 @@ public class ProductsContract {
         public static final String COLUMN_MP_OPTIONS_NAME2 = "mp_options_name2";
         public static final String COLUMN_MP_OPTIONS_NAME3 = "mp_options_name3";
         public static final String COLUMN_CUSTOM_PRODUCT_ID = "mp_custom_product_id";
+        public static final String COLUMN_ARRAYLIST_IMAGE_URIS = "mp_array_img_uris";
+        public static final String COLUMN_ARRAYLIST_IMG_URLS = "mp_array_image_urls";
 
         public static final String[] ALL_PRODUCT_COLUMNS_PROJECTION = new String[]{ //Todas as colunas da tabela
                 ProductsEntry._ID,
@@ -126,6 +128,8 @@ public class ProductsContract {
                 ProductsEntry.COLUMN_MP_OPTIONS_NAME2,
                 ProductsEntry.COLUMN_MP_OPTIONS_NAME3,
                 ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID,
+                ProductsEntry.COLUMN_ARRAYLIST_IMAGE_URIS,
+                ProductsEntry.COLUMN_ARRAYLIST_IMG_URLS
         };
     }
 

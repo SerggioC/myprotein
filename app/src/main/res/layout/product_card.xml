@@ -8,8 +8,7 @@
     app:cardBackgroundColor="@color/cardsColor"
     app:cardCornerRadius="2dp"
     app:cardElevation="3dp"
-    app:cardPreventCornerOverlap="true"
-    >
+    app:cardPreventCornerOverlap="true">
 
     <LinearLayout
         android:id="@+id/root_ll_vertical"
@@ -28,15 +27,13 @@
             android:drawableLeft="@drawable/arrow"
             android:gravity="start"
             android:textAlignment="viewStart"
-            android:textSize="20sp"
-            />
+            android:textSize="20sp"/>
 
         <LinearLayout
             android:id="@+id/details_ll_horizontal"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="horizontal"
-            >
+            android:orientation="horizontal">
 
             <ImageView
                 android:id="@+id/product_image"
@@ -76,14 +73,14 @@
             </LinearLayout>
 
             <!--<ImageView-->
-                <!--android:id="@+id/image_watch"-->
-                <!--android:layout_width="30dp"-->
-                <!--android:layout_height="30dp"-->
-                <!--android:layout_gravity="center_vertical"-->
-                <!--android:layout_marginLeft="8dp"-->
-                <!--android:layout_marginRight="8dp"-->
-                <!--android:contentDescription="watch product"-->
-                <!--android:src="@drawable/ic_view"/>-->
+            <!--android:id="@+id/image_watch"-->
+            <!--android:layout_width="30dp"-->
+            <!--android:layout_height="30dp"-->
+            <!--android:layout_gravity="center_vertical"-->
+            <!--android:layout_marginLeft="8dp"-->
+            <!--android:layout_marginRight="8dp"-->
+            <!--android:contentDescription="watch product"-->
+            <!--android:src="@drawable/ic_view"/>-->
 
         </LinearLayout>
     </LinearLayout>

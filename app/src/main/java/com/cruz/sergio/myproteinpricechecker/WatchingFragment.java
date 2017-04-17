@@ -4,8 +4,11 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.TransitionDrawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
@@ -17,20 +20,43 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
+import android.widget.FrameLayout;
+import android.widget.ImageSwitcher;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ViewSwitcher;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.GlideDrawable;
+import com.bumptech.glide.request.animation.GlideAnimation;
+import com.bumptech.glide.request.target.SimpleTarget;
 import com.cruz.sergio.myproteinpricechecker.helper.ProductsContract;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import static android.R.attr.path;
 import static android.database.DatabaseUtils.dumpCursorToString;
+import static android.util.DisplayMetrics.DENSITY_HIGH;
+import static android.util.DisplayMetrics.DENSITY_LOW;
+import static android.util.DisplayMetrics.DENSITY_MEDIUM;
+import static android.util.DisplayMetrics.DENSITY_XHIGH;
+import static android.util.DisplayMetrics.DENSITY_XXHIGH;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.ALL_PRODUCT_COLUMNS_PROJECTION;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.CONTENT_DIR_TYPE;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.CONTENT_ITEM_TYPE;
-
 
 public class WatchingFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
     public static final int LOADER_ID = 0;
@@ -39,6 +65,11 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     static cursorDBAdapter cursorDBAdapter;
     ListView listViewItems;
     static Loader<Cursor> loaderManager;
+    public float scale;
+    public int density;
+    String[] imageSizesToLoad;
+    ArrayList bitmapArray;
+    Timer timer = new Timer();
 
     public static class ViewHolder {
         public final ImageView iconView;
@@ -46,6 +77,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         public final TextView highestPriceView;
         public final TextView lowestPriceView;
         public final TextView currentPriceView;
+        public final ImageSwitcher imageSwitcher;
 
         public ViewHolder(View view) {
             iconView = (ImageView) view.findViewById(R.id.item_icon);
@@ -53,6 +85,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             highestPriceView = (TextView) view.findViewById(R.id.item_highest_price_textview);
             lowestPriceView = (TextView) view.findViewById(R.id.item_lowest_price_textview);
             currentPriceView = (TextView) view.findViewById(R.id.item_current_price_textview);
+            imageSwitcher = (ImageSwitcher) view.findViewById(R.id.image_switcher);
         }
     }
 
@@ -64,6 +97,27 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     public void onCreate(@Nullable Bundle savedInstanceState) {
         mActivity = getActivity();
         super.onCreate(savedInstanceState);
+        scale = getResources().getDisplayMetrics().density;
+        density = getResources().getDisplayMetrics().densityDpi;
+
+        if (density <= DENSITY_LOW) {
+            imageSizesToLoad = new String[]{"small", "smallthumb", "thumbnail"};
+        } else if (density > DENSITY_LOW && density <= DENSITY_MEDIUM) {
+            imageSizesToLoad = new String[]{"smallthumb", "thumbnail"};
+        } else if (density > DENSITY_MEDIUM && density <= DENSITY_HIGH) {
+            imageSizesToLoad = new String[]{"thumbnail", "smallprod"};
+        } else if (density > DENSITY_HIGH && density <= DENSITY_XHIGH) {
+            imageSizesToLoad = new String[]{"smallprod", "product", "large"};
+        } else if (density > DENSITY_XHIGH && density <= DENSITY_XXHIGH) { //galaxy S5: 480dpi scale = 3x; (70x70)*3 = 210x210;
+            imageSizesToLoad = new String[]{"large", "list", "raw"};
+        } else {
+            imageSizesToLoad = new String[]{"raw", "largeproduct", "quickview"};
+        }
+
+        Log.d("Sergio>", this + "onCreate:\ndensity=\n" + density);
+        for (int i = 0; i < imageSizesToLoad.length; i++) {
+            Log.d("Sergio>", this + "onCreate:\nimageSizesToLoad=\n" + imageSizesToLoad[i]);
+        }
     }
 
     @Override
@@ -184,8 +238,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         // such as setting the text on a TextView.
         @Override
         public void bindView(View view, Context context, Cursor cursor) {
-            ViewHolder viewHolder = (ViewHolder) view.getTag();
             //Log.i("Sergio>", this + " bindView: cursor=\n" + dumpCursorToString(cursor));
+            ViewHolder viewHolder = (ViewHolder) view.getTag();
+            viewHolder.imageSwitcher.removeAllViews();
 
             String prod_name = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME));
             String img_url = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_BASE_IMG_URL));
@@ -195,6 +250,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             String options_sabor = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME1));
             String options_caixa = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME2));
             String options_quant = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME3));
+            String string_array_img_uris = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGE_URIS));
+            String string_array_image_URLs = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMG_URLS));
             if (options_sabor == null) options_sabor = "";
             if (options_caixa == null) options_caixa = "";
             if (options_quant == null) options_quant = "";
@@ -202,17 +259,261 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             if (min_price == null || min_price.equals("0")) min_price = "-";
             if (current_price == null || current_price.equals("0")) current_price = "-";
 
-            if (img_url != null) {
-                Glide.with(mActivity).load(img_url).into(viewHolder.iconView);
-            } else {
-                Glide.with(mActivity).load(R.drawable.noimage).into(viewHolder.iconView);
+            ArrayList<File> arrayListImageFiles = new ArrayList<>();
+            Boolean gotPictures = false;
+            JSONArray jsonArray_img_uris = null;
+            if (string_array_img_uris != null) {
+                try {
+                    jsonArray_img_uris = new JSONArray(string_array_img_uris);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
+
+            jsonArray_img_uris = null; //REMOVER!
+
+            if (jsonArray_img_uris != null) {
+                if (jsonArray_img_uris.length() > 0) {
+                    for (int i = 0; i < jsonArray_img_uris.length(); i++) {
+                        JSONArray json_array_i = jsonArray_img_uris.optJSONArray(i);
+                        String fileToLoad = null;
+                        for (int j = 0; j < json_array_i.length(); j++) {
+                            try {
+                                String filename = (String) json_array_i.get(j);
+                                if (filename != null) {
+                                    for (int k = 0; k < imageSizesToLoad.length; k++) {
+                                        if (filename.contains("_" + imageSizesToLoad[k] + "_")) {
+                                            fileToLoad = filename;
+                                            gotPictures = true;
+                                        }
+                                    }
+                                }
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        if (gotPictures) {
+                            arrayListImageFiles.add(new File(mActivity.getFilesDir(), fileToLoad));
+                        }
+                    }
+                    if (gotPictures) {
+                        placeImagesFromFile(viewHolder, arrayListImageFiles);
+                        Log.i("Sergio>", this + "bindView:\narrayListImageFiles=\n" + arrayListImageFiles);
+                    }
+                }
+            }
+            // Se as imagem não estiverem guardadas no /data/ folder da app no dispositivo (memória interna)
+            // fazer o download a partir da lista de URLs
+            if (!gotPictures) {
+                if (string_array_image_URLs != null) {
+                    ArrayList<String> arrayListImageURLs = new ArrayList<>();
+                    JSONArray jsonArray_image_URLs = null;
+                    JSONObject obj = null;
+                    try {
+                        jsonArray_image_URLs = new JSONArray(string_array_image_URLs);
+                        obj = new JSONObject(string_array_image_URLs);
+                        Log.i("Sergio>", this + "bindView:\njsonArray_image_URLs=\n" + jsonArray_image_URLs);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    if (obj != null) {
+                        String a = "hello";
+                    }
+                    if (jsonArray_image_URLs != null) {
+                        if (jsonArray_image_URLs.length() > 0) {
+                            for (int i = 0; i < jsonArray_image_URLs.length(); i++) {
+                                JSONArray json_array_i = jsonArray_image_URLs.optJSONArray(i);
+                                String urlToLoad = null;
+                                for (int j = 0; j < json_array_i.length(); j++) {
+                                    try {
+                                        String url = (String) json_array_i.get(j);
+                                        if (url != null) {
+                                            for (int k = 0; k < imageSizesToLoad.length; k++) {
+                                                if (url.contains("_" + imageSizesToLoad[k] + "_")) {
+                                                    urlToLoad = url;
+                                                    gotPictures = true;
+                                                }
+                                            }
+                                        }
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                                if (gotPictures) {
+                                    arrayListImageURLs.add(urlToLoad);
+                                }
+                            }
+                            if (gotPictures) {
+                                placeImagesFromURL(viewHolder, arrayListImageURLs);
+                                Log.i("Sergio>", this + "bindView:\narrayListImageURLs=\n" + arrayListImageURLs);
+                            }
+                        }
+                    }
+                }
+
+            }
+            if (!gotPictures) { //Se não encontrou imagens nenhumas colocar imagem com no image available
+                viewHolder.imageSwitcher.addView(getNewImageView());
+                ImageView iv = (ImageView) viewHolder.imageSwitcher.getChildAt(0);
+                Glide.with(mActivity).load(R.drawable.noimage).into(iv);
+            }
+
+
+//            if (img_url != null) {
+//                Glide.with(mActivity).load(img_url).into(viewHolder.iconView);
+//            } else {
+//                Glide.with(mActivity).load(R.drawable.noimage).into(viewHolder.iconView);
+//            }
             viewHolder.titleView.setText(prod_name + " " + options_sabor + " " + options_caixa + " " + options_quant);
             viewHolder.highestPriceView.setText(max_price);
             viewHolder.lowestPriceView.setText(min_price);
             viewHolder.currentPriceView.setText(current_price);
+            //End bindView
+        }
 
-            Log.i("Sergio>>>", this + " bindView: prod_name= " + prod_name);
+        private void placeImagesFromURL(final ViewHolder viewHolder, final ArrayList<String> arrayListImageURLs) {
+            final int size = arrayListImageURLs.size();
+
+            viewHolder.imageSwitcher.setFactory(new ViewSwitcher.ViewFactory() {
+                public View makeView() {
+                    return getNewImageView();
+                }
+            });
+            // Declare in and out animations and load them using AnimationUtils class
+            Animation fadeIn = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_in);
+            fadeIn.setDuration(1200);
+            Animation fadeOut = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_out);
+            fadeOut.setDuration(1200);
+
+            // set the animation type to ImageSwitcher
+            viewHolder.imageSwitcher.setInAnimation(fadeIn);
+            viewHolder.imageSwitcher.setOutAnimation(fadeOut);
+
+            //Set the schedule function and rate
+            final int[] currentIndex = {0};
+            timer.scheduleAtFixedRate(new TimerTask() {
+                public void run() {
+                    //Called every 5000 milliseconds
+                    currentIndex[0]++;
+                    if (currentIndex[0] == size) currentIndex[0] = 0;
+                    mActivity.runOnUiThread(new Runnable() {
+                        public void run() {
+                            viewHolder.imageSwitcher.setImageURI(Uri.parse(arrayListImageURLs.get(currentIndex[0])));
+                        }
+                    });
+                }
+            }, 0, 5000);
+
+            viewHolder.imageSwitcher.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    currentIndex[0]++;
+                    if (currentIndex[0] == size) currentIndex[0] = 0;
+                    mActivity.runOnUiThread(new Runnable() {
+                        public void run() {
+                            viewHolder.imageSwitcher.setImageURI(Uri.parse(arrayListImageURLs.get(currentIndex[0])));
+                        }
+                    });
+                }
+            });
+        }
+
+        private void placeImagesFromFile(final ViewHolder viewHolder, final ArrayList<File> arrayListImageFiles) {
+            final int size = arrayListImageFiles.size();
+
+            viewHolder.imageSwitcher.setFactory(new ViewSwitcher.ViewFactory() {
+                public View makeView() {
+                    return getNewImageView();
+                }
+            });
+            // Declare in and out animations and load them using AnimationUtils class
+            Animation fadeIn = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_in);
+            fadeIn.setDuration(1200);
+            Animation fadeOut = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_out);
+            fadeOut.setDuration(1200);
+
+            // set the animation type to ImageSwitcher
+            viewHolder.imageSwitcher.setInAnimation(fadeIn);
+            viewHolder.imageSwitcher.setOutAnimation(fadeOut);
+
+            //Set the schedule function and rate
+            final int[] currentIndex = {0};
+            timer.scheduleAtFixedRate(new TimerTask() {
+                public void run() {
+                    //Called every 5000 milliseconds
+                    currentIndex[0]++;
+                    if (currentIndex[0] == size) currentIndex[0] = 0;
+                    mActivity.runOnUiThread(new Runnable() {
+                        public void run() {
+                            viewHolder.imageSwitcher.setImageURI(Uri.fromFile(arrayListImageFiles.get(currentIndex[0])));
+                        }
+                    });
+                }
+            }, 0, 5000);
+
+            viewHolder.imageSwitcher.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    currentIndex[0]++;
+                    if (currentIndex[0] == size) currentIndex[0] = 0;
+                    mActivity.runOnUiThread(new Runnable() {
+                        public void run() {
+                            viewHolder.imageSwitcher.setImageURI(Uri.fromFile(arrayListImageFiles.get(currentIndex[0])));
+                        }
+                    });
+                }
+            });
+
+        }
+
+        @NonNull
+        private View getNewImageView() {
+            ImageView imageView = new ImageView(mActivity);
+            imageView.setPadding(0, 2, 2, 0);
+            imageView.setScaleType(ImageView.ScaleType.CENTER);
+            imageView.setAdjustViewBounds(true);
+            int widthHeight = (int) (70 * scale + 0.5f);
+            imageView.setLayoutParams(new FrameLayout.LayoutParams(widthHeight, widthHeight));
+            return imageView;
+        }
+
+        private void placeImagesWithTransition(ImageView imageview) {
+            // create the transition layers
+            Drawable[] layers = new Drawable[bitmapArray.size()];
+            for (int i = 0; i < bitmapArray.size(); i++) {
+                layers[i] = (Drawable) bitmapArray.get(i);
+            }
+//            layers[0] = new BitmapDrawable(getResources(), firstBitmap);
+//            layers[1] = new BitmapDrawable(getResources(), secondBitmap);
+
+            TransitionDrawable transitionDrawable = new TransitionDrawable(layers);
+            imageview.setImageDrawable(transitionDrawable);
+            transitionDrawable.startTransition(1000);
+        }
+
+
+        void saveToBitmapArray(String filename) {
+            File file = new File(mActivity.getFilesDir(), filename); // Pass getFilesDir() and "filename" to read file
+            Glide.with(mActivity).load(file.getPath()).into(new SimpleTarget<GlideDrawable>() {
+                @Override
+                public void onResourceReady(GlideDrawable resource, GlideAnimation<? super GlideDrawable> glideAnimation) {
+                    bitmapArray.add(resource);
+                }
+            });
+        }
+
+        void placeImage(ViewHolder viewHolder, int id, String filename) {
+            File file = new File(mActivity.getFilesDir(), filename); // Pass getFilesDir() and "filename" to read file
+
+            ImageView imageView = new ImageView(mActivity);
+            imageView.setId(id);
+            imageView.setPadding(0, 2, 2, 0);
+            imageView.setScaleType(ImageView.ScaleType.CENTER);
+            imageView.setAdjustViewBounds(true);
+            int widthHeight = (int) (70 * scale + 0.5f);
+            imageView.setLayoutParams(new LinearLayout.LayoutParams(widthHeight, widthHeight));
+            Glide.with(mActivity).load(file.getPath()).into(imageView);
+            viewHolder.imageSwitcher.addView(imageView);
         }
     }
 
@@ -226,6 +527,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
         //if (all_products_cursor.getCount() > 0) {
         if (true) {
+            timer.cancel();
+            timer.purge();
+            timer = new Timer();
             getLoaderManager().restartLoader(LOADER_ID, null, this);
         } else {
             DetailsFragment.showCustomToast(mActivity, "Empty DataBase...", R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_SHORT);

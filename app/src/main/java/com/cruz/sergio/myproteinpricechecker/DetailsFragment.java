@@ -10,7 +10,6 @@ import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -21,7 +20,6 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.view.ViewCompat;
@@ -61,17 +59,19 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static android.database.DatabaseUtils.dumpCursorToString;
+import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.normalizeDate;
 
@@ -94,7 +94,24 @@ public class DetailsFragment extends Fragment {
     Boolean addedNewProduct = false;
     ImageView productImageView;
     Boolean gotImages = false;
-    ArrayList<HashMap<String, String>> arrayListHashMap_Images;
+    ArrayList<HashMap<String, String>> arrayListHashMap_Image_URLs;
+
+    final static String[] MP_ALL_IMAGE_TYPES = new String[]{
+            "extrasmall",   // 20/20
+            "small",        // 50/50
+            "smallthumb",   // 60/60
+            "thumbnail",    // 70/70
+            "smallprod",    // 100/100
+            "product",      // 130/130
+            "large",        // 180/180
+            "list",         // 200/200
+            "raw",          // 270/270
+            "largeproduct", // 300/300
+            "quickview",    // 350/350
+            "carousel",     // 480/480
+            "extralarge",   // 600/600
+            "zoom",         // 960/960
+            "magnify"};    // 1600/1600
 
     final static String[] MP_IMAGE_TYPES = new String[]{
             "extrasmall",   // 20/20
@@ -112,14 +129,6 @@ public class DetailsFragment extends Fragment {
             "extralarge",   // 600/600
             "zoom",         // 960/960
             "magnify"};    // 1600/1600
-
-
-    final static String[] MP_IMAGE_TYPES2 = new String[]{
-            "extrasmall",   // 20/20
-            "magnify"};    // 1600/1600
-
-
-    int image_sizes = 0;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -273,17 +282,37 @@ public class DetailsFragment extends Fragment {
                 priceContentValues.put(ProductsContract.PriceEntry.COLUMN_PRODUCT_PRICE_DATE, normalizeDate(System.currentTimeMillis()));
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID, productID);
 
-                for (int i = 0; i < arrayListHashMap_Images.size(); i++) {
-                    HashMap hashMap_Index_i = arrayListHashMap_Images.get(i);
+                ArrayList<ArrayList<String>> arrayListArrayListImageURIs = new ArrayList<>();
+                for (int i = 0; i < arrayListHashMap_Image_URLs.size(); i++) {
+                    HashMap hashMap_Index_i = arrayListHashMap_Image_URLs.get(i);
+                    ArrayList<String> arrayListImageURIs = new ArrayList<>();
 
                     for (int k = 0; k < MP_IMAGE_TYPES.length; k++) {
                         if (hashMap_Index_i.containsKey(MP_IMAGE_TYPES[k])) {
-                            String s = i + MP_IMAGE_TYPES[k];
-                            saveImageWithGlide(hashMap_Index_i.get(MP_IMAGE_TYPES[k]).toString(), s); //guarda as imagens todas. index_i=variação index_k=tamanho
-                            image_sizes++;
+                            String filename = customProductID + "_" + MP_IMAGE_TYPES[k] + "_index_" + i + ".jpg";
+                            saveImageWithGlide(hashMap_Index_i.get(MP_IMAGE_TYPES[k]).toString(), filename); //guarda as imagens todas. index_i=variação MP_IMAGE_TYPES[k]=tamanho
+                            arrayListImageURIs.add(filename);
                         }
                     }
+                    arrayListArrayListImageURIs.add(arrayListImageURIs);
                 }
+
+                Log.i("Sergio>", this + "onClick:\narrayListArrayListImageURIs=\n" + arrayListArrayListImageURIs);
+
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGE_URIS, arrayListArrayListImageURIs.toString());
+                //productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMG_URLS, arrayListHashMap_Image_URLs.toString());
+
+                JSONArray lista = null;
+                try {
+                    lista = new JSONArray(arrayListArrayListImageURIs.toString());
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                for (int i = 0; i < lista.length(); i++) {
+                    Log.i("Sergio>", this + "onClick:\nlista.optJSONArray(i);=\n" + lista.optJSONArray(i));
+                }
+
 
                 DBHelper dbHelper = new DBHelper(getContext());
                 SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -383,8 +412,7 @@ public class DetailsFragment extends Fragment {
                             addedNewProduct = true;
                         }
                         Log.w("Sergio>>>", this + " onClick: db= " + db);
-                        Log.i("Sergio>>>", this + " onClick: productRowID= " + productRowID);
-                        Log.i("Sergio>>>", this + " onClick: PriceRowId= " + priceRowId);
+                        Log.i("Sergio>>>", this + " onClick: productRowID= " + productRowID + " PriceRowId= " + priceRowId);
                         Log.d("Sergio>>>", this + " onClick: productContentValues= " + productContentValues);
                     }
                 }
@@ -401,16 +429,16 @@ public class DetailsFragment extends Fragment {
 
     }
 
-    public void saveImageWithGlide(String image, final String index_i) {
-        Log.i("Sergio>", this + "saveImageWithGlide:\nimage=\n" + image);
+    public void saveImageWithGlide(String imageURI, final String filename) {
         Glide.with(mActivity)
-                .load(image)
+                .load(imageURI)
                 .asBitmap()
                 .toBytes(Bitmap.CompressFormat.JPEG, 100)
+                .asIs()
+                .format(PREFER_ARGB_8888)
+                .dontTransform()
                 .diskCacheStrategy(DiskCacheStrategy.NONE)
                 .skipMemoryCache(true)
-                .dontAnimate()
-                .dontTransform()
                 .into(new SimpleTarget<byte[]>() {
                     @Override
                     public void onResourceReady(final byte[] resource, GlideAnimation<? super byte[]> glideAnimation) {
@@ -418,10 +446,8 @@ public class DetailsFragment extends Fragment {
                             @Override
                             protected Void doInBackground(Void... params) {
                                 FileOutputStream outputStream;
-                                String file;
                                 try {
-                                    file = customProductID + "_indexi_" + index_i + ".jpg";
-                                    outputStream = mActivity.openFileOutput(file, Context.MODE_PRIVATE);
+                                    outputStream = mActivity.openFileOutput(filename, Context.MODE_PRIVATE);
                                     outputStream.write(resource);
                                     outputStream.flush();
                                     outputStream.close();
@@ -435,34 +461,20 @@ public class DetailsFragment extends Fragment {
                 });
     }
 
-    public class SaveBitmapFromURL extends AsyncTaskLoader {
-
-        public SaveBitmapFromURL(Context context) {
-            super(context);
-        }
-
-        @Override
-        public Bitmap loadInBackground() {
-            try {
-                URL url = new URL("https://s2.thcdn.com/productimg/600/600/10530943-1874454249804175.jpg");
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setDoInput(true);
-                connection.connect();
-                InputStream input = connection.getInputStream();
-                Bitmap myBitmap = BitmapFactory.decodeStream(input);
-                connection.disconnect();
-                input.close();
-                return myBitmap;
-            } catch (IOException e) {
-                // Log exception
-                return null;
+    public StringBuffer readFile(String fileName){
+        try {
+            File file = new File(mActivity.getFilesDir(), fileName);
+            BufferedReader input = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+            String line;
+            StringBuffer buffer = new StringBuffer();
+            while ((line = input.readLine()) != null) {
+                buffer.append(line);
             }
+            return buffer;
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
-        @Override
-        public void deliverResult(Object data) {
-            super.deliverResult(data);
-        }
+        return null;
     }
 
 
@@ -962,31 +974,45 @@ public class DetailsFragment extends Fragment {
                     // Parse do url das imagens se existirem no json
                     JSONArray json_images = json.getJSONArray("images");
 
-                    arrayListHashMap_Images = new ArrayList<>();
+                    arrayListHashMap_Image_URLs = new ArrayList<>();
                     HashMap<String, String> image_hmap = new HashMap<>();
+
+                    JSONObject jsonObject_size_url = new JSONObject();
+                    JSONArray jsonArray_size_urls = new JSONArray();
 
                     int image_index = 0;
                     for (int i = 0; i < json_images.length(); i++) {
                         JSONObject image_i = (JSONObject) json_images.get(i);
 
                         int current_img_index = image_i.getInt("index");                        // 0, 1, 2...
-                        String image_type = image_i.getString("type");                          // tamanho
+                        String image_type = image_i.getString("type");                          // tamanho: "small" "extralarge" "zoom" ...
                         String image_url = "https://s4.thcdn.com/" + image_i.getString("name"); // url
 
                         if (current_img_index == image_index) {
                             image_hmap.put(image_type, image_url);
+                            jsonObject_size_url.put(image_type, image_url.toString());
+
                         } else {
-                            arrayListHashMap_Images.add(image_hmap);
+                            arrayListHashMap_Image_URLs.add(new HashMap<>(image_hmap));
                             image_hmap = new HashMap<>();
+                            image_hmap.put(image_type, image_url);
+
+                            jsonArray_size_urls.put(jsonObject_size_url);
+                            jsonObject_size_url = new JSONObject();
+                            jsonObject_size_url.put(image_type, image_url.toString());
+
                             image_index = current_img_index;
                         }
                     }
-                    arrayListHashMap_Images.add(image_hmap);
+                    arrayListHashMap_Image_URLs.add(image_hmap);
+
+                    jsonArray_size_urls.put(jsonObject_size_url);
+
 
                     gotImages = true;
                     //TODO Carrousel de imagens
-                    Log.i("Sergio>", this + "onPostExecute:\narrayListHashMap_Images=\n" + arrayListHashMap_Images);
-
+                    Log.i("Sergio>", this + "onPostExecute:\narrayListHashMap_Image_URLs=\n" + arrayListHashMap_Image_URLs);
+                    Log.i("Sergio>", this + "onPostExecute:\njsonArray_size_urls=\n" + jsonArray_size_urls);
 
                 } catch (JSONException erro) {
                     erro.printStackTrace();
