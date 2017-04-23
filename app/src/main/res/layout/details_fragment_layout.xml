@@ -96,8 +96,16 @@
                     android:id="@+id/p_details_image"
                     android:layout_width="100dp"
                     android:layout_height="100dp"
-                    android:contentDescription="product image"
-                    android:drawingCacheQuality="auto"/>
+                    android:contentDescription="product image"/>
+
+                <ImageSwitcher
+                    android:id="@+id/image_switcher_details"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:visibility="gone"
+                    android:contentDescription="product image">
+
+                </ImageSwitcher>
 
                 <LinearLayout
                     android:layout_width="0dp"

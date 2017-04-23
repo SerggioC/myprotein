@@ -10,6 +10,7 @@ import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -33,14 +34,19 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.FrameLayout;
+import android.widget.ImageSwitcher;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ViewSwitcher;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
@@ -67,11 +73,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static android.database.DatabaseUtils.dumpCursorToString;
 import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
+import static com.cruz.sergio.myproteinpricechecker.WatchingFragment.imageSizesToLoad;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.normalizeDate;
 
@@ -95,6 +104,8 @@ public class DetailsFragment extends Fragment {
     ImageView productImageView;
     Boolean gotImages = false;
     ArrayList<HashMap<String, String>> arrayListHashMap_Image_URLs;
+    JSONArray outer_ArrayArray;
+    ImageSwitcher image_switcher_details;
 
     final static String[] MP_ALL_IMAGE_TYPES = new String[]{
             "extrasmall",   // 20/20
@@ -129,6 +140,9 @@ public class DetailsFragment extends Fragment {
             "extralarge",   // 600/600
             "zoom",         // 960/960
             "magnify"};    // 1600/1600
+
+    Timer timer = new Timer();
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -206,6 +220,7 @@ public class DetailsFragment extends Fragment {
                 Toast.makeText(mActivity, "Clicked Image", Toast.LENGTH_SHORT).show();
             }
         });
+        image_switcher_details = (ImageSwitcher) mActivity.findViewById(R.id.image_switcher_details);
         Bundle extras = getArguments();
         if (extras != null) {
             url = extras.getString("url");
@@ -300,7 +315,7 @@ public class DetailsFragment extends Fragment {
                 Log.i("Sergio>", this + "onClick:\narrayListArrayListImageURIs=\n" + arrayListArrayListImageURIs);
 
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGE_URIS, arrayListArrayListImageURIs.toString());
-                //productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMG_URLS, arrayListHashMap_Image_URLs.toString());
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMG_URLS, outer_ArrayArray.toString().replace("\\", ""));
 
                 JSONArray lista = null;
                 try {
@@ -461,7 +476,7 @@ public class DetailsFragment extends Fragment {
                 });
     }
 
-    public StringBuffer readFile(String fileName){
+    public StringBuffer readFile(String fileName) {
         try {
             File file = new File(mActivity.getFilesDir(), fileName);
             BufferedReader input = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
@@ -969,57 +984,105 @@ public class DetailsFragment extends Fragment {
                 } else {
                     gotPrice = false;
                 }
+                if (!gotImages) {
 
-                try {
-                    // Parse do url das imagens se existirem no json
-                    JSONArray json_images = json.getJSONArray("images");
+                    try {
+                        // Parse do url das imagens se existirem no json
+                        JSONArray json_images = json.getJSONArray("images");
 
-                    arrayListHashMap_Image_URLs = new ArrayList<>();
-                    HashMap<String, String> image_hmap = new HashMap<>();
+                        arrayListHashMap_Image_URLs = new ArrayList<>();
+                        HashMap<String, String> image_hmap = new HashMap<>();
 
-                    JSONObject jsonObject_size_url = new JSONObject();
-                    JSONArray jsonArray_size_urls = new JSONArray();
+                        JSONArray inner_array = new JSONArray();
+                        outer_ArrayArray = new JSONArray();
 
-                    int image_index = 0;
-                    for (int i = 0; i < json_images.length(); i++) {
-                        JSONObject image_i = (JSONObject) json_images.get(i);
+                        int image_index = 0;
+                        for (int i = 0; i < json_images.length(); i++) {
+                            JSONObject image_i = (JSONObject) json_images.get(i);
 
-                        int current_img_index = image_i.getInt("index");                        // 0, 1, 2...
-                        String image_type = image_i.getString("type");                          // tamanho: "small" "extralarge" "zoom" ...
-                        String image_url = "https://s4.thcdn.com/" + image_i.getString("name"); // url
+                            int current_img_index = image_i.getInt("index");                            // 0, 1, 2...
+                            String image_type = image_i.getString("type");                              // tamanho: "small" "extralarge" "zoom" ...
+                            String image_url = "https://s4.thcdn.com/" + image_i.getString("name");     // url
 
-                        if (current_img_index == image_index) {
-                            image_hmap.put(image_type, image_url);
-                            jsonObject_size_url.put(image_type, image_url.toString());
+                            if (current_img_index == image_index) {
+                                image_hmap.put(image_type, image_url);
 
-                        } else {
-                            arrayListHashMap_Image_URLs.add(new HashMap<>(image_hmap));
-                            image_hmap = new HashMap<>();
-                            image_hmap.put(image_type, image_url);
+                                JSONObject innerObject = new JSONObject();
+                                innerObject.put("size", image_type);
+                                innerObject.put("url", image_url);
+                                inner_array.put(innerObject);
 
-                            jsonArray_size_urls.put(jsonObject_size_url);
-                            jsonObject_size_url = new JSONObject();
-                            jsonObject_size_url.put(image_type, image_url.toString());
+                            } else {
+                                arrayListHashMap_Image_URLs.add(new HashMap<>(image_hmap));
+                                image_hmap = new HashMap<>();
+                                image_hmap.put(image_type, image_url);
 
-                            image_index = current_img_index;
+                                outer_ArrayArray.put(inner_array);
+                                JSONObject innerObject = new JSONObject();
+                                innerObject.put("size", image_type);
+                                innerObject.put("url", image_url);
+                                inner_array = new JSONArray();
+                                inner_array.put(innerObject);
+
+                                image_index = current_img_index;
+
+                            }
                         }
+                        arrayListHashMap_Image_URLs.add(image_hmap);
+
+                        outer_ArrayArray.put(inner_array);
+
+
+                        Boolean gotPictures = false;
+                        ArrayList<String> arrayListImageURLsToLoad = new ArrayList<>();
+
+                        for (int i = 0; i < outer_ArrayArray.length(); i++) {
+                            JSONArray json_array_i = outer_ArrayArray.optJSONArray(i);
+                            String urlToLoad = null;
+                            for (int j = 0; j < json_array_i.length(); j++) {
+                                try {
+                                    String size = (String) ((JSONObject) json_array_i.get(j)).get("size");
+                                    String url = (String) ((JSONObject) json_array_i.get(j)).get("url");
+                                    if (url != null) {
+                                        for (int k = 0; k < imageSizesToLoad.length; k++) {
+                                            if (size.equals(imageSizesToLoad[k])) {
+                                                urlToLoad = url;
+                                                gotPictures = true;
+                                            }
+                                        }
+                                    }
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                            if (gotPictures) {
+                                arrayListImageURLsToLoad.add(urlToLoad);
+                            }
+                        }
+                        if (gotPictures) {
+                            placeImagesFromURL_Details(arrayListImageURLsToLoad);
+                            productImageView.setVisibility(View.GONE);
+                            image_switcher_details.setVisibility(View.VISIBLE);
+                            Log.i("Sergio>", this + "bindView:\narrayListImageURLsToLoad=\n" + arrayListImageURLsToLoad);
+                        }
+
+
+                        Log.d("Sergio>", this + "onPostExecute:\narrayListImageURLsToLoad=\n" + arrayListImageURLsToLoad);
+
+                        gotImages = true;
+
+                        Log.i("Sergio>", this + "onPostExecute:\narrayListHashMap_Image_URLs=\n" + arrayListHashMap_Image_URLs);
+                        Log.i("Sergio>", this + "onPostExecute:\nouter_ArrayArray=\n" + outer_ArrayArray.toString().replace("\\", ""));
+
+
+                    } catch (JSONException erro) {
+                        erro.printStackTrace();
+                        if (erro.toString().contains("No value for images")) {
+                            gotImages = false;
+                        }
+                        Log.w("Sergio>", this + " onPostExecute: falhou ao fazer o parse do json \n exception = " + erro);
                     }
-                    arrayListHashMap_Image_URLs.add(image_hmap);
 
-                    jsonArray_size_urls.put(jsonObject_size_url);
-
-
-                    gotImages = true;
-                    //TODO Carrousel de imagens
-                    Log.i("Sergio>", this + "onPostExecute:\narrayListHashMap_Image_URLs=\n" + arrayListHashMap_Image_URLs);
-                    Log.i("Sergio>", this + "onPostExecute:\njsonArray_size_urls=\n" + jsonArray_size_urls);
-
-                } catch (JSONException erro) {
-                    erro.printStackTrace();
-                    if (erro.toString().contains("No value for images")) {
-                        gotImages = false;
-                    }
-                    Log.w("Sergio>", this + " onPostExecute: falhou ao fazer o parse do json \n exception = " + erro);
                 }
 
                 mActivity.findViewById(R.id.priceProgressBarRound).setVisibility(View.GONE);
@@ -1033,6 +1096,83 @@ public class DetailsFragment extends Fragment {
         }
     }
 
+    private void placeImagesFromURL_Details(final ArrayList<String> arrayListImageURLsToLoad) {
+        final int size = arrayListImageURLsToLoad.size();
+        final ArrayList<Bitmap> arrayListImageBitmap = new ArrayList<>(size);
+
+        for (int i = 0; i < size; i++) {
+            final int finalI = i;
+            Glide.with(mActivity)
+                    .load(arrayListImageURLsToLoad.get(i))
+                    .asBitmap()
+                    .asIs()
+                    .into(new SimpleTarget<Bitmap>() {
+                        @Override
+                        public void onResourceReady(final Bitmap resource, GlideAnimation glideAnimation) {
+                            arrayListImageBitmap.add(resource);
+                            if (finalI == size - 1) {
+                                bitmapsReady(arrayListImageBitmap);
+                            }
+                        }
+                    });
+        }
+
+    }
+
+    private void bitmapsReady(final ArrayList<Bitmap> arrayListImageBitmap) {
+        final int size = arrayListImageBitmap.size();
+        image_switcher_details.setFactory(new ViewSwitcher.ViewFactory() {
+            public View makeView() {
+                return getNewImageView(100);
+            }
+        });
+        // Declare in and out animations and load them using AnimationUtils class
+        Animation fadeIn = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_in);
+        fadeIn.setDuration(1200);
+        Animation fadeOut = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_out);
+        fadeOut.setDuration(1200);
+
+        // set the animation type to ImageSwitcher
+        image_switcher_details.setInAnimation(fadeIn);
+        image_switcher_details.setOutAnimation(fadeOut);
+        //Set the schedule function and rate
+        final int[] currentIndex = {0};
+        timer.scheduleAtFixedRate(new TimerTask() {
+            public void run() {
+                //Called every 5000 milliseconds
+                currentIndex[0]++;
+                if (currentIndex[0] == size) currentIndex[0] = 0;
+                mActivity.runOnUiThread(new Runnable() {
+                    public void run() {
+                        image_switcher_details.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
+                    }
+                });
+            }
+        }, 0, 5000);
+
+        image_switcher_details.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                currentIndex[0]++;
+                if (currentIndex[0] == size) currentIndex[0] = 0;
+                mActivity.runOnUiThread(new Runnable() {
+                    public void run() {
+                        image_switcher_details.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
+                    }
+                });
+            }
+        });
+    }
+
+    private View getNewImageView(int pixels_widthHeight) {
+        ImageView imageView = new ImageView(mActivity);
+        imageView.setPadding(0, 2, 2, 0);
+        imageView.setScaleType(ImageView.ScaleType.CENTER);
+        imageView.setAdjustViewBounds(true);
+        int widthHeight = (int) (pixels_widthHeight * WatchingFragment.scale + 0.5f);
+        imageView.setLayoutParams(new FrameLayout.LayoutParams(widthHeight, widthHeight));
+        return imageView;
+    }
 
     public static void showCustomToast(Activity cActivity, String toastText, int icon_RID, int text_color_RID, int duration) {
         LayoutInflater inflater = cActivity.getLayoutInflater();
@@ -1294,26 +1434,6 @@ public class DetailsFragment extends Fragment {
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

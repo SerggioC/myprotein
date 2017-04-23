@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.net.Uri;
@@ -47,7 +49,6 @@ import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import static android.R.attr.path;
 import static android.database.DatabaseUtils.dumpCursorToString;
 import static android.util.DisplayMetrics.DENSITY_HIGH;
 import static android.util.DisplayMetrics.DENSITY_LOW;
@@ -65,11 +66,14 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     static cursorDBAdapter cursorDBAdapter;
     ListView listViewItems;
     static Loader<Cursor> loaderManager;
-    public float scale;
+    public static float scale;
     public int density;
-    String[] imageSizesToLoad;
+    static String[] imageSizesToLoad;
     ArrayList bitmapArray;
     Timer timer = new Timer();
+
+    // method invoke when biitmap is ready
+
 
     public static class ViewHolder {
         public final ImageView iconView;
@@ -270,8 +274,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 }
             }
 
-            jsonArray_img_uris = null; //REMOVER!
-
             if (jsonArray_img_uris != null) {
                 if (jsonArray_img_uris.length() > 0) {
                     for (int i = 0; i < jsonArray_img_uris.length(); i++) {
@@ -308,16 +310,11 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 if (string_array_image_URLs != null) {
                     ArrayList<String> arrayListImageURLs = new ArrayList<>();
                     JSONArray jsonArray_image_URLs = null;
-                    JSONObject obj = null;
                     try {
                         jsonArray_image_URLs = new JSONArray(string_array_image_URLs);
-                        obj = new JSONObject(string_array_image_URLs);
                         Log.i("Sergio>", this + "bindView:\njsonArray_image_URLs=\n" + jsonArray_image_URLs);
                     } catch (JSONException e) {
                         e.printStackTrace();
-                    }
-                    if (obj != null) {
-                        String a = "hello";
                     }
                     if (jsonArray_image_URLs != null) {
                         if (jsonArray_image_URLs.length() > 0) {
@@ -326,10 +323,11 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                                 String urlToLoad = null;
                                 for (int j = 0; j < json_array_i.length(); j++) {
                                     try {
-                                        String url = (String) json_array_i.get(j);
+                                        String size = (String) ((JSONObject) json_array_i.get(j)).get("size");
+                                        String url = (String) ((JSONObject) json_array_i.get(j)).get("url");
                                         if (url != null) {
                                             for (int k = 0; k < imageSizesToLoad.length; k++) {
-                                                if (url.contains("_" + imageSizesToLoad[k] + "_")) {
+                                                if (size.equals(imageSizesToLoad[k])) {
                                                     urlToLoad = url;
                                                     gotPictures = true;
                                                 }
@@ -353,7 +351,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
             }
             if (!gotPictures) { //Se não encontrou imagens nenhumas colocar imagem com no image available
-                viewHolder.imageSwitcher.addView(getNewImageView());
+                viewHolder.imageSwitcher.addView(getNewImageView(70));
                 ImageView iv = (ImageView) viewHolder.imageSwitcher.getChildAt(0);
                 Glide.with(mActivity).load(R.drawable.noimage).into(iv);
             }
@@ -373,10 +371,31 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
         private void placeImagesFromURL(final ViewHolder viewHolder, final ArrayList<String> arrayListImageURLs) {
             final int size = arrayListImageURLs.size();
+            final ArrayList<Bitmap> arrayListImageBitmap = new ArrayList<>(size);
 
+            for (int i = 0; i < size; i++) {
+                final int finalI = i;
+                Glide.with(mActivity)
+                        .load(arrayListImageURLs.get(i))
+                        .asBitmap()
+                        .asIs()
+                        .into(new SimpleTarget<Bitmap>() {
+                            @Override
+                            public void onResourceReady(final Bitmap resource, GlideAnimation glideAnimation) {
+                                arrayListImageBitmap.add(resource);
+                                if (finalI == size - 1) {
+                                    bitmapsReady(viewHolder, size, arrayListImageBitmap);
+                                }
+                            }
+                        });
+            }
+
+        }
+
+        public void bitmapsReady(final ViewHolder viewHolder, final int size, final ArrayList<Bitmap> arrayListImageBitmap) {
             viewHolder.imageSwitcher.setFactory(new ViewSwitcher.ViewFactory() {
                 public View makeView() {
-                    return getNewImageView();
+                    return getNewImageView(70);
                 }
             });
             // Declare in and out animations and load them using AnimationUtils class
@@ -388,7 +407,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             // set the animation type to ImageSwitcher
             viewHolder.imageSwitcher.setInAnimation(fadeIn);
             viewHolder.imageSwitcher.setOutAnimation(fadeOut);
-
             //Set the schedule function and rate
             final int[] currentIndex = {0};
             timer.scheduleAtFixedRate(new TimerTask() {
@@ -398,7 +416,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                     if (currentIndex[0] == size) currentIndex[0] = 0;
                     mActivity.runOnUiThread(new Runnable() {
                         public void run() {
-                            viewHolder.imageSwitcher.setImageURI(Uri.parse(arrayListImageURLs.get(currentIndex[0])));
+                            viewHolder.imageSwitcher.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
                         }
                     });
                 }
@@ -411,26 +429,27 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                     if (currentIndex[0] == size) currentIndex[0] = 0;
                     mActivity.runOnUiThread(new Runnable() {
                         public void run() {
-                            viewHolder.imageSwitcher.setImageURI(Uri.parse(arrayListImageURLs.get(currentIndex[0])));
+                            viewHolder.imageSwitcher.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
                         }
                     });
                 }
             });
         }
 
+
         private void placeImagesFromFile(final ViewHolder viewHolder, final ArrayList<File> arrayListImageFiles) {
             final int size = arrayListImageFiles.size();
 
             viewHolder.imageSwitcher.setFactory(new ViewSwitcher.ViewFactory() {
                 public View makeView() {
-                    return getNewImageView();
+                    return getNewImageView(70);
                 }
             });
             // Declare in and out animations and load them using AnimationUtils class
             Animation fadeIn = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_in);
-            fadeIn.setDuration(1200);
+            fadeIn.setDuration(1000);
             Animation fadeOut = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_out);
-            fadeOut.setDuration(1200);
+            fadeOut.setDuration(1000);
 
             // set the animation type to ImageSwitcher
             viewHolder.imageSwitcher.setInAnimation(fadeIn);
@@ -438,24 +457,25 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
             //Set the schedule function and rate
             final int[] currentIndex = {0};
-            timer.scheduleAtFixedRate(new TimerTask() {
+            final TimerTask timerTask = new TimerTask() {
                 public void run() {
-                    //Called every 5000 milliseconds
-                    currentIndex[0]++;
-                    if (currentIndex[0] == size) currentIndex[0] = 0;
                     mActivity.runOnUiThread(new Runnable() {
                         public void run() {
                             viewHolder.imageSwitcher.setImageURI(Uri.fromFile(arrayListImageFiles.get(currentIndex[0])));
                         }
                     });
+                    currentIndex[0]++;
+                    if (currentIndex[0] >= size) currentIndex[0] = 0;
                 }
-            }, 0, 5000);
+            };
+            //Called every 5000 milliseconds with 0 delay
+            timer.scheduleAtFixedRate(timerTask, 0, 5000);
 
             viewHolder.imageSwitcher.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     currentIndex[0]++;
-                    if (currentIndex[0] == size) currentIndex[0] = 0;
+                    if (currentIndex[0] >= size) currentIndex[0] = 0;
                     mActivity.runOnUiThread(new Runnable() {
                         public void run() {
                             viewHolder.imageSwitcher.setImageURI(Uri.fromFile(arrayListImageFiles.get(currentIndex[0])));
@@ -467,12 +487,12 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         }
 
         @NonNull
-        private View getNewImageView() {
+        private View getNewImageView(int pixels_widthHeight) {
             ImageView imageView = new ImageView(mActivity);
             imageView.setPadding(0, 2, 2, 0);
             imageView.setScaleType(ImageView.ScaleType.CENTER);
             imageView.setAdjustViewBounds(true);
-            int widthHeight = (int) (70 * scale + 0.5f);
+            int widthHeight = (int) (pixels_widthHeight * scale + 0.5f);
             imageView.setLayoutParams(new FrameLayout.LayoutParams(widthHeight, widthHeight));
             return imageView;
         }
