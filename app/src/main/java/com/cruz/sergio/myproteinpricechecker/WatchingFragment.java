@@ -9,6 +9,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -35,6 +36,7 @@ import android.widget.Toast;
 import android.widget.ViewSwitcher;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.resource.drawable.GlideDrawable;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
@@ -45,6 +47,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -55,6 +59,7 @@ import static android.util.DisplayMetrics.DENSITY_LOW;
 import static android.util.DisplayMetrics.DENSITY_MEDIUM;
 import static android.util.DisplayMetrics.DENSITY_XHIGH;
 import static android.util.DisplayMetrics.DENSITY_XXHIGH;
+import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.ALL_PRODUCT_COLUMNS_PROJECTION;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.CONTENT_DIR_TYPE;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.CONTENT_ITEM_TYPE;
@@ -184,13 +189,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 //        Uri uri = ProductsContract.ProductsEntry.CONTENT_URI.buildUpon()
 //                .appendPath(ProductsContract.ProductsEntry.TABLE_NAME)
 //                .build();
-        Log.i("Sergio>>>", this + " onCreateLoader: " +
-                "\nCONTENT_DIR_TYPE= " + CONTENT_DIR_TYPE +
-                " \nCONTENT_ITEM_TYPE= " + CONTENT_ITEM_TYPE);
-
+        Log.i("Sergio>>>", this + " onCreateLoader: " + "\nCONTENT_DIR_TYPE= " + CONTENT_DIR_TYPE + " \nCONTENT_ITEM_TYPE= " + CONTENT_ITEM_TYPE);
         Uri uri = ProductsContract.ProductsEntry.CONTENT_URI;
-        Log.d("Sergio>>>", this + " onCreateLoader: " +
-                "\nuri=" + uri);
+        Log.d("Sergio>>>", this + " onCreateLoader: " + "\nuri=" + uri);
 
         //String selection = "WHERE '" + ProductsContract.ProductsEntry.TABLE_NAME + "' = 'qualquercoisa'";
         CursorLoader cursor_loader = new CursorLoader(
@@ -201,8 +202,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 null,
                 ProductsContract.ProductsEntry._ID + " ASC "
         );
-        Log.d("Sergio>>>", this + " onCreateLoader: cursor_loader= " + cursor_loader);
-
         return cursor_loader;
     }
 
@@ -273,19 +272,18 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                     e.printStackTrace();
                 }
             }
-
             if (jsonArray_img_uris != null) {
                 if (jsonArray_img_uris.length() > 0) {
                     for (int i = 0; i < jsonArray_img_uris.length(); i++) {
                         JSONArray json_array_i = jsonArray_img_uris.optJSONArray(i);
-                        String fileToLoad = null;
+                        String fileNameToLoad = null;
                         for (int j = 0; j < json_array_i.length(); j++) {
                             try {
                                 String filename = (String) json_array_i.get(j);
                                 if (filename != null) {
                                     for (int k = 0; k < imageSizesToLoad.length; k++) {
                                         if (filename.contains("_" + imageSizesToLoad[k] + "_")) {
-                                            fileToLoad = filename;
+                                            fileNameToLoad = filename;
                                             gotPictures = true;
                                         }
                                     }
@@ -295,24 +293,28 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                             }
                         }
                         if (gotPictures) {
-                            arrayListImageFiles.add(new File(mActivity.getFilesDir(), fileToLoad));
+                            File img_File = new File(mActivity.getFilesDir(), fileNameToLoad);
+                            if (img_File.exists()) {
+                                arrayListImageFiles.add(img_File);
+                            }
                         }
                     }
-                    if (gotPictures) {
+                    Log.i("Sergio>", this + "bindView:\narrayListImageFiles=\n" + arrayListImageFiles);
+
+                    if (gotPictures && arrayListImageFiles.size() > 0) {
                         placeImagesFromFile(viewHolder, arrayListImageFiles);
-                        Log.i("Sergio>", this + "bindView:\narrayListImageFiles=\n" + arrayListImageFiles);
                     }
                 }
             }
             // Se as imagem não estiverem guardadas no /data/ folder da app no dispositivo (memória interna)
             // fazer o download a partir da lista de URLs
-            if (!gotPictures) {
+            if (arrayListImageFiles.size() == 0) {
                 if (string_array_image_URLs != null) {
+                    gotPictures = false;
                     ArrayList<String> arrayListImageURLs = new ArrayList<>();
                     JSONArray jsonArray_image_URLs = null;
                     try {
                         jsonArray_image_URLs = new JSONArray(string_array_image_URLs);
-                        Log.i("Sergio>", this + "bindView:\njsonArray_image_URLs=\n" + jsonArray_image_URLs);
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -335,6 +337,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                                         }
                                     } catch (JSONException e) {
                                         e.printStackTrace();
+                                        gotPictures = false;
                                     }
                                 }
                                 if (gotPictures) {
@@ -343,12 +346,13 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                             }
                             if (gotPictures) {
                                 placeImagesFromURL(viewHolder, arrayListImageURLs);
-                                Log.i("Sergio>", this + "bindView:\narrayListImageURLs=\n" + arrayListImageURLs);
+
+                                //TODO create image file and save it
+                                //saveImagesWithGlide(fileNameToLoad);
                             }
                         }
                     }
                 }
-
             }
             if (!gotPictures) { //Se não encontrou imagens nenhumas colocar imagem com no image available
                 viewHolder.imageSwitcher.addView(getNewImageView(70));
@@ -356,12 +360,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 Glide.with(mActivity).load(R.drawable.noimage).into(iv);
             }
 
-
-//            if (img_url != null) {
-//                Glide.with(mActivity).load(img_url).into(viewHolder.iconView);
-//            } else {
-//                Glide.with(mActivity).load(R.drawable.noimage).into(viewHolder.iconView);
-//            }
             viewHolder.titleView.setText(prod_name + " " + options_sabor + " " + options_caixa + " " + options_quant);
             viewHolder.highestPriceView.setText(max_price);
             viewHolder.lowestPriceView.setText(min_price);
@@ -389,7 +387,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                             }
                         });
             }
-
         }
 
         public void bitmapsReady(final ViewHolder viewHolder, final int size, final ArrayList<Bitmap> arrayListImageBitmap) {
@@ -413,9 +410,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 public void run() {
                     //Called every 5000 milliseconds
                     currentIndex[0]++;
-                    if (currentIndex[0] == size) currentIndex[0] = 0;
                     mActivity.runOnUiThread(new Runnable() {
                         public void run() {
+                            if (currentIndex[0] >= size) currentIndex[0] = 0;
                             viewHolder.imageSwitcher.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
                         }
                     });
@@ -426,16 +423,15 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 @Override
                 public void onClick(View v) {
                     currentIndex[0]++;
-                    if (currentIndex[0] == size) currentIndex[0] = 0;
                     mActivity.runOnUiThread(new Runnable() {
                         public void run() {
+                            if (currentIndex[0] >= size) currentIndex[0] = 0;
                             viewHolder.imageSwitcher.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
                         }
                     });
                 }
             });
         }
-
 
         private void placeImagesFromFile(final ViewHolder viewHolder, final ArrayList<File> arrayListImageFiles) {
             final int size = arrayListImageFiles.size();
@@ -461,11 +457,11 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 public void run() {
                     mActivity.runOnUiThread(new Runnable() {
                         public void run() {
+                            if (currentIndex[0] >= size) currentIndex[0] = 0;
                             viewHolder.imageSwitcher.setImageURI(Uri.fromFile(arrayListImageFiles.get(currentIndex[0])));
                         }
                     });
                     currentIndex[0]++;
-                    if (currentIndex[0] >= size) currentIndex[0] = 0;
                 }
             };
             //Called every 5000 milliseconds with 0 delay
@@ -475,9 +471,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 @Override
                 public void onClick(View v) {
                     currentIndex[0]++;
-                    if (currentIndex[0] >= size) currentIndex[0] = 0;
                     mActivity.runOnUiThread(new Runnable() {
                         public void run() {
+                            if (currentIndex[0] >= size) currentIndex[0] = 0;
                             viewHolder.imageSwitcher.setImageURI(Uri.fromFile(arrayListImageFiles.get(currentIndex[0])));
                         }
                     });
@@ -511,7 +507,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             transitionDrawable.startTransition(1000);
         }
 
-
         void saveToBitmapArray(String filename) {
             File file = new File(mActivity.getFilesDir(), filename); // Pass getFilesDir() and "filename" to read file
             Glide.with(mActivity).load(file.getPath()).into(new SimpleTarget<GlideDrawable>() {
@@ -535,6 +530,38 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             Glide.with(mActivity).load(file.getPath()).into(imageView);
             viewHolder.imageSwitcher.addView(imageView);
         }
+    }
+
+    private void saveImagesWithGlide(String imageURL, final String filename) {
+        Glide.with(mActivity)
+                .load(imageURL)
+                .asBitmap()
+                .toBytes(Bitmap.CompressFormat.JPEG, 100)
+                .asIs()
+                .format(PREFER_ARGB_8888)
+                .dontTransform()
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .skipMemoryCache(true)
+                .into(new SimpleTarget<byte[]>() {
+                    @Override
+                    public void onResourceReady(final byte[] resource, GlideAnimation<? super byte[]> glideAnimation) {
+                        new AsyncTask<Void, Void, Void>() {
+                            @Override
+                            protected Void doInBackground(Void... params) {
+                                FileOutputStream outputStream;
+                                try {
+                                    outputStream = mActivity.openFileOutput(filename, Context.MODE_PRIVATE);
+                                    outputStream.write(resource);
+                                    outputStream.flush();
+                                    outputStream.close();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                                return null;
+                            }
+                        }.execute();
+                    }
+                });
     }
 
     public void getWatchingProducts() {

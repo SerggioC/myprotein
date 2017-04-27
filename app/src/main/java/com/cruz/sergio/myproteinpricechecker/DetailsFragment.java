@@ -72,7 +72,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.regex.Matcher;
@@ -103,8 +102,8 @@ public class DetailsFragment extends Fragment {
     Boolean addedNewProduct = false;
     ImageView productImageView;
     Boolean gotImages = false;
-    ArrayList<HashMap<String, String>> arrayListHashMap_Image_URLs;
-    JSONArray outer_ArrayArray;
+    //    ArrayList<HashMap<String, String>> arrayListHashMap_Image_URLs;
+    JSONArray outer_ArrayArray_Image_URLs;
     ImageSwitcher image_switcher_details;
 
     final static String[] MP_ALL_IMAGE_TYPES = new String[]{
@@ -298,36 +297,45 @@ public class DetailsFragment extends Fragment {
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID, productID);
 
                 ArrayList<ArrayList<String>> arrayListArrayListImageURIs = new ArrayList<>();
-                for (int i = 0; i < arrayListHashMap_Image_URLs.size(); i++) {
-                    HashMap hashMap_Index_i = arrayListHashMap_Image_URLs.get(i);
+//                for (int i = 0; i < arrayListHashMap_Image_URLs.size(); i++) {
+//                    HashMap hashMap_Index_i = arrayListHashMap_Image_URLs.get(i);
+//                    ArrayList<String> arrayListImageURIs = new ArrayList<>();
+//
+//                    for (int k = 0; k < MP_IMAGE_TYPES.length; k++) {
+//                        if (hashMap_Index_i.containsKey(MP_IMAGE_TYPES[k])) {
+//                            String filename = customProductID + "_" + MP_IMAGE_TYPES[k] + "_index_" + i + ".jpg";
+//                            saveImageWithGlide(hashMap_Index_i.get(MP_IMAGE_TYPES[k]).toString(), filename); //guarda as imagens todas. index_i=variação MP_IMAGE_TYPES[k]=tamanho
+//                            arrayListImageURIs.add(filename);
+//                        }
+//                    }
+//                    arrayListArrayListImageURIs.add(arrayListImageURIs);
+//                }
+                for (int i = 0; i < outer_ArrayArray_Image_URLs.length(); i++) {
+                    JSONArray json_array_i = outer_ArrayArray_Image_URLs.optJSONArray(i);
                     ArrayList<String> arrayListImageURIs = new ArrayList<>();
-
-                    for (int k = 0; k < MP_IMAGE_TYPES.length; k++) {
-                        if (hashMap_Index_i.containsKey(MP_IMAGE_TYPES[k])) {
-                            String filename = customProductID + "_" + MP_IMAGE_TYPES[k] + "_index_" + i + ".jpg";
-                            saveImageWithGlide(hashMap_Index_i.get(MP_IMAGE_TYPES[k]).toString(), filename); //guarda as imagens todas. index_i=variação MP_IMAGE_TYPES[k]=tamanho
-                            arrayListImageURIs.add(filename);
+                    for (int j = 0; j < json_array_i.length(); j++) {
+                        try {
+                            String size = (String) ((JSONObject) json_array_i.get(j)).get("size");
+                            String url = (String) ((JSONObject) json_array_i.get(j)).get("url");
+                            if (url != null) {
+                                for (int k = 0; k < imageSizesToLoad.length; k++) {
+                                    if (size.equals(imageSizesToLoad[k])) {
+                                        String filename = customProductID + "_" + imageSizesToLoad[k] + "_index_" + i + ".jpg";
+                                        saveImageWithGlide(url, filename); //guarda as imagens todas. index_i=variação imageSizesToLoad[k]=tamanho
+                                        arrayListImageURIs.add(filename);
+                                    }
+                                }
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
                         }
                     }
                     arrayListArrayListImageURIs.add(arrayListImageURIs);
                 }
-
                 Log.i("Sergio>", this + "onClick:\narrayListArrayListImageURIs=\n" + arrayListArrayListImageURIs);
 
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGE_URIS, arrayListArrayListImageURIs.toString());
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMG_URLS, outer_ArrayArray.toString().replace("\\", ""));
-
-                JSONArray lista = null;
-                try {
-                    lista = new JSONArray(arrayListArrayListImageURIs.toString());
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
-                for (int i = 0; i < lista.length(); i++) {
-                    Log.i("Sergio>", this + "onClick:\nlista.optJSONArray(i);=\n" + lista.optJSONArray(i));
-                }
-
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMG_URLS, outer_ArrayArray_Image_URLs.toString().replace("\\", ""));
 
                 DBHelper dbHelper = new DBHelper(getContext());
                 SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -444,9 +452,9 @@ public class DetailsFragment extends Fragment {
 
     }
 
-    public void saveImageWithGlide(String imageURI, final String filename) {
+    public void saveImageWithGlide(String imageURL, final String filename) {
         Glide.with(mActivity)
-                .load(imageURI)
+                .load(imageURL)
                 .asBitmap()
                 .toBytes(Bitmap.CompressFormat.JPEG, 100)
                 .asIs()
@@ -824,7 +832,6 @@ public class DetailsFragment extends Fragment {
                             oneSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                                 @Override
                                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                                    gotImages = false;
                                     addedNewProduct = false;
                                     getPriceMethod(arrayArray_opt_ids, variation_ids);
                                 }
@@ -985,16 +992,18 @@ public class DetailsFragment extends Fragment {
                     gotPrice = false;
                 }
                 if (!gotImages) {
-
+                    //
+                    //  Criar o JSONArray com array das imagens a colocar na base de dados. no array está um JSON Object ()
+                    //
                     try {
                         // Parse do url das imagens se existirem no json
                         JSONArray json_images = json.getJSONArray("images");
 
-                        arrayListHashMap_Image_URLs = new ArrayList<>();
-                        HashMap<String, String> image_hmap = new HashMap<>();
+//                        arrayListHashMap_Image_URLs = new ArrayList<>();
+//                        HashMap<String, String> image_hmap = new HashMap<>();
 
+                        outer_ArrayArray_Image_URLs = new JSONArray();
                         JSONArray inner_array = new JSONArray();
-                        outer_ArrayArray = new JSONArray();
 
                         int image_index = 0;
                         for (int i = 0; i < json_images.length(); i++) {
@@ -1005,7 +1014,7 @@ public class DetailsFragment extends Fragment {
                             String image_url = "https://s4.thcdn.com/" + image_i.getString("name");     // url
 
                             if (current_img_index == image_index) {
-                                image_hmap.put(image_type, image_url);
+//                                image_hmap.put(image_type, image_url);
 
                                 JSONObject innerObject = new JSONObject();
                                 innerObject.put("size", image_type);
@@ -1013,11 +1022,11 @@ public class DetailsFragment extends Fragment {
                                 inner_array.put(innerObject);
 
                             } else {
-                                arrayListHashMap_Image_URLs.add(new HashMap<>(image_hmap));
-                                image_hmap = new HashMap<>();
-                                image_hmap.put(image_type, image_url);
+//                                arrayListHashMap_Image_URLs.add(new HashMap<>(image_hmap));
+//                                image_hmap = new HashMap<>();
+//                                image_hmap.put(image_type, image_url);
 
-                                outer_ArrayArray.put(inner_array);
+                                outer_ArrayArray_Image_URLs.put(inner_array);
                                 JSONObject innerObject = new JSONObject();
                                 innerObject.put("size", image_type);
                                 innerObject.put("url", image_url);
@@ -1028,16 +1037,15 @@ public class DetailsFragment extends Fragment {
 
                             }
                         }
-                        arrayListHashMap_Image_URLs.add(image_hmap);
+//                        arrayListHashMap_Image_URLs.add(image_hmap);
+                        outer_ArrayArray_Image_URLs.put(inner_array);
+                        gotImages = true;
+                        Log.i("Sergio>", this + "onPostExecute:\nouter_ArrayArray_Image_URLs=\n" + outer_ArrayArray_Image_URLs.toString().replace("\\", ""));
 
-                        outer_ArrayArray.put(inner_array);
-
-
-                        Boolean gotPictures = false;
+                        gotImages = false;
                         ArrayList<String> arrayListImageURLsToLoad = new ArrayList<>();
-
-                        for (int i = 0; i < outer_ArrayArray.length(); i++) {
-                            JSONArray json_array_i = outer_ArrayArray.optJSONArray(i);
+                        for (int i = 0; i < outer_ArrayArray_Image_URLs.length(); i++) {
+                            JSONArray json_array_i = outer_ArrayArray_Image_URLs.optJSONArray(i);
                             String urlToLoad = null;
                             for (int j = 0; j < json_array_i.length(); j++) {
                                 try {
@@ -1047,33 +1055,25 @@ public class DetailsFragment extends Fragment {
                                         for (int k = 0; k < imageSizesToLoad.length; k++) {
                                             if (size.equals(imageSizesToLoad[k])) {
                                                 urlToLoad = url;
-                                                gotPictures = true;
+                                                gotImages = true;
                                             }
                                         }
                                     }
                                 } catch (JSONException e) {
                                     e.printStackTrace();
+                                    gotImages = false;
                                 }
                             }
-                            if (gotPictures) {
+                            if (gotImages) {
                                 arrayListImageURLsToLoad.add(urlToLoad);
                             }
                         }
-                        if (gotPictures) {
+                        if (gotImages) {
                             placeImagesFromURL_Details(arrayListImageURLsToLoad);
                             productImageView.setVisibility(View.GONE);
                             image_switcher_details.setVisibility(View.VISIBLE);
                             Log.i("Sergio>", this + "bindView:\narrayListImageURLsToLoad=\n" + arrayListImageURLsToLoad);
                         }
-
-
-                        Log.d("Sergio>", this + "onPostExecute:\narrayListImageURLsToLoad=\n" + arrayListImageURLsToLoad);
-
-                        gotImages = true;
-
-                        Log.i("Sergio>", this + "onPostExecute:\narrayListHashMap_Image_URLs=\n" + arrayListHashMap_Image_URLs);
-                        Log.i("Sergio>", this + "onPostExecute:\nouter_ArrayArray=\n" + outer_ArrayArray.toString().replace("\\", ""));
-
 
                     } catch (JSONException erro) {
                         erro.printStackTrace();
@@ -1099,6 +1099,7 @@ public class DetailsFragment extends Fragment {
     private void placeImagesFromURL_Details(final ArrayList<String> arrayListImageURLsToLoad) {
         final int size = arrayListImageURLsToLoad.size();
         final ArrayList<Bitmap> arrayListImageBitmap = new ArrayList<>(size);
+        image_switcher_details.removeAllViews();
 
         for (int i = 0; i < size; i++) {
             final int finalI = i;
@@ -1106,6 +1107,8 @@ public class DetailsFragment extends Fragment {
                     .load(arrayListImageURLsToLoad.get(i))
                     .asBitmap()
                     .asIs()
+                    .format(PREFER_ARGB_8888)
+                    .dontTransform()
                     .into(new SimpleTarget<Bitmap>() {
                         @Override
                         public void onResourceReady(final Bitmap resource, GlideAnimation glideAnimation) {
@@ -1141,9 +1144,9 @@ public class DetailsFragment extends Fragment {
             public void run() {
                 //Called every 5000 milliseconds
                 currentIndex[0]++;
-                if (currentIndex[0] == size) currentIndex[0] = 0;
                 mActivity.runOnUiThread(new Runnable() {
                     public void run() {
+                        if (currentIndex[0] == size) currentIndex[0] = 0;
                         image_switcher_details.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
                     }
                 });
@@ -1154,9 +1157,9 @@ public class DetailsFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 currentIndex[0]++;
-                if (currentIndex[0] == size) currentIndex[0] = 0;
                 mActivity.runOnUiThread(new Runnable() {
                     public void run() {
+                        if (currentIndex[0] == size) currentIndex[0] = 0;
                         image_switcher_details.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
                     }
                 });
