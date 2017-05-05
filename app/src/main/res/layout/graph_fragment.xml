@@ -17,4 +17,15 @@
         android:textColor="@android:color/holo_red_light"
         android:textSize="30sp"/>
 
+    <Button
+        android:id="@+id/button_add_price_to_db"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/textView"
+        android:layout_alignStart="@+id/textView"
+        android:layout_below="@+id/textView"
+        android:text="add Price"/>
+
+
+
 </RelativeLayout>

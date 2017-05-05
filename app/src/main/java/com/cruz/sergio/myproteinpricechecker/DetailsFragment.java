@@ -77,11 +77,9 @@ import java.util.TimerTask;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static android.database.DatabaseUtils.dumpCursorToString;
 import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
 import static com.cruz.sergio.myproteinpricechecker.WatchingFragment.imageSizesToLoad;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
-import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.normalizeDate;
 
 public class DetailsFragment extends Fragment {
     Activity mActivity;
@@ -105,6 +103,7 @@ public class DetailsFragment extends Fragment {
     //    ArrayList<HashMap<String, String>> arrayListHashMap_Image_URLs;
     JSONArray outer_ArrayArray_Image_URLs;
     ImageSwitcher image_switcher_details;
+    ArrayList<String> arrayListImageURL;
 
     final static String[] MP_ALL_IMAGE_TYPES = new String[]{
             "extrasmall",   // 20/20
@@ -149,6 +148,7 @@ public class DetailsFragment extends Fragment {
         mActivity = getActivity();
         thisFragment = this;
         productContentValues = new ContentValues(); //content values para a DB
+        arrayListImageURL = new ArrayList(3);
     }
 
     @Override
@@ -202,7 +202,8 @@ public class DetailsFragment extends Fragment {
         String shippingCountry = prefManager.getString("mp_shipping_location", "GB"); //"PT";
         String currency = prefManager.getString("mp_currencies", "GBP"); //"EUR";
         MP_Domain = MyProteinDomain.getHref(pref_MP_Locale);
-        URL_suffix = "&settingsSaved=Y&shippingcountry=" + shippingCountry + "&switchcurrency=" + currency + "&countrySelected=Y";
+        //URL_suffix = "&settingsSaved=Y&shippingcountry=" + shippingCountry + "&switchcurrency=" + currency + "&countrySelected=Y";
+        URL_suffix = "settingsSaved=Y&shippingcountry=" + shippingCountry + "&switchcurrency=" + currency + "&countrySelected=Y";
 
         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_WEBSTORE_DOMAIN_URL, MP_Domain);
         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_LOCALE, pref_MP_Locale);
@@ -231,7 +232,6 @@ public class DetailsFragment extends Fragment {
 
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID, customProductID);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL, url);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_BASE_IMG_URL, imgURL);
 
             Drawable drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.tick, null);
             SpannableStringBuilder pptList_SSB = new SpannableStringBuilder();
@@ -254,13 +254,14 @@ public class DetailsFragment extends Fragment {
             ((TextView) mActivity.findViewById(R.id.p_description)).setText(pptList_SSB);
 
             if (imgURL != null) {
+                arrayListImageURL.add(imgURL);
                 Glide.with(mActivity).load(imgURL).into(productImageView);
             } else {
                 Glide.with(mActivity).load(R.drawable.noimage).into(productImageView);
             }
 
             AsyncTask<String, Void, Boolean> get_product_page = new checkInternetAsyncMethods("getProductPage");
-            get_product_page.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url);
+            get_product_page.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url + "?" + URL_suffix);
 
         } else {
             showCustomToast(mActivity, "Error getting product details. Try again.", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
@@ -272,7 +273,7 @@ public class DetailsFragment extends Fragment {
         mActivity.findViewById(R.id.open_in_browser).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Uri address = Uri.parse(url);
+                Uri address = Uri.parse(url + "?" + URL_suffix);
                 Intent browser = new Intent(Intent.ACTION_VIEW, address);
                 startActivity(browser);
             }
@@ -282,9 +283,9 @@ public class DetailsFragment extends Fragment {
         mActivity.findViewById(R.id.button_add_to_db).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ContentValues priceContentValues = new ContentValues();
+                long timeMillis = System.currentTimeMillis();
                 String price = priceTV.getText().toString();
-                priceContentValues.put(ProductsContract.PriceEntry.COLUMN_PRODUCT_PRICE, price);
+                String priceString = price;
 
                 Pattern regex = Pattern.compile("[^.,\\d]+"); // matches . , e números de 0 a 9
                 Matcher match = regex.matcher(price);
@@ -292,11 +293,37 @@ public class DetailsFragment extends Fragment {
                 price = price.replaceAll(",", ".");
                 double price_value = Double.parseDouble(price);
 
-                priceContentValues.put(ProductsContract.PriceEntry.COLUMN_PRODUCT_PRICE_VALUE, price_value);
-                priceContentValues.put(ProductsContract.PriceEntry.COLUMN_PRODUCT_PRICE_DATE, normalizeDate(System.currentTimeMillis()));
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID, productID);
+                ContentValues priceContentValues = new ContentValues();
+                priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE, priceString);
+                priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_VALUE, price_value);
+                priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_DATE, timeMillis);
 
-                ArrayList<ArrayList<String>> arrayListArrayListImageURIs = new ArrayList<>();
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID, productID);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, priceString);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE, price_value);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, timeMillis);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, priceString);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE, price_value);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, timeMillis);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE, priceString);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE, price_value);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE, timeMillis);
+
+                if (outer_ArrayArray_Image_URLs == null && arrayListImageURL != null) {
+
+                    String[] baseImageSizes = new String[]{"S300", "S480", "S600"};
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAY_MP_BASE_IMG_URLS, arrayListImageURL.toString());
+                    ArrayList<String> arrayListBaseImageURIs = new ArrayList<>();
+
+                    for (int i = 0; i < arrayListImageURL.size(); i++) {
+                        String filename = customProductID + "_" + baseImageSizes[i] + "_.jpg";
+                        saveImageWithGlide(arrayListImageURL.get(i), filename);
+                        arrayListBaseImageURIs.add(filename);
+                    }
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAY_BASE_IMG_URIS, arrayListBaseImageURIs.toString());
+
+                } else if (outer_ArrayArray_Image_URLs != null) {
+                    ArrayList<ArrayList<String>> arrayListArrayListImageURIs = new ArrayList<>();
 //                for (int i = 0; i < arrayListHashMap_Image_URLs.size(); i++) {
 //                    HashMap hashMap_Index_i = arrayListHashMap_Image_URLs.get(i);
 //                    ArrayList<String> arrayListImageURIs = new ArrayList<>();
@@ -310,32 +337,32 @@ public class DetailsFragment extends Fragment {
 //                    }
 //                    arrayListArrayListImageURIs.add(arrayListImageURIs);
 //                }
-                for (int i = 0; i < outer_ArrayArray_Image_URLs.length(); i++) {
-                    JSONArray json_array_i = outer_ArrayArray_Image_URLs.optJSONArray(i);
-                    ArrayList<String> arrayListImageURIs = new ArrayList<>();
-                    for (int j = 0; j < json_array_i.length(); j++) {
-                        try {
-                            String size = (String) ((JSONObject) json_array_i.get(j)).get("size");
-                            String url = (String) ((JSONObject) json_array_i.get(j)).get("url");
-                            if (url != null) {
-                                for (int k = 0; k < imageSizesToLoad.length; k++) {
-                                    if (size.equals(imageSizesToLoad[k])) {
-                                        String filename = customProductID + "_" + imageSizesToLoad[k] + "_index_" + i + ".jpg";
-                                        saveImageWithGlide(url, filename); //guarda as imagens todas. index_i=variação imageSizesToLoad[k]=tamanho
-                                        arrayListImageURIs.add(filename);
+                    for (int i = 0; i < outer_ArrayArray_Image_URLs.length(); i++) {
+                        JSONArray json_array_i = outer_ArrayArray_Image_URLs.optJSONArray(i);
+                        ArrayList<String> arrayListImageURIs = new ArrayList<>();
+                        for (int j = 0; j < json_array_i.length(); j++) {
+                            try {
+                                String size = (String) ((JSONObject) json_array_i.get(j)).get("size");
+                                String url = (String) ((JSONObject) json_array_i.get(j)).get("url");
+                                if (url != null) {
+                                    for (int k = 0; k < imageSizesToLoad.length; k++) {
+                                        if (size.equals(imageSizesToLoad[k])) {
+                                            String filename = customProductID + "_" + imageSizesToLoad[k] + "_index_" + i + ".jpg";
+                                            saveImageWithGlide(url, filename); //guarda as imagens todas. index_i=variação imageSizesToLoad[k]=tamanho
+                                            arrayListImageURIs.add(filename);
+                                        }
                                     }
                                 }
+                            } catch (JSONException e) {
+                                e.printStackTrace();
                             }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
                         }
+                        arrayListArrayListImageURIs.add(arrayListImageURIs);
                     }
-                    arrayListArrayListImageURIs.add(arrayListImageURIs);
+                    Log.i("Sergio>", this + "onClick:\narrayListArrayListImageURIs=\n" + arrayListArrayListImageURIs);
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMG_URLS, outer_ArrayArray_Image_URLs.toString().replace("\\", ""));
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGE_URIS, arrayListArrayListImageURIs.toString());
                 }
-                Log.i("Sergio>", this + "onClick:\narrayListArrayListImageURIs=\n" + arrayListArrayListImageURIs);
-
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGE_URIS, arrayListArrayListImageURIs.toString());
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMG_URLS, outer_ArrayArray_Image_URLs.toString().replace("\\", ""));
 
                 DBHelper dbHelper = new DBHelper(getContext());
                 SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -423,11 +450,11 @@ public class DetailsFragment extends Fragment {
                     } else {
                         // A _ID do produto vai entrar na Tabela dos preços com o nome de _ID_PRODUCTS
                         // Podem existir vários _ID_PRODUCTS iguais na tabela de preços
-                        priceContentValues.put(ProductsContract.PriceEntry.COLUMN_ID_PRODUCTS, productRowID);
-                        long priceRowId = db.insert(ProductsContract.PriceEntry.TABLE_NAME, null, priceContentValues);
+                        priceContentValues.put(ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS, productRowID);
+                        long priceRowId = db.insert(ProductsContract.PricesEntry.TABLE_NAME, null, priceContentValues);
                         if (priceRowId < 0L) {
                             showCustomToast(mActivity, "Error inserting product to DataBase " +
-                                            ProductsContract.PriceEntry.TABLE_NAME + "! Try again.",
+                                            ProductsContract.PricesEntry.TABLE_NAME + "! Try again.",
                                     R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
                         } else {
                             showCustomToast(mActivity, "Now following product price!",
@@ -505,7 +532,7 @@ public class DetailsFragment extends Fragment {
         DBHelper dbHelper = new DBHelper(getContext());
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.ProductsEntry.TABLE_NAME);
-        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.PriceEntry.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.PricesEntry.TABLE_NAME);
         dbHelper.onCreate(db);
         db.close();
     }
@@ -556,52 +583,6 @@ public class DetailsFragment extends Fragment {
                 }
                 ((TextView) mActivity.findViewById(R.id.p_subtitle)).append(subtitle);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_SUBTITLE, subtitle);
-//
-//                Element first_prod_img = resultDocument.getElementsByClass("product-img").first();
-//                String url_img480 = null;
-//                if (first_prod_img != null) {
-//                    url_img480 = first_prod_img.attr("src"); // https://s1.thcdn.com/ às vezes retorna apenas isto ou spacer gif
-//                    if (url_img480 != null && !(url_img480.contains(".jpg") || url_img480.contains(".jpeg") || url_img480.contains(".png") || url_img480.contains(".bmp"))) {
-//                        url_img480 = null;
-//                    }
-//                }
-//                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_ZOOM_IMG_URL, url_img480);
-//                //Imagem do produto
-//                final Bitmap[] theBitmap480 = new Bitmap[1];
-//                theBitmap480[0] = null;
-//                if (url_img480 != null) {
-//                    Glide.with(mActivity).load(url_img480).into(productImageView);
-//                    //Glide.with(mActivity).load(url_img480).crossFade().placeholder(R.drawable.noimage).into(productImageView);
-////
-////                    Glide.with(mActivity)
-////                            .load(url_img480)
-////                            .asBitmap()
-////                            .into(new SimpleTarget<Bitmap>() {
-////                                @Override
-////                                public void onResourceReady(Bitmap bitmap, GlideAnimation<? super Bitmap> glideAnimation) {
-////                                    theBitmap480[0] = bitmap;
-////                                }
-////                            });
-//
-//                } else {
-//                    //failed getting product image
-//                    Glide.with(mActivity).load(R.drawable.noimage).into(productImageView);
-//                    theBitmap480[0] = null;
-//                }
-
-                //Imagem para aplicar o zoom
-                Element first_img_zoom_action = resultDocument.getElementsByClass("product-img-zoom-action").first();
-                String url_img600 = null;
-                if (first_img_zoom_action != null) {
-                    url_img600 = first_img_zoom_action.attr("href");
-                    if (url_img600 != null && !(url_img600.contains(".jpg") || url_img600.contains(".jpeg") || url_img600.contains(".png") || url_img600.contains(".bmp"))) {
-                        url_img600 = null;
-                    }
-                }
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_ZOOM_IMG_URL, url_img600);
-
-                //Log.i("Sergio>>>", "onPostExecute: url_img600= " + url_img600);
-
 
                 // Labels: Sabor, Quantidade, Embalagem
                 Elements productVariationsLabels = resultDocument.getElementsByClass("productVariations__label");
@@ -622,10 +603,31 @@ public class DetailsFragment extends Fragment {
                 } else {
                     // Sem opções de sabor, embalagem, tamanho para selecionar
                     String price = resultDocument.getElementsByClass("priceBlock_current_price").text();
+
+                    Log.w("Sergio>", this + " onPostExecute: \n" + "price=\n" + price);
+
                     Pattern regex = Pattern.compile("[.,\\d]+"); // matches . , e números de 0 a 9
                     Matcher match = regex.matcher(price);
                     String currency_symbol = match.replaceAll("");
                     productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL, currency_symbol);
+
+                    // Imagem 480x480
+                    Element first_prod_img = resultDocument.getElementsByClass("product-img").first();
+                    if (first_prod_img != null) {
+                        String url_img480 = first_prod_img.attr("src"); // https://s1.thcdn.com/ às vezes retorna apenas isto ou spacer gif
+                        if (url_img480 != null && (url_img480.contains(".jpg") || url_img480.contains(".jpeg") || url_img480.contains(".png") || url_img480.contains(".bmp"))) {
+                            arrayListImageURL.add(url_img480);
+                        }
+                    }
+
+                    // Imagem 600x600
+                    Element first_img_zoom_action = resultDocument.getElementsByClass("product-img-zoom-action").first();
+                    if (first_img_zoom_action != null) {
+                        String url_img600 = first_img_zoom_action.attr("href");
+                        if (url_img600 != null && (url_img600.contains(".jpg") || url_img600.contains(".jpeg") || url_img600.contains(".png") || url_img600.contains(".bmp"))) {
+                            arrayListImageURL.add(url_img600);
+                        }
+                    }
 
                     priceTV.setText(price);
                     gotPrice = true;
@@ -683,7 +685,7 @@ public class DetailsFragment extends Fragment {
     }
 
     private void get_Available_Options() {
-        String full_JSON_URL = MP_Domain + "variations.json?productId=" + productID + URL_suffix;
+        String full_JSON_URL = MP_Domain + "variations.json?productId=" + productID + "&" + URL_suffix;
         AsyncTask<String, Void, Boolean> checkinternetAsyncTask = new checkInternetAsyncMethods("get_Available_Options");
         checkinternetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, full_JSON_URL);
 
@@ -889,7 +891,7 @@ public class DetailsFragment extends Fragment {
         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID, customProductID);
         Log.d(" Sergio>>>", this + " getPriceMethod: customProductID =" + customProductID);
 
-        String JSON_URL_Details = MP_Domain + "variations.json?productId=" + productID + options + URL_suffix;
+        String JSON_URL_Details = MP_Domain + "variations.json?productId=" + productID + options + "&" + URL_suffix;
         //String jsonurl = "https://pt.myprotein.com/variations.json?productId=10530943";
         //String options = "&selected=3 &variation1=5 &option1=2413 &variation2=6 &option2=2407 &variation3=7 &option3=5935"
         //String mais = "&settingsSaved=Y&shippingcountry=PT&switchcurrency=GBP&countrySelected=Y"
@@ -987,7 +989,9 @@ public class DetailsFragment extends Fragment {
                     Pattern regex = Pattern.compile("[.,\\d]+"); // matches . , e números de 0 a 9
                     Matcher match = regex.matcher(priceJson);
                     String currency_symbol = match.replaceAll("");
+
                     productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL, currency_symbol);
+
                 } else {
                     gotPrice = false;
                 }
@@ -1315,97 +1319,6 @@ public class DetailsFragment extends Fragment {
             }
 
         }
-    }
-
-    public void outputFull_PricesDB_toLog() {
-        DBHelper dbHelper = new DBHelper(getContext());
-
-        SQLiteDatabase dbread = dbHelper.getReadableDatabase();
-        Cursor fullPricesDB_Cursor = dbread.rawQuery("SELECT * FROM " + ProductsContract.PriceEntry.TABLE_NAME, null);
-        Log.i("Sergio>>>", this + " dumpCursorToString fullPricesDB_Cursor= " + dumpCursorToString(fullPricesDB_Cursor));
-
-        if (fullPricesDB_Cursor.moveToFirst()) {
-            while (!fullPricesDB_Cursor.isAfterLast()) {
-                int data0 = fullPricesDB_Cursor.getInt(fullPricesDB_Cursor.getColumnIndex(ProductsContract.PriceEntry._ID));
-                String data1 = fullPricesDB_Cursor.getString(fullPricesDB_Cursor.getColumnIndex(ProductsContract.PriceEntry.COLUMN_ID_PRODUCTS));
-                String data2 = fullPricesDB_Cursor.getString(fullPricesDB_Cursor.getColumnIndex(ProductsContract.PriceEntry.COLUMN_PRODUCT_PRICE));
-                String data3 = fullPricesDB_Cursor.getString(fullPricesDB_Cursor.getColumnIndex(ProductsContract.PriceEntry.COLUMN_PRODUCT_PRICE_DATE));
-
-                Log.i("Sergio>>>", "onClick: PriceEntry \n_ID= " + data0 +
-                        "\n COLUMN_PRODUCT_ID= " + data1 +
-                        "\n COLUMN_PRODUCT_PRICE= " + data2 +
-                        "\n COLUMN_PRODUCT_PRICE_DATE= " + data3);
-                fullPricesDB_Cursor.moveToNext();
-            }
-        }
-        Log.e("Sergio>>>", "onClick: alldb cursor= " + fullPricesDB_Cursor);
-        dbread.close();
-        fullPricesDB_Cursor.close();
-    }
-
-    public void outputFull_ProductsDB_toLog() {
-        DBHelper dbHelper = new DBHelper(getContext());
-        SQLiteDatabase readableDatabase = dbHelper.getReadableDatabase();
-        Cursor fullDB = readableDatabase.rawQuery("SELECT * FROM " + ProductsContract.ProductsEntry.TABLE_NAME, null);
-
-        if (fullDB.moveToFirst()) {
-            while (!fullDB.isAfterLast()) {
-                int data = fullDB.getInt(fullDB.getColumnIndex(ProductsContract.ProductsEntry._ID));
-                String data1 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID));
-                String data2 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME));
-                String data3 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_SUBTITLE));
-                String data4 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION));
-                String data5 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_WEBSTORE_NAME));
-                String data6 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL));
-                String data7 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_WEBSTORE_DOMAIN_URL));
-                String data8 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_SHIPPING_LOCATION));
-                String data9 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY));
-                String data10 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS));
-                String data11 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_VARIATION1));
-                String data12 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_VARIATION2));
-                String data13 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_VARIATION3));
-                String data14 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS1));
-                String data15 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS2));
-                String data16 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS3));
-                String data17 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_BASE_IMG_URL));
-                String data18 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_ZOOM_IMG_URL));
-                String data19 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE));
-                long data20 = fullDB.getLong(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE));
-                String data21 = fullDB.getString(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE));
-                long data22 = fullDB.getLong(fullDB.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE));
-
-                Log.i("Sergio>>>", "onClick: ProductsEntry " +
-                        "\n_ID= " + data +
-                        " \nCOLUMN_PRODUCT_ID= " + data1 +
-                        " \nCOLUMN_PRODUCT_NAME= " + data2 +
-                        " \nCOLUMN_PRODUCT_SUBTITLE= " + data3 +
-                        " \nCOLUMN_PRODUCT_DESCRIPTION= " + data4 +
-                        " \nCOLUMN_WEBSTORE_NAME= " + data5 +
-                        " \nCOLUMN_PRODUCT_BASE_URL= " + data6 +
-                        " \nCOLUMN_MP_WEBSTORE_DOMAIN_URL= " + data7 +
-                        " \nCOLUMN_MP_SHIPPING_LOCATION= " + data8 +
-                        " \nCOLUMN_MP_CURRENCY= " + data9 +
-                        " \nCOLUMN_MP_JSON_URL_DETAILS= " + data10 +
-                        " \nCOLUMN_MP_VARIATION1= " + data11 +
-                        " \nCOLUMN_MP_VARIATION2= " + data12 +
-                        " \nCOLUMN_MP_VARIATION3= " + data13 +
-                        " \nCOLUMN_MP_OPTIONS1= " + data14 +
-                        " \nCOLUMN_MP_OPTIONS2= " + data15 +
-                        " \nCOLUMN_MP_OPTIONS3= " + data16 +
-                        " \nCOLUMN_MP_BASE_IMG_URL= " + data17 +
-                        " \nCOLUMN_MP_ZOOM_IMG_URL= " + data18 +
-                        " \nCOLUMN_MAX_PRICE= " + data19 +
-                        " \nCOLUMN_MAX_PRICE_DATE= " + data20 +
-                        " \nCOLUMN_MIN_PRICE= " + data21 +
-                        " \nCOLUMN_MIN_PRICE_DATE= " + data22
-                );
-                fullDB.moveToNext();
-            }
-        }
-        Log.e("Sergio>>>", "onClick: alldb cursor2= " + fullDB);
-
-        readableDatabase.close();
-        fullDB.close();
     }
 
     public class checkInternetPriceMethodAsync extends AsyncTask<String, Void, Boolean> {

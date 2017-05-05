@@ -47,7 +47,7 @@ public class DBProvider extends ContentProvider {
             }
             case PRICES: {
                 cursorProvider = database.query(
-                        ProductsContract.PriceEntry.TABLE_NAME,
+                        ProductsContract.PricesEntry.TABLE_NAME,
                         projection,
                         selection,
                         selectionArgs,
@@ -72,9 +72,9 @@ public class DBProvider extends ContentProvider {
             case PRODUCTS_ID:
                 return ProductsContract.ProductsEntry.CONTENT_ITEM_TYPE;
             case PRICES:
-                return ProductsContract.PriceEntry.CONTENT_DIR_TYPE;
+                return ProductsContract.PricesEntry.CONTENT_DIR_TYPE;
             case PRICES_ID:
-                return ProductsContract.PriceEntry.CONTENT_ITEM_TYPE;
+                return ProductsContract.PricesEntry.CONTENT_ITEM_TYPE;
             default:
                 throw new IllegalArgumentException("Unknown URI " + uri);
         }
@@ -96,9 +96,9 @@ public class DBProvider extends ContentProvider {
                     throw new android.database.SQLException("Failed to insert row into " + uri);
             }
             case PRICES: {
-                long _id = db.insert(ProductsContract.PriceEntry.TABLE_NAME, null, values);
+                long _id = db.insert(ProductsContract.PricesEntry.TABLE_NAME, null, values);
                 if (_id > 0)
-                    returnUri = ProductsContract.PriceEntry.buildPricesUri(_id);
+                    returnUri = ProductsContract.PricesEntry.buildPricesUri(_id);
                 else
                     throw new android.database.SQLException("Failed to insert row into " + uri);
                 break;

@@ -43,12 +43,17 @@ public class DBHelper extends SQLiteOpenHelper {
                 ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS1 + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS2 + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS3 + " TEXT, " +
-                ProductsContract.ProductsEntry.COLUMN_MP_BASE_IMG_URL + " TEXT, " +
-                ProductsContract.ProductsEntry.COLUMN_MP_ZOOM_IMG_URL + " TEXT, " +
-                ProductsContract.ProductsEntry.COLUMN_MAX_PRICE + " TEXT, " +
-                ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE + " INTEGER, " +
+                ProductsContract.ProductsEntry.COLUMN_ARRAY_MP_BASE_IMG_URLS + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_ARRAY_BASE_IMG_URIS + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MIN_PRICE + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE + " REAL, " +
                 ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE + " INTEGER, " +
+                ProductsContract.ProductsEntry.COLUMN_MAX_PRICE + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE + " REAL, " +
+                ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE + " INTEGER, " +
+                ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE + " REAL, " +
+                ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE + " INTEGER, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_VARIATION_NAME1 + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_VARIATION_NAME2 + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_VARIATION_NAME3 + " TEXT, " +
@@ -59,16 +64,16 @@ public class DBHelper extends SQLiteOpenHelper {
                 ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGE_URIS + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMG_URLS + " TEXT " +
 //                " FOREIGN KEY (" + ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID + ") REFERENCES " +
-//                ProductsContract.PriceEntry.TABLE_NAME + " (" + ProductsContract.PriceEntry._ID + ") " +
+//                ProductsContract.PricesEntry.TABLE_NAME + " (" + ProductsContract.PricesEntry._ID + ") " +
                 " );";
 
-        final String SQL_CREATE_PRICES_TABLE = "CREATE TABLE " + ProductsContract.PriceEntry.TABLE_NAME + " (" +
-                ProductsContract.PriceEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                ProductsContract.PriceEntry.COLUMN_ID_PRODUCTS + " INTEGER NOT NULL, " + // igual a _ID da Products_Table
-                ProductsContract.PriceEntry.COLUMN_PRODUCT_PRICE + " TEXT NOT NULL, " +
-                ProductsContract.PriceEntry.COLUMN_PRODUCT_PRICE_VALUE + " REAL NOT NULL, " +
-                ProductsContract.PriceEntry.COLUMN_PRODUCT_PRICE_DATE + " INTEGER NOT NULL, " +
-                " FOREIGN KEY (" + ProductsContract.PriceEntry.COLUMN_ID_PRODUCTS + ") REFERENCES " +
+        final String SQL_CREATE_PRICES_TABLE = "CREATE TABLE " + ProductsContract.PricesEntry.TABLE_NAME + " (" +
+                ProductsContract.PricesEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS + " INTEGER NOT NULL, " + // igual a _ID da Products_Table
+                ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE + " TEXT NOT NULL, " +
+                ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_VALUE + " REAL NOT NULL, " +
+                ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_DATE + " INTEGER NOT NULL, " +
+                " FOREIGN KEY (" + ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS + ") REFERENCES " +
                 ProductsContract.ProductsEntry.TABLE_NAME + " (" + ProductsContract.ProductsEntry._ID + ") " +
                 " );";
 
@@ -89,7 +94,7 @@ public class DBHelper extends SQLiteOpenHelper {
         // If you want to update the schema without wiping data, commenting out the next 2 lines
         // should be your top priority before modifying this method.
         db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.ProductsEntry.TABLE_NAME);
-        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.PriceEntry.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.PricesEntry.TABLE_NAME);
         onCreate(db);
     }
 
@@ -97,7 +102,7 @@ public class DBHelper extends SQLiteOpenHelper {
     public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         super.onDowngrade(db, oldVersion, newVersion);
         db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.ProductsEntry.TABLE_NAME);
-        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.PriceEntry.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.PricesEntry.TABLE_NAME);
         onCreate(db);
     }
 

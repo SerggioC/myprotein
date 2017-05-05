@@ -38,6 +38,7 @@ public class ProductsContract {
         Time time = new Time();
         time.set(startDate);
         int julianDay = Time.getJulianDay(startDate, time.gmtoff);
+
         return time.setJulianDay(julianDay);
     }
 
@@ -72,19 +73,24 @@ public class ProductsContract {
         public static final String COLUMN_MP_CURRENCY = "mp_currency";                  // from shared prefs
         public static final String COLUMN_MP_CURRENCY_SYMBOL = "mp_currency_symbol";    // from shared prefs
         public static final String COLUMN_MP_LOCALE = "mp_locale";                      // from shared prefs
-        public static final String COLUMN_MP_JSON_URL_DETAILS = "json_url_Details";
+        public static final String COLUMN_MP_JSON_URL_DETAILS = "json_url_details";
         public static final String COLUMN_MP_VARIATION1 = "mp_variation1";
         public static final String COLUMN_MP_VARIATION2 = "mp_variation2";
         public static final String COLUMN_MP_VARIATION3 = "mp_variation3";
         public static final String COLUMN_MP_OPTIONS1 = "mp_options1";
         public static final String COLUMN_MP_OPTIONS2 = "mp_options2";
         public static final String COLUMN_MP_OPTIONS3 = "mp_options3";
-        public static final String COLUMN_MP_BASE_IMG_URL = "mp_base_img_url";
-        public static final String COLUMN_MP_ZOOM_IMG_URL = "mp_zoom_img_url";
+        public static final String COLUMN_ARRAY_MP_BASE_IMG_URLS = "mp_base_mp_img_urls";
+        public static final String COLUMN_ARRAY_BASE_IMG_URIS = "mp_base_img_uris";
         public static final String COLUMN_MIN_PRICE = "min_price";
+        public static final String COLUMN_MIN_PRICE_VALUE = "min_price_value";
         public static final String COLUMN_MIN_PRICE_DATE = "min_price_date";
         public static final String COLUMN_MAX_PRICE = "max_price";
+        public static final String COLUMN_MAX_PRICE_VALUE = "max_price_value";
         public static final String COLUMN_MAX_PRICE_DATE = "max_price_date";
+        public static final String COLUMN_ACTUAL_PRICE = "actual_price";
+        public static final String COLUMN_ACTUAL_PRICE_VALUE = "actual_price_value";
+        public static final String COLUMN_ACTUAL_PRICE_DATE = "actual_price_date";
         public static final String COLUMN_MP_VARIATION_NAME1 = "mp_variation_name1";
         public static final String COLUMN_MP_VARIATION_NAME2 = "mp_variation_name2";
         public static final String COLUMN_MP_VARIATION_NAME3 = "mp_variation_name3";
@@ -115,12 +121,17 @@ public class ProductsContract {
                 ProductsEntry.COLUMN_MP_OPTIONS1,
                 ProductsEntry.COLUMN_MP_OPTIONS2,
                 ProductsEntry.COLUMN_MP_OPTIONS3,
-                ProductsEntry.COLUMN_MP_BASE_IMG_URL,
-                ProductsEntry.COLUMN_MP_ZOOM_IMG_URL,
+                ProductsEntry.COLUMN_ARRAY_MP_BASE_IMG_URLS,
+                ProductsEntry.COLUMN_ARRAY_BASE_IMG_URIS,
                 ProductsEntry.COLUMN_MIN_PRICE,
+                ProductsEntry.COLUMN_MIN_PRICE_VALUE,
                 ProductsEntry.COLUMN_MIN_PRICE_DATE,
                 ProductsEntry.COLUMN_MAX_PRICE,
+                ProductsEntry.COLUMN_MAX_PRICE_VALUE,
                 ProductsEntry.COLUMN_MAX_PRICE_DATE,
+                ProductsEntry.COLUMN_ACTUAL_PRICE,
+                ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE,
+                ProductsEntry.COLUMN_ACTUAL_PRICE_DATE,
                 ProductsEntry.COLUMN_MP_VARIATION_NAME1,
                 ProductsEntry.COLUMN_MP_VARIATION_NAME2,
                 ProductsEntry.COLUMN_MP_VARIATION_NAME3,
@@ -133,7 +144,7 @@ public class ProductsContract {
         };
     }
 
-    public static final class PriceEntry implements BaseColumns {
+    public static final class PricesEntry implements BaseColumns {
         public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_PRICES).build();
 
         public static final String CONTENT_DIR_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_PRICES;
@@ -151,31 +162,12 @@ public class ProductsContract {
         }
 
         public static final String[] ALL_PRICE_COLUMNS_PROJECTION = new String[]{
-                PriceEntry._ID,
-                PriceEntry.COLUMN_ID_PRODUCTS,
-                PriceEntry.COLUMN_PRODUCT_PRICE,
-                PriceEntry.COLUMN_PRODUCT_PRICE_VALUE,
-                PriceEntry.COLUMN_PRODUCT_PRICE_DATE
+                PricesEntry._ID,
+                PricesEntry.COLUMN_ID_PRODUCTS,
+                PricesEntry.COLUMN_PRODUCT_PRICE,
+                PricesEntry.COLUMN_PRODUCT_PRICE_VALUE,
+                PricesEntry.COLUMN_PRODUCT_PRICE_DATE
         };
-    }
-
-    public static final class MinMaxEntry implements BaseColumns {
-        public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_MINMAX).build();
-
-        public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_MINMAX;
-        public static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_MINMAX;
-
-        // Min Max prices table
-        public static final String TABLE_NAME = "minmax_table";
-        public static final String COLUMN_PRODUCT_ID = "product_id"; // foreign key
-        public static final String COLUMN_MIN_PRICE = "min_price";
-        public static final String COLUMN_MIN_PRICE_DATE = "min_price_date";
-        public static final String COLUMN_MAX_PRICE = "max_price";
-        public static final String COLUMN_MAX_PRICE_DATE = "max_price_date";
-
-        public static Uri buildMinMaxUri(long id) {
-            return ContentUris.withAppendedId(CONTENT_URI, id);
-        }
     }
 
 }
