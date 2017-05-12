@@ -61,6 +61,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.DataNode;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -100,10 +101,10 @@ public class DetailsFragment extends Fragment {
     Boolean addedNewProduct = false;
     ImageView productImageView;
     Boolean gotImages = false;
-    //    ArrayList<HashMap<String, String>> arrayListHashMap_Image_URLs;
     JSONArray outer_ArrayArray_Image_URLs;
     ImageSwitcher image_switcher_details;
-    ArrayList<String> arrayListImageURL;
+    Timer timer;
+    ArrayList<ArrayList<String>> arrayListImageURLsFromScript;
 
     final static String[] MP_ALL_IMAGE_TYPES = new String[]{
             "extrasmall",   // 20/20
@@ -139,8 +140,6 @@ public class DetailsFragment extends Fragment {
             "zoom",         // 960/960
             "magnify"};    // 1600/1600
 
-    Timer timer = new Timer();
-
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -148,7 +147,6 @@ public class DetailsFragment extends Fragment {
         mActivity = getActivity();
         thisFragment = this;
         productContentValues = new ContentValues(); //content values para a DB
-        arrayListImageURL = new ArrayList(3);
     }
 
     @Override
@@ -254,7 +252,6 @@ public class DetailsFragment extends Fragment {
             ((TextView) mActivity.findViewById(R.id.p_description)).setText(pptList_SSB);
 
             if (imgURL != null) {
-                arrayListImageURL.add(imgURL);
                 Glide.with(mActivity).load(imgURL).into(productImageView);
             } else {
                 Glide.with(mActivity).load(R.drawable.noimage).into(productImageView);
@@ -309,20 +306,7 @@ public class DetailsFragment extends Fragment {
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE, price_value);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE, timeMillis);
 
-                if (outer_ArrayArray_Image_URLs == null && arrayListImageURL != null) {
-
-                    String[] baseImageSizes = new String[]{"S300", "S480", "S600"};
-                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAY_MP_BASE_IMG_URLS, arrayListImageURL.toString());
-                    ArrayList<String> arrayListBaseImageURIs = new ArrayList<>();
-
-                    for (int i = 0; i < arrayListImageURL.size(); i++) {
-                        String filename = customProductID + "_" + baseImageSizes[i] + "_.jpg";
-                        saveImageWithGlide(arrayListImageURL.get(i), filename);
-                        arrayListBaseImageURIs.add(filename);
-                    }
-                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAY_BASE_IMG_URIS, arrayListBaseImageURIs.toString());
-
-                } else if (outer_ArrayArray_Image_URLs != null) {
+                if (outer_ArrayArray_Image_URLs != null) { // Imagens do JSON (Mais completo)
                     ArrayList<ArrayList<String>> arrayListArrayListImageURIs = new ArrayList<>();
 //                for (int i = 0; i < arrayListHashMap_Image_URLs.size(); i++) {
 //                    HashMap hashMap_Index_i = arrayListHashMap_Image_URLs.get(i);
@@ -362,6 +346,24 @@ public class DetailsFragment extends Fragment {
                     Log.i("Sergio>", this + "onClick:\narrayListArrayListImageURIs=\n" + arrayListArrayListImageURIs);
                     productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMG_URLS, outer_ArrayArray_Image_URLs.toString().replace("\\", ""));
                     productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGE_URIS, arrayListArrayListImageURIs.toString());
+
+                } else if (outer_ArrayArray_Image_URLs == null && arrayListImageURLsFromScript != null) { // Imagens do cript Presente no HTML (6 Tamanhos)
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAY_MP_BASE_IMG_URLS, arrayListImageURLsFromScript.toString());
+
+                    String[] scriptImageSizes = new String[]{"S70", "S130", "S180", "S300", "S600", "S960"};
+
+                    ArrayList<ArrayList<String>> arrayArrayScriptImageURIs = new ArrayList<>();
+                    for (int a = 0; a < arrayListImageURLsFromScript.size(); a++) {
+
+                        ArrayList<String> arrayListBaseImageURIs = new ArrayList<>();
+                        for (int i = 0; i < arrayListImageURLsFromScript.get(a).size(); i++) {
+                            String filename = customProductID + "_" + scriptImageSizes[i] + "_.jpg";
+                            saveImageWithGlide(arrayListImageURLsFromScript.get(a).get(i), filename);
+                            arrayListBaseImageURIs.add(filename);
+                        }
+                        arrayArrayScriptImageURIs.add(arrayListBaseImageURIs);
+                    }
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAY_BASE_IMG_URIS, arrayArrayScriptImageURIs.toString());
                 }
 
                 DBHelper dbHelper = new DBHelper(getContext());
@@ -566,20 +568,20 @@ public class DetailsFragment extends Fragment {
             if (thisFragment.isVisible()) {
                 Element titleElem = resultDocument.getElementsByClass("product-title").first();  // Titulo ou nome do produto
                 String title;
-                if (titleElem == null) {
-                    title = "N/A";
-                } else {
+                if (titleElem != null) {
                     title = titleElem.text();
+                } else {
+                    title = "N/A";
                 }
                 ((TextView) mActivity.findViewById(R.id.title_tv)).append(title);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME, title);
 
                 Elements subtitle_element = resultDocument.getElementsByClass("product-sub-name");
                 String subtitle;
-                if (subtitle_element == null) {
-                    subtitle = "N/A";
+                if (subtitle_element != null) {
+                    subtitle = subtitle_element.text(); //Subtítulo
                 } else {
-                    subtitle = subtitle_element.text(); //Subtitulo
+                    subtitle = "N/A";
                 }
                 ((TextView) mActivity.findViewById(R.id.p_subtitle)).append(subtitle);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_SUBTITLE, subtitle);
@@ -611,24 +613,24 @@ public class DetailsFragment extends Fragment {
                     String currency_symbol = match.replaceAll("");
                     productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL, currency_symbol);
 
-                    // Imagem 480x480
-                    Element first_prod_img = resultDocument.getElementsByClass("product-img").first();
-                    if (first_prod_img != null) {
-                        String url_img480 = first_prod_img.attr("src"); // https://s1.thcdn.com/ às vezes retorna apenas isto ou spacer gif
-                        if (url_img480 != null && (url_img480.contains(".jpg") || url_img480.contains(".jpeg") || url_img480.contains(".png") || url_img480.contains(".bmp"))) {
-                            arrayListImageURL.add(url_img480);
-                        }
-                    }
-
-                    // Imagem 600x600
-                    Element first_img_zoom_action = resultDocument.getElementsByClass("product-img-zoom-action").first();
-                    if (first_img_zoom_action != null) {
-                        String url_img600 = first_img_zoom_action.attr("href");
-                        if (url_img600 != null && (url_img600.contains(".jpg") || url_img600.contains(".jpeg") || url_img600.contains(".png") || url_img600.contains(".bmp"))) {
-                            arrayListImageURL.add(url_img600);
-                        }
-                    }
-
+                    getImagesFromSrciptTag(resultDocument);
+//                    // Imagem 480x480
+//                    Element first_prod_img = resultDocument.getElementsByClass("product-img").first();
+//                    if (first_prod_img != null) {
+//                        String url_img480 = first_prod_img.attr("src"); // https://s1.thcdn.com/ às vezes retorna apenas isto ou spacer gif
+//                        if (url_img480 != null && (url_img480.contains(".jpg") || url_img480.contains(".jpeg") || url_img480.contains(".png") || url_img480.contains(".bmp"))) {
+//                            arrayListImageURL.add(url_img480);
+//                        }
+//                    }
+//
+//                    // Imagem 600x600
+//                    Element first_img_zoom_action = resultDocument.getElementsByClass("product-img-zoom-action").first();
+//                    if (first_img_zoom_action != null) {
+//                        String url_img600 = first_img_zoom_action.attr("href");
+//                        if (url_img600 != null && (url_img600.contains(".jpg") || url_img600.contains(".jpeg") || url_img600.contains(".png") || url_img600.contains(".bmp"))) {
+//                            arrayListImageURL.add(url_img600);
+//                        }
+//                    }
                     priceTV.setText(price);
                     gotPrice = true;
                     mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
@@ -636,51 +638,40 @@ public class DetailsFragment extends Fragment {
                     mActivity.findViewById(R.id.ll_description).setVisibility(View.VISIBLE);
 
                 }
-//                for (Element variation : productVariationsLabels) {
-//                    variationLabels.add(variation.text());
-//                    // Labels Sabor, Quantidade, Embalagem
-//                }
 
-//                final ArrayList<HashMap> arraylistHashMap = new ArrayList<>(3);
-//                final ArrayList<String> opts_id = new ArrayList<>(3);
-//                Elements productVariations = resultDocument.getElementsByClass("productVariations__select");
-//                int pv_size = productVariations.size();
-//                for (int i = 0; i < pv_size; i++) {
-//                    Element option = productVariations.get(i);
-////                }
-////                for (Element option : productVariations) {
-//                    //Log.i("Sergio>>>", "onPostExecute: " + option.attr("id"));
-//                    opts_id.add(option.attr("id").replace("opts-", ""));
-//                    Elements optionBoxes = option.getElementsByAttribute("value");
-//                    LinkedHashMap<String, String> hmap = new LinkedHashMap<>();
-//                    for (Element optionBox_i : optionBoxes) {
-//                        //Log.i("Sergio>>>", "onPostExecute: " + optionBox_i.attr("value") + "= " + optionBox_i.text());
-//                        hmap.put(optionBox_i.attr("value"), optionBox_i.text());
-//                    }
-//                    arraylistHashMap.add(hmap);
-//                }
-
-
-//                if (arraylistHashMap.size() > 0) { // Tem opções ou variações
-//                    get_Available_Options();
-//                    getPriceMethod(arrayArrayKeys, linearLayoutSpiners, opts_id);
-//                } else {
-//                    // Sem opções de sabor, embalagem, tamanho para selecionar
-//                    String price = resultDocument.getElementsByClass("priceBlock_current_price").text();
-//                    Pattern regex = Pattern.compile("[.,\\d]+"); // matches . , e números de 0 a 9
-//                    Matcher match = regex.matcher(price);
-//                    String currency_symbol = match.replaceAll("");
-//                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL, currency_symbol);
-//
-//                    priceTV.setText(price);
-//                    gotPrice = true;
-//                    mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
-//                    mActivity.findViewById(R.id.button_add_to_db).setEnabled(true);
-//                }
             } else {
                 Toast.makeText(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT).show();
             }
 
+        }
+
+        private void getImagesFromSrciptTag(Document resultDocument) {
+            Elements scriptTags = resultDocument.getElementsByTag("script");
+            for (Element tag : scriptTags) {
+                for (DataNode node : tag.dataNodes()) {
+                    String script = node.getWholeData();
+                    if (script.contains("arProductImages")) {
+                        arrayListImageURLsFromScript = new ArrayList<>();
+
+                        int indexOfarray = script.indexOf("arProductImages[");
+
+                        while (indexOfarray >= 0) {
+                            String sub_script = script.substring(indexOfarray, script.indexOf(");", indexOfarray));
+
+                            ArrayList<String> URLsFromScriptArray = new ArrayList<>();
+                            int indexOfHttps = sub_script.indexOf("https");
+                            while (indexOfHttps >= 0) {
+                                String imgURL = sub_script.substring(indexOfHttps, sub_script.indexOf(".jpg", indexOfHttps) + 4);
+                                URLsFromScriptArray.add(imgURL);
+                                indexOfHttps = sub_script.indexOf("https", indexOfHttps + 1);
+                            }
+                            arrayListImageURLsFromScript.add(URLsFromScriptArray);
+                            indexOfarray = script.indexOf("arProductImages[", indexOfarray + 1);
+                        }
+                        Log.w("Sergio>", this + " onPostExecute: \n" + "arrayListImageURLsFromScript=\n" + arrayListImageURLsFromScript);
+                    }
+                }
+            }
         }
     }
 
@@ -688,7 +679,6 @@ public class DetailsFragment extends Fragment {
         String full_JSON_URL = MP_Domain + "variations.json?productId=" + productID + "&" + URL_suffix;
         AsyncTask<String, Void, Boolean> checkinternetAsyncTask = new checkInternetAsyncMethods("get_Available_Options");
         checkinternetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, full_JSON_URL);
-
         Log.i("Sergio>", this + " get_Available_Options: \nfull_JSON_URL=\n" + full_JSON_URL);
     }
 
@@ -780,26 +770,15 @@ public class DetailsFragment extends Fragment {
                     try {
                         JSONArray variations_Array = json.getJSONArray("variations"); //3
 
-                        //ArrayList<HashMap<Integer, String>> arrayList_variation_map = new ArrayList<>();
-                        //ArrayList<HashMap<Integer, String>> arrayList_options_map = new ArrayList<>();
                         final ArrayList<String> variation_ids = new ArrayList<>();
                         final ArrayList<ArrayList<String>> arrayArray_opt_ids = new ArrayList<>();
                         ArrayList<ArrayList<String>> arrayArray_opt_names = new ArrayList<>();
                         for (int i = 0; i < variations_Array.length(); i++) {
-                            //HashMap<Integer, String> variation_map = new HashMap<>();
+
                             JSONObject variation_i = (JSONObject) variations_Array.get(i);
                             String variation_id = String.valueOf(variation_i.getInt("id"));
                             variation_ids.add(variation_id);
 
-                            //String variation_name = variation_i.getString("variation");
-//                            Log.d("Sergio>", this + " onPostExecute: " +
-//                                    "\n variation_i= " + variation_i +
-//                                    "\n variation_id= " + variation_id +
-//                                    "\n variation_name=" + variation_name);
-                            //variation_map.put(variation_id, variation_name);
-                            //arrayList_variation_map.add(variation_map);
-
-                            //HashMap<String, String> options_map = new HashMap<>();
                             ArrayList<String> arraylist_options_ids = new ArrayList<>();
                             ArrayList<String> arraylist_options_names = new ArrayList<>();
 
@@ -810,16 +789,9 @@ public class DetailsFragment extends Fragment {
                                 String option_name = option_i.getString("name");
                                 arraylist_options_ids.add(option_id);
                                 arraylist_options_names.add(option_name);
-//                                String option_value = option_i.getString("value"); // não necessário
-//                                Log.i("Sergio>", this + " onPostExecute: " +
-//                                        "\n option_id= " + option_id +
-//                                        "\n option_name= " + option_name +
-//                                        "\n option_value= " + option_value);
-                                //options_map.put(option_id, option_name);
                             }
                             arrayArray_opt_ids.add(arraylist_options_ids);
                             arrayArray_opt_names.add(arraylist_options_names);
-                            //arrayList_options_map.add(options_map);
 
                             final RelativeLayout relativeLayoutSpiners = (RelativeLayout) linearLayoutSpiners.getChildAt(i);
                             final Spinner oneSpinner = (Spinner) relativeLayoutSpiners.getChildAt(0);
@@ -834,6 +806,7 @@ public class DetailsFragment extends Fragment {
                             oneSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                                 @Override
                                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                                    gotImages = false;
                                     addedNewProduct = false;
                                     getPriceMethod(arrayArray_opt_ids, variation_ids);
                                 }
@@ -1003,9 +976,6 @@ public class DetailsFragment extends Fragment {
                         // Parse do url das imagens se existirem no json
                         JSONArray json_images = json.getJSONArray("images");
 
-//                        arrayListHashMap_Image_URLs = new ArrayList<>();
-//                        HashMap<String, String> image_hmap = new HashMap<>();
-
                         outer_ArrayArray_Image_URLs = new JSONArray();
                         JSONArray inner_array = new JSONArray();
 
@@ -1018,18 +988,12 @@ public class DetailsFragment extends Fragment {
                             String image_url = "https://s4.thcdn.com/" + image_i.getString("name");     // url
 
                             if (current_img_index == image_index) {
-//                                image_hmap.put(image_type, image_url);
-
                                 JSONObject innerObject = new JSONObject();
                                 innerObject.put("size", image_type);
                                 innerObject.put("url", image_url);
                                 inner_array.put(innerObject);
 
                             } else {
-//                                arrayListHashMap_Image_URLs.add(new HashMap<>(image_hmap));
-//                                image_hmap = new HashMap<>();
-//                                image_hmap.put(image_type, image_url);
-
                                 outer_ArrayArray_Image_URLs.put(inner_array);
                                 JSONObject innerObject = new JSONObject();
                                 innerObject.put("size", image_type);
@@ -1038,15 +1002,11 @@ public class DetailsFragment extends Fragment {
                                 inner_array.put(innerObject);
 
                                 image_index = current_img_index;
-
                             }
                         }
-//                        arrayListHashMap_Image_URLs.add(image_hmap);
                         outer_ArrayArray_Image_URLs.put(inner_array);
-                        gotImages = true;
                         Log.i("Sergio>", this + "onPostExecute:\nouter_ArrayArray_Image_URLs=\n" + outer_ArrayArray_Image_URLs.toString().replace("\\", ""));
 
-                        gotImages = false;
                         ArrayList<String> arrayListImageURLsToLoad = new ArrayList<>();
                         for (int i = 0; i < outer_ArrayArray_Image_URLs.length(); i++) {
                             JSONArray json_array_i = outer_ArrayArray_Image_URLs.optJSONArray(i);
@@ -1103,7 +1063,6 @@ public class DetailsFragment extends Fragment {
     private void placeImagesFromURL_Details(final ArrayList<String> arrayListImageURLsToLoad) {
         final int size = arrayListImageURLsToLoad.size();
         final ArrayList<Bitmap> arrayListImageBitmap = new ArrayList<>(size);
-        image_switcher_details.removeAllViews();
 
         for (int i = 0; i < size; i++) {
             final int finalI = i;
@@ -1118,6 +1077,13 @@ public class DetailsFragment extends Fragment {
                         public void onResourceReady(final Bitmap resource, GlideAnimation glideAnimation) {
                             arrayListImageBitmap.add(resource);
                             if (finalI == size - 1) {
+                                if (timer != null) {
+                                    timer.cancel();
+                                    timer.purge();
+                                    timer = new Timer();
+                                } else {
+                                    timer = new Timer();
+                                }
                                 bitmapsReady(arrayListImageBitmap);
                             }
                         }
@@ -1128,6 +1094,7 @@ public class DetailsFragment extends Fragment {
 
     private void bitmapsReady(final ArrayList<Bitmap> arrayListImageBitmap) {
         final int size = arrayListImageBitmap.size();
+        image_switcher_details.removeAllViews();
         image_switcher_details.setFactory(new ViewSwitcher.ViewFactory() {
             public View makeView() {
                 return getNewImageView(100);
@@ -1147,9 +1114,9 @@ public class DetailsFragment extends Fragment {
         timer.scheduleAtFixedRate(new TimerTask() {
             public void run() {
                 //Called every 5000 milliseconds
-                currentIndex[0]++;
                 mActivity.runOnUiThread(new Runnable() {
                     public void run() {
+                        currentIndex[0]++;
                         if (currentIndex[0] == size) currentIndex[0] = 0;
                         image_switcher_details.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
                     }
@@ -1160,9 +1127,9 @@ public class DetailsFragment extends Fragment {
         image_switcher_details.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                currentIndex[0]++;
                 mActivity.runOnUiThread(new Runnable() {
                     public void run() {
+                        currentIndex[0]++;
                         if (currentIndex[0] == size) currentIndex[0] = 0;
                         image_switcher_details.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
                     }

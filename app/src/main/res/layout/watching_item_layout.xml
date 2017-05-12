@@ -10,7 +10,6 @@
     app:cardElevation="2dp"
     app:cardPreventCornerOverlap="true">
 
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -60,37 +59,38 @@
                     android:id="@+id/item_highest_price_textview_label"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="left"
                     android:layout_weight="1"
                     android:text="Máximo"
-                    android:textAlignment="center"
                     android:textColor="@color/red"
-                    android:textStyle="bold"/>
+                    android:textSize="12sp"/>
 
                 <TextView
                     android:id="@+id/item_lowest_price_textview_label"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="left"
                     android:layout_weight="1"
                     android:text="Mínimo"
-                    android:textAlignment="center"
                     android:textColor="@color/green"
-                    android:textStyle="bold"/>
+                    android:textSize="12sp"/>
 
                 <TextView
                     android:id="@+id/item_current_price_textview_label"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="left"
                     android:layout_weight="1"
                     android:text="Atual"
-                    android:textAlignment="center"
                     android:textColor="@color/colorPrimaryAlpha"
-                    android:textStyle="bold"/>
+                    android:textSize="12sp"/>
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
+                android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <ImageView
@@ -103,8 +103,9 @@
                     android:id="@+id/item_highest_price_textview"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="left|center_vertical"
                     android:layout_weight="1"
-                    android:textAlignment="center"
+                    android:gravity="center_vertical"
                     android:textColor="@color/red"
                     android:textStyle="bold"/>
 
@@ -118,8 +119,9 @@
                     android:id="@+id/item_lowest_price_textview"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="left|center_vertical"
                     android:layout_weight="1"
-                    android:textAlignment="center"
+                    android:gravity="center_vertical"
                     android:textColor="@color/green"
                     android:textStyle="bold"/>
 
@@ -133,8 +135,9 @@
                     android:id="@+id/item_current_price_textview"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="left|center_vertical"
                     android:layout_weight="1"
-                    android:textAlignment="center"
+                    android:gravity="center_vertical"
                     android:textColor="@color/colorPrimaryAlpha"
                     android:textStyle="bold"/>
             </LinearLayout>
@@ -148,8 +151,8 @@
                     android:id="@+id/item_highest_price_date"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="left"
                     android:layout_weight="1"
-                    android:textAlignment="center"
                     android:textColor="@color/cardview_dark_background"
                     android:textSize="10sp"
                     />
@@ -158,8 +161,8 @@
                     android:id="@+id/item_lowest_price_date"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="left"
                     android:layout_weight="1"
-                    android:textAlignment="center"
                     android:textColor="@color/cardview_dark_background"
                     android:textSize="10sp"
                     />
@@ -168,8 +171,8 @@
                     android:id="@+id/item_current_price_date"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="left"
                     android:layout_weight="1"
-                    android:textAlignment="center"
                     android:textColor="@color/cardview_dark_background"
                     android:textSize="10sp"
                     />

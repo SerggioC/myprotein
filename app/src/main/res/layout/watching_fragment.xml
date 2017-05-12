@@ -22,7 +22,8 @@
             android:paddingRight="4dp"
             android:dividerHeight="4dp"
             tools:listheader="@layout/watch_list_header_view"
-            tools:listitem="@layout/watching_item_layout"/>
+            tools:listitem="@layout/watching_item_layout"
+            />
 
     </android.support.v4.widget.SwipeRefreshLayout>
 </RelativeLayout>

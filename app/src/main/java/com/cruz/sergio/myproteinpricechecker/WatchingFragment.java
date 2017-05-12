@@ -66,9 +66,8 @@ import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.ALL_PRODUCT_COLUMNS_PROJECTION;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.CONTENT_DIR_TYPE;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.CONTENT_ITEM_TYPE;
-import static java.text.DateFormat.DEFAULT;
-import static java.text.DateFormat.MEDIUM;
 import static java.text.DateFormat.getDateTimeInstance;
+import static java.text.DateFormat.getTimeInstance;
 
 public class WatchingFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
     public static final int LOADER_ID = 0;
@@ -82,6 +81,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     static String[] imageSizesToLoad;
     ArrayList bitmapArray;
     Timer timer = new Timer();
+    TimerTask[] array_timerTask = null;
 
     public static class ViewHolder {
         public final ImageView iconView;
@@ -130,11 +130,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             imageSizesToLoad = new String[]{"large", "list", "raw"};
         } else {
             imageSizesToLoad = new String[]{"raw", "largeproduct", "quickview"};
-        }
-
-        Log.d("Sergio>", this + "onCreate:\ndensity=\n" + density);
-        for (int i = 0; i < imageSizesToLoad.length; i++) {
-            Log.d("Sergio>", this + "onCreate:\nimageSizesToLoad=\n" + imageSizesToLoad[i]);
         }
     }
 
@@ -192,14 +187,13 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        Log.d("Sergio>>>", this + " onCreateLoader: id= " + id);
-//
+
 //        Uri uri = ProductsContract.ProductsEntry.CONTENT_URI.buildUpon()
 //                .appendPath(ProductsContract.ProductsEntry.TABLE_NAME)
 //                .build();
-        Log.i("Sergio>>>", this + " onCreateLoader: " + "\nCONTENT_DIR_TYPE= " + CONTENT_DIR_TYPE + " \nCONTENT_ITEM_TYPE= " + CONTENT_ITEM_TYPE);
+
         Uri uri = ProductsContract.ProductsEntry.CONTENT_URI;
-        Log.d("Sergio>>>", this + " onCreateLoader: " + "\nuri=" + uri);
+        Log.i("Sergio>>>", this + " onCreateLoader:  id= " + id + "\nCONTENT_DIR_TYPE= " + CONTENT_DIR_TYPE + " \nCONTENT_ITEM_TYPE= " + CONTENT_ITEM_TYPE + "\nuri=" + uri);
 
         //String selection = "WHERE '" + ProductsContract.ProductsEntry.TABLE_NAME + "' = 'qualquercoisa'";
         CursorLoader cursor_loader = new CursorLoader(
@@ -240,21 +234,45 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
     public class cursorDBAdapter extends CursorAdapter {
         private LayoutInflater cursorItemInflater;
+        private ArrayList<ArrayList<String>> arrayArray_imgURI;
 
         public cursorDBAdapter(Context context, Cursor c, int flags) {
             super(context, c, flags);
             cursorItemInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            //Log.d("Sergio>>>", this + " cursorDBAdapter: cursorItemInflater \n" + cursorItemInflater);
+
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+
+            View view = super.getView(position, convertView, parent);
+
+            Log.i("Sergio>", this + "\ngetView:\nconvertView=\n" + convertView + "\ngetView:\nposition=\n" + position);
+
+            // quando convertView != null recicla as views anteriores já existentes
+            // mas misturava as imagens do imageSwitcher
+            // as views não visíveis eram recriadas com imageSwitcher das views que desapareciam
+            // multiplicando timers e imagens misturando tudo
+            // mas fica mais lento
+            // TODO: melhorar performance
+            if (convertView != null) {
+                //view = newView(mContext, mCursor, null);
+                view = newView(null, null, null);
+                bindView(view, mContext, (Cursor) getItem(position));
+            }
+
+            return view;
+
         }
 
         // The newView method is used to inflate a new view and return it,
         // you don't bind any data to the view at this point.
         @Override
         public View newView(Context context, Cursor cursor, ViewGroup parent) {
-            Log.d("Sergio>>>", this + " newView: cursor= " + cursor + " parent= " + parent);
-            View item_root = cursorItemInflater.inflate(R.layout.watching_item_layout, parent, false);
+            View item_root = cursorItemInflater.inflate(R.layout.watching_item_layout, null, false);
+
             ViewHolder viewHolder = new ViewHolder(item_root);
-            item_root.setTag(viewHolder);
+            item_root.setTag(R.id.viewholder, viewHolder);
             return item_root;
         }
 
@@ -262,10 +280,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         // such as setting the text on a TextView.
         @Override
         public void bindView(View view, Context context, Cursor cursor) {
-            //Log.i("Sergio>", this + " bindView: cursor=\n" + dumpCursorToString(cursor));
-            ViewHolder viewHolder = (ViewHolder) view.getTag();
-            viewHolder.imageSwitcher.removeAllViews();
-
             String prod_name = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME));
             String min_price = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE));
             String max_price = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE));
@@ -277,7 +291,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             String string_array_base_image_URLs = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ARRAY_MP_BASE_IMG_URLS));
             String string_array_img_uris = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGE_URIS));
             String string_array_image_URLs = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMG_URLS));
-
             long minPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE));
             long maxPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE));
             long actualPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE));
@@ -289,15 +302,18 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             if (min_price == null || min_price.equals("0")) min_price = "-";
             if (current_price == null || current_price.equals("0")) current_price = "-";
 
+            ViewHolder viewHolder = (ViewHolder) view.getTag(R.id.viewholder);
 
             Boolean gotPictures = false;
-            if (string_array_base_img_uris != null) {
-                gotPictures = extractImagesFromBase(viewHolder, string_array_base_img_uris, string_array_base_image_URLs);
-            } else if (string_array_img_uris != null) {
+            if (string_array_img_uris != null) {
                 gotPictures = extractImagesFromJSON(viewHolder, string_array_img_uris, string_array_image_URLs);
+            } else {
+                if (string_array_base_img_uris != null) {
+                    gotPictures = extractImagesFromBase(viewHolder, string_array_base_img_uris, string_array_base_image_URLs);
+                }
             }
 
-            if (!gotPictures) { //Se não encontrou imagens nenhumas colocar imagem com no image available
+            if (!gotPictures) { //Se não encontrou imagens nenhumas colocar imagem "no image available"
                 viewHolder.imageSwitcher.addView(getNewImageView(70));
                 ImageView iv = (ImageView) viewHolder.imageSwitcher.getChildAt(0);
                 Glide.with(mActivity).load(R.drawable.noimage).into(iv);
@@ -307,100 +323,10 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             viewHolder.highestPriceView.setText(max_price);
             viewHolder.lowestPriceView.setText(min_price);
             viewHolder.currentPriceView.setText(current_price);
-
             viewHolder.highestPriceDate.setText(getMillisecondsToDate(maxPriceDate));
             viewHolder.lowestPriceDate.setText(getMillisecondsToDate(minPriceDate));
             viewHolder.currentPriceDate.setText(getMillisecondsToDate(actualPriceDate));
-            //End bindView
-        }
-
-        private Boolean extractImagesFromBase(ViewHolder viewHolder, String string_array_base_img_uris, String string_array_base_image_urLs) {
-            String[] baseImageSizes = new String[]{"S300", "S480", "S600"};
-            ArrayList<File> arrayListImageFiles = new ArrayList<>();
-            Boolean gotPictures = false;
-            JSONArray jsonArray_img_uris = null;
-            if (string_array_base_img_uris != null) {
-                try {
-                    jsonArray_img_uris = new JSONArray(string_array_base_img_uris);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (jsonArray_img_uris != null) {
-                if (jsonArray_img_uris.length() > 0) {
-                    String fileNameToLoad = null;
-                    for (int i = 0; i < jsonArray_img_uris.length(); i++) {
-                        try {
-                            String filename = (String) jsonArray_img_uris.get(i);
-                            if (filename != null) {
-                                for (int k = 0; k < baseImageSizes.length; k++) {
-                                    if (filename.contains("_" + baseImageSizes[k] + "_")) {
-                                        fileNameToLoad = filename;
-                                        gotPictures = true;
-                                    }
-                                }
-                            }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    if (gotPictures) {
-                        File img_File = new File(mActivity.getFilesDir(), fileNameToLoad);
-                        if (img_File.exists()) {
-                            arrayListImageFiles.add(img_File);
-                            placeImagesFromFile(viewHolder, arrayListImageFiles);
-                        }
-                    }
-
-                    Log.i("Sergio>", this + "bindView:\narrayListImageFiles From Base=\n" + arrayListImageFiles);
-                }
-            }
-            // Se as imagem não estiverem guardadas no /data/ folder da app no dispositivo (memória interna)
-            // fazer o download a partir da lista de URLs e guardá-las
-            if (arrayListImageFiles.size() == 0) {
-                if (string_array_base_image_urLs != null) {
-                    gotPictures = false;
-                    ArrayList<String> arrayListImageURLs = new ArrayList<>();
-                    JSONArray jsonArray_image_URLs = null;
-                    try {
-                        jsonArray_image_URLs = new JSONArray(string_array_base_image_urLs);
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                    if (jsonArray_image_URLs != null) {
-                        if (jsonArray_image_URLs.length() > 0) {
-
-                            String urlToLoad = null;
-                            for (int j = 0; j < jsonArray_image_URLs.length(); j++) {
-                                try {
-                                    String url = (String) jsonArray_image_URLs.get(j);
-                                    if (url != null) {
-                                        for (int k = 0; k < baseImageSizes.length; k++) {
-                                            if (url.contains("_" + baseImageSizes[k] + "_")) {
-                                                urlToLoad = url;
-                                                gotPictures = true;
-                                            }
-                                        }
-                                    }
-                                } catch (JSONException e) {
-                                    e.printStackTrace();
-                                    gotPictures = false;
-                                }
-                            }
-                            if (gotPictures) {
-                                arrayListImageURLs.add(urlToLoad);
-                                placeImagesFromURL(viewHolder, arrayListImageURLs);
-
-                                //TODO create image file and save it
-                                //saveImagesWithGlide(fileNameToLoad);
-                            }
-                        }
-                    }
-                }
-            }
-            return gotPictures;
-        }
+        }   // End bindView
 
         @NonNull
         public Boolean extractImagesFromJSON(ViewHolder viewHolder, String string_array_img_uris, String string_array_image_URLs) {
@@ -441,8 +367,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                             }
                         }
                     }
-                    Log.i("Sergio>", this + "bindView:\narrayListImageFiles=\n" + arrayListImageFiles);
-
                     if (gotPictures && arrayListImageFiles.size() > 0) {
                         placeImagesFromFile(viewHolder, arrayListImageFiles);
                     }
@@ -488,7 +412,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                             }
                             if (gotPictures) {
                                 placeImagesFromURL(viewHolder, arrayListImageURLs);
-
                                 //TODO create image file and save it
                                 //saveImagesWithGlide(fileNameToLoad);
                             }
@@ -497,6 +420,144 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 }
             }
             return gotPictures;
+        }
+
+        @NonNull
+        private Boolean extractImagesFromBase(ViewHolder viewHolder, String string_array_base_img_uris, String string_array_base_image_urLs) {
+            String[] scriptImageSizesToLoad = new String[]{"S300", "S480", "S600"};
+            ArrayList<File> arrayListImageFiles = new ArrayList<>();
+            Boolean gotPictures = false;
+            JSONArray jsonArray_img_uris = null;
+            if (string_array_base_img_uris != null) {
+                try {
+                    jsonArray_img_uris = new JSONArray(string_array_base_img_uris);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (jsonArray_img_uris != null) {
+                if (jsonArray_img_uris.length() > 0) {
+                    for (int o = 0; o < jsonArray_img_uris.length(); o++) {
+
+                        String fileNameToLoad = null;
+                        JSONArray array_i_imgURIs = jsonArray_img_uris.optJSONArray(o);
+                        for (int i = 0; i < array_i_imgURIs.length(); i++) {
+                            try {
+                                String filename = (String) array_i_imgURIs.get(i);
+                                if (filename != null) {
+                                    for (int k = 0; k < scriptImageSizesToLoad.length; k++) {
+                                        if (filename.contains("_" + scriptImageSizesToLoad[k] + "_")) {
+                                            fileNameToLoad = filename;
+                                            gotPictures = true;
+                                        }
+                                    }
+                                }
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        if (gotPictures) {
+                            File img_File = new File(mActivity.getFilesDir(), fileNameToLoad);
+                            if (img_File.exists()) {
+                                arrayListImageFiles.add(img_File);
+                                placeImagesFromFile(viewHolder, arrayListImageFiles);
+                            }
+                        }
+                    }
+                }
+            }
+            // Se as imagem não estiverem guardadas no /data/ folder da app no dispositivo (memória interna)
+            // fazer o download a partir da lista de URLs e guardá-las
+            if (arrayListImageFiles.size() == 0) {
+                if (string_array_base_image_urLs != null) {
+                    gotPictures = false;
+                    ArrayList<String> arrayListImageURLs = new ArrayList<>();
+                    JSONArray jsonArray_image_URLs = null;
+                    try {
+                        jsonArray_image_URLs = new JSONArray(string_array_base_image_urLs);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    if (jsonArray_image_URLs != null) {
+                        if (jsonArray_image_URLs.length() > 0) {
+                            for (int o = 0; o < jsonArray_image_URLs.length(); o++) {
+
+                                JSONArray array_i_imgURLs = jsonArray_image_URLs.optJSONArray(o);
+                                String urlToLoad = null;
+                                for (int i = 0; i < array_i_imgURLs.length(); i++) {
+                                    try {
+                                        String url = (String) array_i_imgURLs.get(i);
+                                        if (url != null) {
+                                            for (int k = 0; k < scriptImageSizesToLoad.length; k++) {
+                                                if (url.contains("_" + scriptImageSizesToLoad[k] + "_")) {
+                                                    urlToLoad = url;
+                                                    gotPictures = true;
+                                                }
+                                            }
+                                        }
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                        gotPictures = false;
+                                    }
+                                }
+                                if (gotPictures) {
+                                    arrayListImageURLs.add(urlToLoad);
+                                    placeImagesFromURL(viewHolder, arrayListImageURLs);
+                                    //TODO create image file and save it
+                                    //saveImagesWithGlide(fileNameToLoad);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return gotPictures;
+        }
+
+        private void placeImagesFromFile(final ViewHolder viewHolder, final ArrayList<File> arrayListImageFiles) {
+            final int size = arrayListImageFiles.size();
+
+            viewHolder.imageSwitcher.removeAllViews();
+            viewHolder.imageSwitcher.setFactory(new ViewSwitcher.ViewFactory() {
+                public View makeView() {
+                    return getNewImageView(70);
+                }
+            });
+            // Declare in and out animations and load them using AnimationUtils class
+            Animation fadeIn = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_in);
+            fadeIn.setDuration(1200);
+            Animation fadeOut = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_out);
+            fadeOut.setDuration(1200);
+            // set the animation type to ImageSwitcher
+            viewHolder.imageSwitcher.setInAnimation(fadeIn);
+            viewHolder.imageSwitcher.setOutAnimation(fadeOut);
+
+
+            final int[] currentIndex = {0};
+            final Runnable runnable = new Runnable() {
+                public void run() {
+                    currentIndex[0]++;
+                    if (currentIndex[0] >= size) currentIndex[0] = 0;
+                    viewHolder.imageSwitcher.setImageURI(Uri.fromFile(arrayListImageFiles.get(currentIndex[0])));
+                }
+            };
+            TimerTask timerTask = new TimerTask() {
+                public void run() {
+                    mActivity.runOnUiThread(runnable);
+                }
+            };
+
+            Timer timer = new Timer();
+            timer.scheduleAtFixedRate(timerTask, 0, 5400);
+
+            viewHolder.imageSwitcher.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mActivity.runOnUiThread(runnable);
+                }
+            });
+
         }
 
         private void placeImagesFromURL(final ViewHolder viewHolder, final ArrayList<String> arrayListImageURLs) {
@@ -514,104 +575,53 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                             public void onResourceReady(final Bitmap resource, GlideAnimation glideAnimation) {
                                 arrayListImageBitmap.add(resource);
                                 if (finalI == size - 1) {
-                                    bitmapsReady(viewHolder, size, arrayListImageBitmap);
+                                    bitmapsFromURL_Ready(viewHolder, size, arrayListImageBitmap);
                                 }
                             }
                         });
             }
         }
 
-        public void bitmapsReady(final ViewHolder viewHolder, final int size, final ArrayList<Bitmap> arrayListImageBitmap) {
+        public void bitmapsFromURL_Ready(final ViewHolder viewHolder, final int size, final ArrayList<Bitmap> arrayListImageBitmap) {
+            viewHolder.imageSwitcher.removeAllViews();
             viewHolder.imageSwitcher.setFactory(new ViewSwitcher.ViewFactory() {
                 public View makeView() {
                     return getNewImageView(70);
                 }
             });
+
             // Declare in and out animations and load them using AnimationUtils class
             Animation fadeIn = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_in);
             fadeIn.setDuration(1200);
             Animation fadeOut = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_out);
             fadeOut.setDuration(1200);
-
-            // set the animation type to ImageSwitcher
-            viewHolder.imageSwitcher.setInAnimation(fadeIn);
-            viewHolder.imageSwitcher.setOutAnimation(fadeOut);
-            //Set the schedule function and rate
-            final int[] currentIndex = {0};
-            timer.scheduleAtFixedRate(new TimerTask() {
-                public void run() {
-                    //Called every 5000 milliseconds
-                    currentIndex[0]++;
-                    mActivity.runOnUiThread(new Runnable() {
-                        public void run() {
-                            if (currentIndex[0] >= size) currentIndex[0] = 0;
-                            viewHolder.imageSwitcher.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
-                        }
-                    });
-                }
-            }, 0, 5000);
-
-            viewHolder.imageSwitcher.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    currentIndex[0]++;
-                    mActivity.runOnUiThread(new Runnable() {
-                        public void run() {
-                            if (currentIndex[0] >= size) currentIndex[0] = 0;
-                            viewHolder.imageSwitcher.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
-                        }
-                    });
-                }
-            });
-        }
-
-        private void placeImagesFromFile(final ViewHolder viewHolder, final ArrayList<File> arrayListImageFiles) {
-            final int size = arrayListImageFiles.size();
-
-            viewHolder.imageSwitcher.setFactory(new ViewSwitcher.ViewFactory() {
-                public View makeView() {
-                    return getNewImageView(70);
-                }
-            });
-            // Declare in and out animations and load them using AnimationUtils class
-            Animation fadeIn = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_in);
-            fadeIn.setDuration(1000);
-            Animation fadeOut = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_out);
-            fadeOut.setDuration(1000);
-
             // set the animation type to ImageSwitcher
             viewHolder.imageSwitcher.setInAnimation(fadeIn);
             viewHolder.imageSwitcher.setOutAnimation(fadeOut);
 
             //Set the schedule function and rate
             final int[] currentIndex = {0};
-            final TimerTask timerTask = new TimerTask() {
+            final Runnable runnable = new Runnable() {
                 public void run() {
-                    mActivity.runOnUiThread(new Runnable() {
-                        public void run() {
-                            if (currentIndex[0] >= size) currentIndex[0] = 0;
-                            viewHolder.imageSwitcher.setImageURI(Uri.fromFile(arrayListImageFiles.get(currentIndex[0])));
-                        }
-                    });
                     currentIndex[0]++;
+                    if (currentIndex[0] >= size) currentIndex[0] = 0;
+                    viewHolder.imageSwitcher.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
                 }
             };
-            //Called every 5000 milliseconds with 0 delay
-            timer.scheduleAtFixedRate(timerTask, 0, 5000);
+            TimerTask timerTask = new TimerTask() {
+                public void run() {
+                    mActivity.runOnUiThread(runnable);
+                }
+            };
+            //Called every 5000 milliseconds
+            timer.scheduleAtFixedRate(timerTask, 0, 5400);
 
             viewHolder.imageSwitcher.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    currentIndex[0]++;
-                    mActivity.runOnUiThread(new Runnable() {
-                        public void run() {
-                            if (currentIndex[0] >= size) currentIndex[0] = 0;
-                            viewHolder.imageSwitcher.setImageURI(Uri.fromFile(arrayListImageFiles.get(currentIndex[0])));
-                        }
-                    });
+                    mActivity.runOnUiThread(runnable);
                 }
             });
-
         }
 
         @NonNull
@@ -668,13 +678,23 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         long timeDif = System.currentTimeMillis() - milliseconds;
 
         if (timeDif <= 3_600_000) { // uma hora atrás
-            return TimeUnit.MILLISECONDS.toMinutes(timeDif) + " minutos";
+            return TimeUnit.MILLISECONDS.toMinutes(timeDif) + " Minutos atrás";
+
         } else if (timeDif > 3_600_000 && timeDif <= 86_400_000) { // Dentro do dia de hoje até 24h
-            return TimeUnit.MILLISECONDS.toHours(timeDif) + " horas";
-        } else if (timeDif > 86_400_000 && timeDif < 172_800_000) { // Ontem 24 a 48h
-            return "Ontem";
+            return TimeUnit.MILLISECONDS.toHours(timeDif) + " Horas atrás";
+
+        } else if (timeDif > 86_400_000 && timeDif <= 172_800_000) { // Ontem 24 a 48h
+            DateFormat df = getTimeInstance();
+            Date resultDate = new Date(milliseconds);
+            return "Ontem " + df.format(resultDate);
+
+        } else if (timeDif > 172_800_000 && timeDif <= 259_200_000) {
+            DateFormat df = getTimeInstance();
+            Date resultDate = new Date(milliseconds);
+            return "Anteontem " + df.format(resultDate);
+
         } else {
-            DateFormat dateFormat = getDateTimeInstance(MEDIUM, DEFAULT);
+            DateFormat dateFormat = getDateTimeInstance();
             Date resultdate = new Date(milliseconds);
             return dateFormat.format(resultdate);
         }

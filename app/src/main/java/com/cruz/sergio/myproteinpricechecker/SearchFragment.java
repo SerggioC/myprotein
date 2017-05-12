@@ -243,7 +243,10 @@ public class SearchFragment extends Fragment {
             Elements resultProductCards = new Elements(0);
 
             if (resultDocument != null) {
-                resultProductCards = resultDocument.getElementById("divSearchResults").getElementsByClass("item"); //Todos os resultados em "cards"
+                Element divSearchResults = resultDocument.getElementById("divSearchResults");
+                if (divSearchResults != null) {
+                    resultProductCards = divSearchResults.getElementsByClass("item"); //Todos os resultados em "cards"
+                }
             }
 
             //#divSearchResults > div:nth-child(1) > div:nth-child(1)
