@@ -33,39 +33,20 @@ public class MainActivity extends AppCompatActivity {
     int index = 0;
     public static String DETAILS_FRAGMENT_TAG = "DETAILS_FRAGMENT";
     Boolean addedNewProduct = false;
+    public static Boolean CACHE_IMAGES;
+    public static Boolean BC_Registered;
 
     @Override
     protected void onStart() {
         super.onStart();
-        NetworkUtils.createBroadcast(mActivity);
-        //Log.d("Sergio>>>", "Starting MainActivity and createBroadcast");
+        BC_Registered = false;
+        BC_Registered = NetworkUtils.createBroadcast(mActivity);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         NetworkUtils.UnregisterBroadcastReceiver(mActivity);
-        //Log.d("Sergio>>>", "Pausing MainActivity and UnregisterBroadcastReceiver");
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        NetworkUtils.UnregisterBroadcastReceiver(mActivity);
-        //Log.d("Sergio>>>", "Stoping MainActivity");
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        //Log.d("Sergio>>>", "Resuming MainActivity");
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        NetworkUtils.UnregisterBroadcastReceiver(mActivity);
-        //Log.e("Sergio>>>", "Destroying MainActivity and UnregisterBroadcastReceiver");
     }
 
     @Override
@@ -77,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
 
         mActivity = this;
         sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
+        CACHE_IMAGES = sharedPrefs.getBoolean("cache_images", true);
 
         /** Setup the DrawerLayout and NavigationView **/
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawerLayout);

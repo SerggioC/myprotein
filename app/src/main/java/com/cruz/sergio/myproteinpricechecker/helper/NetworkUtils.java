@@ -11,11 +11,12 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
 import java.io.IOException;
+
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.BC_Registered;
 
 /*****
  *
@@ -31,30 +32,32 @@ public class NetworkUtils {
     public static BroadcastReceiver BCReceiver;
 
     public static final void UnregisterBroadcastReceiver(Activity mActivity) {
-        LocalBroadcastManager.getInstance(mActivity).unregisterReceiver(BCReceiver);
-        Toast.makeText(mActivity, "Unregistering Broadcast Receiver", Toast.LENGTH_SHORT).show();
+        if (BCReceiver != null) {
+            LocalBroadcastManager.getInstance(mActivity).unregisterReceiver(BCReceiver);
+            Toast.makeText(mActivity, "Unregistering Broadcast Receiver", Toast.LENGTH_SHORT).show();
+        }
     }
 
-    public static final void createBroadcast(final Activity mActivity) {
+    public static final Boolean createBroadcast(final Activity mActivity) {
         makeNoNetworkSnackBar(mActivity);
-
         BCReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 Bundle extras = intent.getExtras();
                 NetworkInfo info = extras.getParcelable("networkInfo");
                 NetworkInfo.State state = info.getState();
-
                 if (noNetworkSnackBar.isShown())
                     noNetworkSnackBar.dismiss();
                 if (state != NetworkInfo.State.CONNECTED)
                     noNetworkSnackBar.show();
-                Log.w("Sergio>", this + "onReceive:\nnoNetworkSnackBarisShown()=\n" + noNetworkSnackBar.isShown());
             }
         };
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
-        mActivity.registerReceiver(BCReceiver, intentFilter);
+        if (!BC_Registered) {
+            mActivity.registerReceiver(BCReceiver, intentFilter);
+        }
+        return true;
     }
 
     public static final void makeNoNetworkSnackBar(Activity mActivity) {

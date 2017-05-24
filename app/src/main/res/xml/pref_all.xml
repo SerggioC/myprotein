@@ -74,4 +74,10 @@
             android:title="@string/pref_title_sync_frequency"/>
     </PreferenceCategory>
 
+    <SwitchPreference
+        android:defaultValue="true"
+        android:icon="@mipmap/ic_file_add"
+        android:key="cache_images"
+        android:title="@string/pref_title_cache"/>
+
 </PreferenceScreen>

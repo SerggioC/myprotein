@@ -80,8 +80,6 @@ public class ProductsContract {
         public static final String COLUMN_MP_OPTIONS1 = "mp_options1";
         public static final String COLUMN_MP_OPTIONS2 = "mp_options2";
         public static final String COLUMN_MP_OPTIONS3 = "mp_options3";
-        public static final String COLUMN_ARRAY_MP_BASE_IMG_URLS = "mp_base_mp_img_urls";
-        public static final String COLUMN_ARRAY_BASE_IMG_URIS = "mp_base_img_uris";
         public static final String COLUMN_MIN_PRICE = "min_price";
         public static final String COLUMN_MIN_PRICE_VALUE = "min_price_value";
         public static final String COLUMN_MIN_PRICE_DATE = "min_price_date";
@@ -98,8 +96,7 @@ public class ProductsContract {
         public static final String COLUMN_MP_OPTIONS_NAME2 = "mp_options_name2";
         public static final String COLUMN_MP_OPTIONS_NAME3 = "mp_options_name3";
         public static final String COLUMN_CUSTOM_PRODUCT_ID = "mp_custom_product_id";
-        public static final String COLUMN_ARRAYLIST_IMAGE_URIS = "mp_array_img_uris";
-        public static final String COLUMN_ARRAYLIST_IMG_URLS = "mp_array_image_urls";
+        public static final String COLUMN_ARRAYLIST_IMAGES = "mp_array_images";
 
         public static final String[] ALL_PRODUCT_COLUMNS_PROJECTION = new String[]{ //Todas as colunas da tabela
                 ProductsEntry._ID,
@@ -121,8 +118,6 @@ public class ProductsContract {
                 ProductsEntry.COLUMN_MP_OPTIONS1,
                 ProductsEntry.COLUMN_MP_OPTIONS2,
                 ProductsEntry.COLUMN_MP_OPTIONS3,
-                ProductsEntry.COLUMN_ARRAY_MP_BASE_IMG_URLS,
-                ProductsEntry.COLUMN_ARRAY_BASE_IMG_URIS,
                 ProductsEntry.COLUMN_MIN_PRICE,
                 ProductsEntry.COLUMN_MIN_PRICE_VALUE,
                 ProductsEntry.COLUMN_MIN_PRICE_DATE,
@@ -139,8 +134,7 @@ public class ProductsContract {
                 ProductsEntry.COLUMN_MP_OPTIONS_NAME2,
                 ProductsEntry.COLUMN_MP_OPTIONS_NAME3,
                 ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID,
-                ProductsEntry.COLUMN_ARRAYLIST_IMAGE_URIS,
-                ProductsEntry.COLUMN_ARRAYLIST_IMG_URLS
+                ProductsEntry.COLUMN_ARRAYLIST_IMAGES
         };
     }
 

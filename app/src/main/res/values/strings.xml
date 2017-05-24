@@ -45,6 +45,7 @@
     <string name="tab_text_search">Search Product</string>
     <string name="tab_text_graph">Price Graphs</string>
     <string name="tab_text_voucher">Voucher Codes</string>
+    <string name="pref_title_cache">Cache Images</string>
 
     <string-array name="pref_mp_website_titles">
         <item>Austria (German)</item>

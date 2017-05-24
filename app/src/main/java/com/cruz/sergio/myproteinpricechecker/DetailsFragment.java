@@ -73,13 +73,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
-import static com.cruz.sergio.myproteinpricechecker.WatchingFragment.imageSizesToLoad;
+import static com.cruz.sergio.myproteinpricechecker.WatchingFragment.imageSizesToUse;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
 
 public class DetailsFragment extends Fragment {
@@ -101,11 +102,11 @@ public class DetailsFragment extends Fragment {
     Boolean addedNewProduct = false;
     ImageView productImageView;
     Boolean gotImages = false;
-    JSONArray outer_ArrayArray_Image_URLs;
+    JSONArray JSON_ArrayArray_Images;
     ImageSwitcher image_switcher_details;
     Timer timer;
-    ArrayList<ArrayList<String>> arrayListImageURLsFromScript;
 
+    ArrayList<String> all_image_sizes;
     final static String[] MP_ALL_IMAGE_TYPES = new String[]{
             "extrasmall",   // 20/20
             "small",        // 50/50
@@ -123,22 +124,39 @@ public class DetailsFragment extends Fragment {
             "zoom",         // 960/960
             "magnify"};    // 1600/1600
 
-    final static String[] MP_IMAGE_TYPES = new String[]{
-            "extrasmall",   // 20/20
-            "small",        // 50/50
-            "smallthumb",   // 60/60
-            "thumbnail",    // 70/70
-            "smallprod",    // 100/100
-            "product",      // 130/130
-            "large",        // 180/180
-            "list",         // 200/200
-            "raw",          // 270/270
-            "largeproduct", // 300/300
-            "quickview",    // 350/350
-            "carousel",     // 480/480
-            "extralarge",   // 600/600
-            "zoom",         // 960/960
-            "magnify"};    // 1600/1600
+    final static String[] MP_XX_IMAGE_TYPES = new String[]{
+            "20x20",        // 20/20
+            "50x50",        // 50/50
+            "60x60",        // 60/60
+            "70x70",        // 70/70
+            "100x100",      // 100/100
+            "130x130",      // 130/130
+            "180x180",      // 180/180
+            "200x200",      // 200/200
+            "270x270",      // 270/270
+            "300x300",      // 300/300
+            "350x350",      // 350/350
+            "480x480",      // 480/480
+            "600x600",      // 600/600
+            "960x960",      // 960/960
+            "1600x1600"};   // 1600/1600
+
+    final static String[] MP_BB_IMAGE_TYPES = new String[]{
+            "/20/20/",        // 20/20
+            "/50/50/",        // 50/50
+            "/60/60/",        // 60/60
+            "/70/70/",        // 70/70
+            "/100/100/",      // 100/100
+            "/130/130/",      // 130/130
+            "/180/180/",      // 180/180
+            "/200/200/",      // 200/200
+            "/270/270/",      // 270/270
+            "/300/300/",      // 300/300
+            "/350/350/",      // 350/350
+            "/480/480/",      // 480/480
+            "/600/600/",      // 600/600
+            "/960/960/",      // 960/960
+            "/1600/1600/"};   // 1600/1600
 
 
     @Override
@@ -147,6 +165,7 @@ public class DetailsFragment extends Fragment {
         mActivity = getActivity();
         thisFragment = this;
         productContentValues = new ContentValues(); //content values para a DB
+        all_image_sizes = new ArrayList<>(Arrays.asList(MP_ALL_IMAGE_TYPES));
     }
 
     @Override
@@ -276,7 +295,10 @@ public class DetailsFragment extends Fragment {
             }
         });
 
-        //Guardar produto na DB ao clicar no botão
+        /*
+         *   Guardar produto na DB ao clicar no botão
+         *
+        */
         mActivity.findViewById(R.id.button_add_to_db).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -306,34 +328,24 @@ public class DetailsFragment extends Fragment {
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE, price_value);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE, timeMillis);
 
-                if (outer_ArrayArray_Image_URLs != null) { // Imagens do JSON (Mais completo)
+                if (JSON_ArrayArray_Images != null) { // Imagens do JSON (Mais completo)
                     ArrayList<ArrayList<String>> arrayListArrayListImageURIs = new ArrayList<>();
-//                for (int i = 0; i < arrayListHashMap_Image_URLs.size(); i++) {
-//                    HashMap hashMap_Index_i = arrayListHashMap_Image_URLs.get(i);
-//                    ArrayList<String> arrayListImageURIs = new ArrayList<>();
-//
-//                    for (int k = 0; k < MP_IMAGE_TYPES.length; k++) {
-//                        if (hashMap_Index_i.containsKey(MP_IMAGE_TYPES[k])) {
-//                            String filename = customProductID + "_" + MP_IMAGE_TYPES[k] + "_index_" + i + ".jpg";
-//                            saveImageWithGlide(hashMap_Index_i.get(MP_IMAGE_TYPES[k]).toString(), filename); //guarda as imagens todas. index_i=variação MP_IMAGE_TYPES[k]=tamanho
-//                            arrayListImageURIs.add(filename);
-//                        }
-//                    }
-//                    arrayListArrayListImageURIs.add(arrayListImageURIs);
-//                }
-                    for (int i = 0; i < outer_ArrayArray_Image_URLs.length(); i++) {
-                        JSONArray json_array_i = outer_ArrayArray_Image_URLs.optJSONArray(i);
+                    for (int i = 0; i < JSON_ArrayArray_Images.length(); i++) {
+                        JSONArray json_array_i = JSON_ArrayArray_Images.optJSONArray(i);
                         ArrayList<String> arrayListImageURIs = new ArrayList<>();
                         for (int j = 0; j < json_array_i.length(); j++) {
                             try {
                                 String size = (String) ((JSONObject) json_array_i.get(j)).get("size");
                                 String url = (String) ((JSONObject) json_array_i.get(j)).get("url");
                                 if (url != null) {
-                                    for (int k = 0; k < imageSizesToLoad.length; k++) {
-                                        if (size.equals(imageSizesToLoad[k])) {
-                                            String filename = customProductID + "_" + imageSizesToLoad[k] + "_index_" + i + ".jpg";
-                                            saveImageWithGlide(url, filename); //guarda as imagens todas. index_i=variação imageSizesToLoad[k]=tamanho
+                                    for (int k = 0; k < imageSizesToUse.length; k++) {
+                                        if (size.equals(imageSizesToUse[k])) {
+                                            String filename = customProductID + "_" + imageSizesToUse[k] + "_index_" + i + ".jpg"; // ex.: tamanho 200x200 imageSizesToUse
+                                            saveImageWithGlide(url, filename); //guarda as imagens todas. index_i=variação imageSizesTounUse[k]=tamanho
                                             arrayListImageURIs.add(filename);
+
+                                            ((JSONObject) JSON_ArrayArray_Images.optJSONArray(i).get(j)).put("uri", filename);
+
                                         }
                                     }
                                 }
@@ -343,27 +355,11 @@ public class DetailsFragment extends Fragment {
                         }
                         arrayListArrayListImageURIs.add(arrayListImageURIs);
                     }
+                    Log.w("Sergio>", this + "\nonClick: \n" + "JSON_ArrayArray_Images=\n" + JSON_ArrayArray_Images);
+
                     Log.i("Sergio>", this + "onClick:\narrayListArrayListImageURIs=\n" + arrayListArrayListImageURIs);
-                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMG_URLS, outer_ArrayArray_Image_URLs.toString().replace("\\", ""));
-                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGE_URIS, arrayListArrayListImageURIs.toString());
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGES, JSON_ArrayArray_Images.toString().replace("\\", ""));
 
-                } else if (outer_ArrayArray_Image_URLs == null && arrayListImageURLsFromScript != null) { // Imagens do cript Presente no HTML (6 Tamanhos)
-                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAY_MP_BASE_IMG_URLS, arrayListImageURLsFromScript.toString());
-
-                    String[] scriptImageSizes = new String[]{"S70", "S130", "S180", "S300", "S600", "S960"};
-
-                    ArrayList<ArrayList<String>> arrayArrayScriptImageURIs = new ArrayList<>();
-                    for (int a = 0; a < arrayListImageURLsFromScript.size(); a++) {
-
-                        ArrayList<String> arrayListBaseImageURIs = new ArrayList<>();
-                        for (int i = 0; i < arrayListImageURLsFromScript.get(a).size(); i++) {
-                            String filename = customProductID + "_" + scriptImageSizes[i] + "_.jpg";
-                            saveImageWithGlide(arrayListImageURLsFromScript.get(a).get(i), filename);
-                            arrayListBaseImageURIs.add(filename);
-                        }
-                        arrayArrayScriptImageURIs.add(arrayListBaseImageURIs);
-                    }
-                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAY_BASE_IMG_URIS, arrayArrayScriptImageURIs.toString());
                 }
 
                 DBHelper dbHelper = new DBHelper(getContext());
@@ -481,7 +477,8 @@ public class DetailsFragment extends Fragment {
 
     }
 
-    public void saveImageWithGlide(String imageURL, final String filename) {
+    public boolean saveImageWithGlide(String imageURL, final String filename) {
+        final Boolean[] has_saved_image = {false};
         Glide.with(mActivity)
                 .load(imageURL)
                 .asBitmap()
@@ -503,14 +500,17 @@ public class DetailsFragment extends Fragment {
                                     outputStream.write(resource);
                                     outputStream.flush();
                                     outputStream.close();
+                                    has_saved_image[0] = true;
                                 } catch (IOException e) {
                                     e.printStackTrace();
+                                    has_saved_image[0] = false;
                                 }
                                 return null;
                             }
                         }.execute();
                     }
                 });
+        return has_saved_image[0];
     }
 
     public StringBuffer readFile(String fileName) {
@@ -613,7 +613,7 @@ public class DetailsFragment extends Fragment {
                     String currency_symbol = match.replaceAll("");
                     productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL, currency_symbol);
 
-                    getImagesFromSrciptTag(resultDocument);
+                    getImagesFromScriptTag(resultDocument);
 //                    // Imagem 480x480
 //                    Element first_prod_img = resultDocument.getElementsByClass("product-img").first();
 //                    if (first_prod_img != null) {
@@ -645,30 +645,48 @@ public class DetailsFragment extends Fragment {
 
         }
 
-        private void getImagesFromSrciptTag(Document resultDocument) {
+        private void getImagesFromScriptTag(Document resultDocument) {
             Elements scriptTags = resultDocument.getElementsByTag("script");
             for (Element tag : scriptTags) {
                 for (DataNode node : tag.dataNodes()) {
                     String script = node.getWholeData();
                     if (script.contains("arProductImages")) {
-                        arrayListImageURLsFromScript = new ArrayList<>();
+                        JSON_ArrayArray_Images = new JSONArray();
 
                         int indexOfarray = script.indexOf("arProductImages[");
 
                         while (indexOfarray >= 0) {
                             String sub_script = script.substring(indexOfarray, script.indexOf(");", indexOfarray));
+                            JSONArray inner_array = new JSONArray();
 
-                            ArrayList<String> URLsFromScriptArray = new ArrayList<>();
                             int indexOfHttps = sub_script.indexOf("https");
                             while (indexOfHttps >= 0) {
                                 String imgURL = sub_script.substring(indexOfHttps, sub_script.indexOf(".jpg", indexOfHttps) + 4);
-                                URLsFromScriptArray.add(imgURL);
+
+                                String size = "";
+                                for (int k = 0; k < MP_BB_IMAGE_TYPES.length; k++) {
+                                    if (imgURL.contains(MP_BB_IMAGE_TYPES[k])) {
+                                        size = MP_XX_IMAGE_TYPES[k];
+                                    }
+                                }
+
+                                JSONObject innerObject = new JSONObject();
+                                try {
+                                    innerObject.put("url", imgURL);
+                                    innerObject.put("size", size);
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+                                inner_array.put(innerObject);
+
                                 indexOfHttps = sub_script.indexOf("https", indexOfHttps + 1);
                             }
-                            arrayListImageURLsFromScript.add(URLsFromScriptArray);
+
+                            JSON_ArrayArray_Images.put(inner_array);
+
                             indexOfarray = script.indexOf("arProductImages[", indexOfarray + 1);
                         }
-                        Log.w("Sergio>", this + " onPostExecute: \n" + "arrayListImageURLsFromScript=\n" + arrayListImageURLsFromScript);
+                        Log.i("Sergio>", this + "\ngetImagesFromScriptTag:\nJSON_ArrayArray_Images from Base=\n" + JSON_ArrayArray_Images);
                     }
                 }
             }
@@ -692,6 +710,7 @@ public class DetailsFragment extends Fragment {
 
         @Override
         protected Boolean doInBackground(String... params) {
+            backGround_param = params[0];
             backGround_param = params[0];
             return NetworkUtils.hasActiveNetworkConnection(mActivity);
         }
@@ -976,15 +995,15 @@ public class DetailsFragment extends Fragment {
                         // Parse do url das imagens se existirem no json
                         JSONArray json_images = json.getJSONArray("images");
 
-                        outer_ArrayArray_Image_URLs = new JSONArray();
+                        JSON_ArrayArray_Images = new JSONArray();
                         JSONArray inner_array = new JSONArray();
 
                         int image_index = 0;
                         for (int i = 0; i < json_images.length(); i++) {
                             JSONObject image_i = (JSONObject) json_images.get(i);
-
                             int current_img_index = image_i.getInt("index");                            // 0, 1, 2...
-                            String image_type = image_i.getString("type");                              // tamanho: "small" "extralarge" "zoom" ...
+                            String image_type = image_i.getString("type");                              // tamanho: "small", "extralarge" "zoom" ...
+                            image_type = MP_XX_IMAGE_TYPES[all_image_sizes.indexOf(image_type)];        // Traduzir o nome para 20x20, 100x100 ...
                             String image_url = "https://s4.thcdn.com/" + image_i.getString("name");     // url
 
                             if (current_img_index == image_index) {
@@ -994,7 +1013,7 @@ public class DetailsFragment extends Fragment {
                                 inner_array.put(innerObject);
 
                             } else {
-                                outer_ArrayArray_Image_URLs.put(inner_array);
+                                JSON_ArrayArray_Images.put(inner_array);
                                 JSONObject innerObject = new JSONObject();
                                 innerObject.put("size", image_type);
                                 innerObject.put("url", image_url);
@@ -1004,20 +1023,21 @@ public class DetailsFragment extends Fragment {
                                 image_index = current_img_index;
                             }
                         }
-                        outer_ArrayArray_Image_URLs.put(inner_array);
-                        Log.i("Sergio>", this + "onPostExecute:\nouter_ArrayArray_Image_URLs=\n" + outer_ArrayArray_Image_URLs.toString().replace("\\", ""));
+                        JSON_ArrayArray_Images.put(inner_array);
+                        Log.i("Sergio>", this + "onPostExecute:\nJSON_ArrayArray_Images=\n" + JSON_ArrayArray_Images.toString().replace("\\", ""));
 
+                        // Carregar imagens no ecrã atual (details)
                         ArrayList<String> arrayListImageURLsToLoad = new ArrayList<>();
-                        for (int i = 0; i < outer_ArrayArray_Image_URLs.length(); i++) {
-                            JSONArray json_array_i = outer_ArrayArray_Image_URLs.optJSONArray(i);
+                        for (int i = 0; i < JSON_ArrayArray_Images.length(); i++) {
+                            JSONArray json_array_i = JSON_ArrayArray_Images.optJSONArray(i);
                             String urlToLoad = null;
                             for (int j = 0; j < json_array_i.length(); j++) {
                                 try {
                                     String size = (String) ((JSONObject) json_array_i.get(j)).get("size");
                                     String url = (String) ((JSONObject) json_array_i.get(j)).get("url");
                                     if (url != null) {
-                                        for (int k = 0; k < imageSizesToLoad.length; k++) {
-                                            if (size.equals(imageSizesToLoad[k])) {
+                                        for (int k = 0; k < imageSizesToUse.length; k++) {
+                                            if (size.equals(imageSizesToUse[k])) {
                                                 urlToLoad = url;
                                                 gotImages = true;
                                             }
