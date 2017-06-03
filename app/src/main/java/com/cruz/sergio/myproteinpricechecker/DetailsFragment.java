@@ -80,6 +80,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
 import static com.cruz.sergio.myproteinpricechecker.WatchingFragment.imageSizesToUse;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
 
@@ -344,7 +345,7 @@ public class DetailsFragment extends Fragment {
                                             saveImageWithGlide(url, filename); //guarda as imagens todas. index_i=variação imageSizesTounUse[k]=tamanho
                                             arrayListImageURIs.add(filename);
 
-                                            ((JSONObject) JSON_ArrayArray_Images.optJSONArray(i).get(j)).put("uri", filename);
+                                            ((JSONObject) JSON_ArrayArray_Images.optJSONArray(i).get(j)).put("file", filename);
 
                                         }
                                     }
@@ -446,8 +447,9 @@ public class DetailsFragment extends Fragment {
                                         ProductsContract.ProductsEntry.TABLE_NAME + "! Try again.",
                                 R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
                     } else {
-                        // A _ID do produto vai entrar na Tabela dos preços com o nome de _ID_PRODUCTS
-                        // Podem existir vários _ID_PRODUCTS iguais na tabela de preços
+                        // A _ID do produto vai entrar para a Tabela dos preços
+                        // ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS = ProductsContract.ProductsEntry._ID
+                        // Podem existir vários _id_products iguais na tabela de preços
                         priceContentValues.put(ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS, productRowID);
                         long priceRowId = db.insert(ProductsContract.PricesEntry.TABLE_NAME, null, priceContentValues);
                         if (priceRowId < 0L) {
@@ -1163,7 +1165,7 @@ public class DetailsFragment extends Fragment {
         imageView.setPadding(0, 2, 2, 0);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         imageView.setAdjustViewBounds(true);
-        int widthHeight = (int) (pixels_widthHeight * WatchingFragment.scale + 0.5f);
+        int widthHeight = (int) (pixels_widthHeight * scale + 0.5f);
         imageView.setLayoutParams(new FrameLayout.LayoutParams(widthHeight, widthHeight));
         return imageView;
     }
@@ -1171,14 +1173,11 @@ public class DetailsFragment extends Fragment {
     public static void showCustomToast(Activity cActivity, String toastText, int icon_RID, int text_color_RID, int duration) {
         LayoutInflater inflater = cActivity.getLayoutInflater();
         View layout = inflater.inflate(R.layout.custom_toast, (ViewGroup) cActivity.findViewById(R.id.toast_layout_root));
-
         TextView text = (TextView) layout.findViewById(R.id.toast_layout_text);
         text.setText(toastText);
         text.setTextColor(ContextCompat.getColor(cActivity, text_color_RID));
-
         ImageView imageV = (ImageView) layout.findViewById(R.id.toast_img);
         imageV.setImageResource(icon_RID);
-
         Toast theCustomToast = new Toast(cActivity);
         theCustomToast.setGravity(Gravity.CENTER_VERTICAL, 0, 0);
         theCustomToast.setDuration(duration);

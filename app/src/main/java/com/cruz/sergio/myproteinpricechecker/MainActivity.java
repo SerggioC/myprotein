@@ -13,11 +13,15 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
+import com.cruz.sergio.myproteinpricechecker.helper.StartFirebase;
+
+import java.util.concurrent.TimeUnit;
 
 import static com.cruz.sergio.myproteinpricechecker.TabFragment.viewPager;
 
@@ -26,39 +30,87 @@ public class MainActivity extends AppCompatActivity {
     DrawerLayout mDrawerLayout;
     static FragmentManager mFragmentManager;
     FragmentTransaction mFragmentTransaction;
-    Activity mActivity;
-    SharedPreferences sharedPrefs;
+    static Activity mActivity;
     Handler mHandler;
     Bundle indexBundle;
     int index = 0;
     public static String DETAILS_FRAGMENT_TAG = "DETAILS_FRAGMENT";
     Boolean addedNewProduct = false;
-    public static Boolean CACHE_IMAGES;
-    public static Boolean BC_Registered;
+    public static Boolean CACHE_IMAGES = true;
+    public static Boolean BC_Registered = false;
+    public static float scale;
+    public static int density;
+    public static int START_INTERVAL = 0;
+    public static int DEFAULT_START_INTERVAL = 180; // 180 minutos = 3hr
+    public static int END_INTERVAL;
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+    }
 
     @Override
     protected void onStart() {
         super.onStart();
-        BC_Registered = false;
         BC_Registered = NetworkUtils.createBroadcast(mActivity);
+
     }
 
+
     @Override
-    protected void onPause() {
-        super.onPause();
-        NetworkUtils.UnregisterBroadcastReceiver(mActivity);
+    protected void onDestroy() {
+        super.onDestroy();
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        mActivity = this;
 
+        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
+        CACHE_IMAGES = sharedPrefs.getBoolean("cache_images", true);
+
+        END_INTERVAL = Integer.parseInt(sharedPrefs.getString("sync_frequency", String.valueOf(TimeUnit.MINUTES.toSeconds(DEFAULT_START_INTERVAL))));
+        END_INTERVAL = 10;
+
+
+        StartFirebase.createJobDispatcher(this, 0, 10);
+
+
+/*
+        // Create a new dispatcher using the Google Play driver.
+        FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(mActivity));
+
+        Bundle myExtrasBundle = new Bundle();
+        myExtrasBundle.putString("some_key", "some_value");
+
+        Job myJob = dispatcher.newJobBuilder()
+                .setService(FirebaseJobservice.class) // the JobService that will be called
+                .setTag("Sergio_tag-update_prices") // uniquely identifies the job
+                .setRecurring(true)
+                .setLifetime(Lifetime.FOREVER) // persist past a device reboot
+                .setTrigger(Trigger.executionWindow(START_INTERVAL, END_INTERVAL)) // start between START_INTERVAL and END_INTERVAL seconds from now
+                .setReplaceCurrent(true) // overwrite an existing job with the same tag
+                .setRetryStrategy(RetryStrategy.DEFAULT_EXPONENTIAL) // retry with exponential backoff
+                // constraints that need to be satisfied for the job to run
+                .setConstraints(
+                        // only run on an unmetered network
+                        Constraint.ON_ANY_NETWORK
+                        // only run when the device is charging
+                        //Constraint.DEVICE_CHARGING,
+                )
+                .setExtras(myExtrasBundle)
+                .build();
+
+        dispatcher.mustSchedule(myJob);
+*/
+
+
+        setContentView(R.layout.activity_main);
+        scale = getResources().getDisplayMetrics().density;
+        density = getResources().getDisplayMetrics().densityDpi;
         mHandler = new Handler();
 
-        mActivity = this;
-        sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
-        CACHE_IMAGES = sharedPrefs.getBoolean("cache_images", true);
 
         /** Setup the DrawerLayout and NavigationView **/
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawerLayout);
@@ -132,7 +184,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         /** Setup Drawer Toggle on the Toolbar ? triple parallel lines on the left **/
-        android.support.v7.widget.Toolbar toolbar = (android.support.v7.widget.Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 
         // Menu icons are inflated just as they were with actionbar
         // Sets the Toolbar to act as the ActionBar for this Activity window.
@@ -143,7 +195,9 @@ public class MainActivity extends AppCompatActivity {
         mDrawerLayout.setDrawerListener(mDrawerToggle);
 
         mDrawerToggle.syncState();
+
     }
+
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
@@ -185,12 +239,12 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.action_settings) {
             startActivity(new Intent(mActivity, SettingsActivity.class));
         }
-
         return super.onOptionsItemSelected(item);
     }
 
     public static class TheMenuItem {
         static MenuItem lastMenuItem;
+
         TheMenuItem(MenuItem lastMenuItem) {
             this.lastMenuItem = lastMenuItem;
         }
