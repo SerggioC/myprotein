@@ -21,8 +21,6 @@ import android.view.MenuItem;
 import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
 import com.cruz.sergio.myproteinpricechecker.helper.StartFirebase;
 
-import java.util.concurrent.TimeUnit;
-
 import static com.cruz.sergio.myproteinpricechecker.TabFragment.viewPager;
 
 public class MainActivity extends AppCompatActivity {
@@ -40,9 +38,7 @@ public class MainActivity extends AppCompatActivity {
     public static Boolean BC_Registered = false;
     public static float scale;
     public static int density;
-    public static int START_INTERVAL = 0;
-    public static int DEFAULT_START_INTERVAL = 180; // 180 minutos = 3hr
-    public static int END_INTERVAL;
+
 
     @Override
     protected void onRestart() {
@@ -70,47 +66,12 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
         CACHE_IMAGES = sharedPrefs.getBoolean("cache_images", true);
 
-        END_INTERVAL = Integer.parseInt(sharedPrefs.getString("sync_frequency", String.valueOf(TimeUnit.MINUTES.toSeconds(DEFAULT_START_INTERVAL))));
-        END_INTERVAL = 10;
-
-
-        StartFirebase.createJobDispatcher(this, 0, 10);
-
-
-/*
-        // Create a new dispatcher using the Google Play driver.
-        FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(mActivity));
-
-        Bundle myExtrasBundle = new Bundle();
-        myExtrasBundle.putString("some_key", "some_value");
-
-        Job myJob = dispatcher.newJobBuilder()
-                .setService(FirebaseJobservice.class) // the JobService that will be called
-                .setTag("Sergio_tag-update_prices") // uniquely identifies the job
-                .setRecurring(true)
-                .setLifetime(Lifetime.FOREVER) // persist past a device reboot
-                .setTrigger(Trigger.executionWindow(START_INTERVAL, END_INTERVAL)) // start between START_INTERVAL and END_INTERVAL seconds from now
-                .setReplaceCurrent(true) // overwrite an existing job with the same tag
-                .setRetryStrategy(RetryStrategy.DEFAULT_EXPONENTIAL) // retry with exponential backoff
-                // constraints that need to be satisfied for the job to run
-                .setConstraints(
-                        // only run on an unmetered network
-                        Constraint.ON_ANY_NETWORK
-                        // only run when the device is charging
-                        //Constraint.DEVICE_CHARGING,
-                )
-                .setExtras(myExtrasBundle)
-                .build();
-
-        dispatcher.mustSchedule(myJob);
-*/
-
+        StartFirebase.createJobDispatcher(this);
 
         setContentView(R.layout.activity_main);
         scale = getResources().getDisplayMetrics().density;
         density = getResources().getDisplayMetrics().densityDpi;
         mHandler = new Handler();
-
 
         /** Setup the DrawerLayout and NavigationView **/
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawerLayout);

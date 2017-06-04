@@ -713,7 +713,6 @@ public class DetailsFragment extends Fragment {
         @Override
         protected Boolean doInBackground(String... params) {
             backGround_param = params[0];
-            backGround_param = params[0];
             return NetworkUtils.hasActiveNetworkConnection(mActivity);
         }
 

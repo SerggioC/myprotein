@@ -138,7 +138,7 @@ public class NetworkUtils {
         return false;
     }
 
-    private static boolean ping() throws InterruptedException, IOException {
+    public static boolean ping() throws InterruptedException, IOException {
         String command = "ping -c 1 " + PING_URL;
         return (Runtime.getRuntime().exec(command).waitFor() == 0);
     }

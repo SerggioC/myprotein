@@ -610,7 +610,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     public String getMillisecondsToDate(long milliseconds) {
         long timeDif = System.currentTimeMillis() - milliseconds;
 
-        if (timeDif <= 3_600_000) { // uma hora atrás
+        if (timeDif > 0 && timeDif < 10_000) { // há menos de 10 segundos atrás
+            return "Agora";
+        } else if (timeDif >= 10_000 && timeDif <= 3_600_000) { // uma hora atrás
             return TimeUnit.MILLISECONDS.toMinutes(timeDif) + " Minutos atrás";
 
         } else if (timeDif > 3_600_000 && timeDif <= 86_400_000) { // Dentro do dia de hoje até 24h atrás
