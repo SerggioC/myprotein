@@ -22,12 +22,12 @@ import com.firebase.jobdispatcher.Trigger;
 public class StartFirebase {
     static int START_INTERVAL;
     static int DEFAULT_START_INTERVAL = 3 * 60 * 60; // 3hr em segundos
-    static int DELTA_INTERVAL = 10 * 60; // 30 minutos em segundos
+    static int DELTA_INTERVAL = 10 * 60; // 10 minutos em segundos
 
     public static void createJobDispatcher(Context context) {
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
         START_INTERVAL = Integer.parseInt(sharedPrefs.getString("sync_frequency", String.valueOf(DEFAULT_START_INTERVAL)));
-        if (DEFAULT_START_INTERVAL < 0) DEFAULT_START_INTERVAL = 0;
+        if (START_INTERVAL < 0) START_INTERVAL = 0;
 
         // Create a new dispatcher using the Google Play driver.
         FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(context));
@@ -41,7 +41,7 @@ public class StartFirebase {
                 .setRecurring(true)
                 .setLifetime(Lifetime.FOREVER) // persist past a device reboot
                 .setTrigger(Trigger.executionWindow(START_INTERVAL, START_INTERVAL + DELTA_INTERVAL)) // start between START_INTERVAL and START + DELTA seconds from now
-                .setReplaceCurrent(false) // overwrite an existing job with the same tag
+                .setReplaceCurrent(true) // overwrite an existing job with the same tag
                 .setRetryStrategy(RetryStrategy.DEFAULT_EXPONENTIAL) // retry with exponential backoff
                 // constraints that need to be satisfied for the job to run
                 .setConstraints(
