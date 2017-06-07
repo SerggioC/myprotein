@@ -470,13 +470,6 @@ public class DetailsFragment extends Fragment {
             }
         });
 
-        mActivity.findViewById(R.id.drop_db).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Reset_DataBase();
-            }
-        });
-
     }
 
     public boolean saveImageWithGlide(String imageURL, final String filename) {
@@ -531,15 +524,6 @@ public class DetailsFragment extends Fragment {
         return null;
     }
 
-
-    public void Reset_DataBase() {
-        DBHelper dbHelper = new DBHelper(getContext());
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.ProductsEntry.TABLE_NAME);
-        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.PricesEntry.TABLE_NAME);
-        dbHelper.onCreate(db);
-        db.close();
-    }
 
     private class getProductPage extends AsyncTask<String, Void, Document> {
         @Override

@@ -21,8 +21,8 @@ import com.firebase.jobdispatcher.Trigger;
 
 public class StartFirebase {
     static int START_INTERVAL;
-    static int DEFAULT_START_INTERVAL = 3 * 60 * 60; // 3hr em segundos
-    static int DELTA_INTERVAL = 10 * 60; // 10 minutos em segundos
+    static int DEFAULT_START_INTERVAL = 0; // em segundos
+    static int DELTA_INTERVAL = 1 * 60 * 60; // em segundos , 10 minutos
 
     public static void createJobDispatcher(Context context) {
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
@@ -42,14 +42,8 @@ public class StartFirebase {
                 .setLifetime(Lifetime.FOREVER) // persist past a device reboot
                 .setTrigger(Trigger.executionWindow(START_INTERVAL, START_INTERVAL + DELTA_INTERVAL)) // start between START_INTERVAL and START + DELTA seconds from now
                 .setReplaceCurrent(true) // overwrite an existing job with the same tag
-                .setRetryStrategy(RetryStrategy.DEFAULT_EXPONENTIAL) // retry with exponential backoff
-                // constraints that need to be satisfied for the job to run
-                .setConstraints(
-                        // only run on an unmetered network
-                        Constraint.ON_ANY_NETWORK
-                        // only run when the device is charging
-                        // Constraint.DEVICE_CHARGING,
-                )
+                .setRetryStrategy(RetryStrategy.DEFAULT_LINEAR) // retry with exponential backoff
+                .setConstraints(Constraint.ON_ANY_NETWORK) // constraints that need to be satisfied for the job to run
                 .setExtras(myExtrasBundle)
                 .build();
         dispatcher.mustSchedule(myJob);

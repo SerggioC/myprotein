@@ -50,45 +50,6 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="1dp"
-                android:layout_marginTop="1dp"
-                android:orientation="horizontal"
-                android:visibility="gone">
-
-                <TextView
-                    android:id="@+id/item_highest_price_textview_label"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="left"
-                    android:layout_weight="1"
-                    android:text="Máximo"
-                    android:textColor="@color/red"
-                    android:textSize="12sp"/>
-
-                <TextView
-                    android:id="@+id/item_lowest_price_textview_label"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="left"
-                    android:layout_weight="1"
-                    android:text="Mínimo"
-                    android:textColor="@color/green"
-                    android:textSize="12sp"/>
-
-                <TextView
-                    android:id="@+id/item_current_price_textview_label"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="left"
-                    android:layout_weight="1"
-                    android:text="Atual"
-                    android:textColor="@color/colorPrimaryAlpha"
-                    android:textSize="12sp"/>
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
@@ -97,6 +58,7 @@
                     android:layout_width="15dp"
                     android:layout_height="15dp"
                     android:layout_gravity="center_vertical"
+                    android:layout_marginRight="2dp"
                     android:src="@drawable/high_price"/>
 
                 <TextView
@@ -113,6 +75,7 @@
                     android:layout_width="15dp"
                     android:layout_height="15dp"
                     android:layout_gravity="center_vertical"
+                    android:layout_marginRight="2dp"
                     android:src="@drawable/low_price"/>
 
                 <TextView
@@ -129,6 +92,8 @@
                     android:layout_width="15dp"
                     android:layout_height="15dp"
                     android:layout_gravity="center_vertical"
+                    android:layout_marginRight="2dp"
+
                     android:src="@drawable/actual_price"/>
 
                 <TextView
@@ -145,12 +110,12 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <ImageView
                     android:layout_width="15dp"
                     android:layout_height="15dp"
-                    android:layout_marginRight="4dp"
                     android:src="@drawable/updateclock"/>
 
                 <TextView
@@ -158,7 +123,10 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="left"
+                    android:layout_marginLeft="-15dp"
                     android:layout_weight="1"
+                    android:paddingLeft="17dp"
+                    android:text="Agora"
                     android:textColor="@color/cardview_dark_background"
                     android:textSize="10sp"
                     />
@@ -169,6 +137,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="left"
                     android:layout_weight="1"
+                    android:paddingLeft="5dp"
                     android:textColor="@color/cardview_dark_background"
                     android:textSize="10sp"
                     />
@@ -179,20 +148,13 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="left"
                     android:layout_weight="1"
+                    android:paddingLeft="5dp"
                     android:textColor="@color/cardview_dark_background"
                     android:textSize="10sp"
                     />
             </LinearLayout>
         </LinearLayout>
 
-        <ImageView
-            android:id="@+id/list_item_go"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
-            android:layout_marginLeft="4dp"
-            android:layout_marginRight="8dp"
-            android:src="@drawable/arrow"/>
 
     </LinearLayout>
 

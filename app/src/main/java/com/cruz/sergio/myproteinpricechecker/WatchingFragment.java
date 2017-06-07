@@ -37,6 +37,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
+import com.cruz.sergio.myproteinpricechecker.helper.FirebaseJobservice;
 import com.cruz.sergio.myproteinpricechecker.helper.ProductsContract;
 
 import org.json.JSONArray;
@@ -63,6 +64,7 @@ import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.CACHE_IMAGES;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.density;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
+import static com.cruz.sergio.myproteinpricechecker.helper.FirebaseJobservice.updatePricesOnStart;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.ALL_PRODUCT_COLUMNS_PROJECTION;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.CONTENT_DIR_TYPE;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.CONTENT_ITEM_TYPE;
@@ -79,6 +81,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     static Loader<Cursor> loaderManager;
     static String[] imageSizesToUse;
     Timer timer = new Timer();
+
+
+
     public static class ViewHolder {
         public final ImageView iconView;
         public final TextView titleView; // ou Product Name
@@ -112,7 +117,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         mActivity = getActivity();
         super.onCreate(savedInstanceState);
 
-
         if (density <= DENSITY_LOW) {
             imageSizesToUse = new String[]{"50x50", "60x60", "70x70"};
         } else if (density > DENSITY_LOW && density <= DENSITY_MEDIUM) {
@@ -127,7 +131,23 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             imageSizesToUse = new String[]{"270x270", "300x300", "350x350"};
         }
 
+
+        FirebaseJobservice jobservice = new FirebaseJobservice();
+        jobservice.setUpdateCompleteListener(new FirebaseJobservice.UpdateCompleteListener() {
+            @Override
+            public void onUpdateReady(Boolean isReady) {
+                Log.w("Sergio>", this + "\n" + "onUpdateReady2= " + isReady);
+                timer.cancel();
+                timer.purge();
+                timer = new Timer();
+                getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
+            }
+        });
+
+        updatePricesOnStart(mActivity, false);
+
     }
+
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
@@ -139,11 +159,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         View rootview = inflater.inflate(R.layout.watching_fragment, null);
         loaderManager = getLoaderManager().initLoader(LOADER_ID, null, this);
 
-/*        DBHelper dbHelper = new DBHelper(mActivity);
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor all_products_cursor = db.rawQuery("SELECT * FROM '" + ProductsContract.ProductsEntry.TABLE_NAME + "'", null);
-        Log.w("Sergio>>>", this + " onCreateView: all_products_cursor=\n" + dumpCursorToString(all_products_cursor));
-*/
         cursorDBAdapter = new cursorDBAdapter(mActivity, null, 0);
         listViewItems = (ListView) rootview.findViewById(R.id.watching_listview);
         listViewItems.setAdapter(cursorDBAdapter);
@@ -189,7 +204,10 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 //                .build();
 
         Uri uri = ProductsContract.ProductsEntry.CONTENT_URI;
-        Log.i("Sergio>>>", this + " onCreateLoader:  id= " + id + "\nCONTENT_DIR_TYPE= " + CONTENT_DIR_TYPE + " \nCONTENT_ITEM_TYPE= " + CONTENT_ITEM_TYPE + "\nuri=" + uri);
+        Log.i("Sergio>>>", this + " onCreateLoader:  id= " + id + "\n" +
+                "CONTENT_DIR_TYPE= " + CONTENT_DIR_TYPE + "\n" +
+                "CONTENT_ITEM_TYPE= " + CONTENT_ITEM_TYPE + "\n" +
+                "uri= " + uri);
 
         //String selection = "WHERE '" + ProductsContract.ProductsEntry.TABLE_NAME + "' = 'qualquercoisa'";
         CursorLoader cursor_loader = new CursorLoader(
@@ -198,8 +216,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 ALL_PRODUCT_COLUMNS_PROJECTION,
                 null,
                 null,
-                ProductsContract.ProductsEntry._ID + " ASC "
-        );
+                ProductsContract.ProductsEntry._ID + " ASC ");
         return cursor_loader;
     }
 
@@ -219,6 +236,10 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             }
         } else {
             Log.v("Sergio", cursorToString);
+        }
+        if (data.getCount() == 0) {
+            DetailsFragment.showCustomToast(mActivity, "Empty DataBase! Add products to track their prices.",
+                    R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_SHORT);
         }
         cursorDBAdapter.swapCursor(data);
     }
@@ -288,7 +309,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             long minPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE));
             long maxPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE));
             long actualPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE));
-            Log.d("Sergio>", this + "\nbindView:\nstring_array_images=\n" + string_array_images);
 
             if (options_sabor == null) options_sabor = "";
             if (options_caixa == null) options_caixa = "";
@@ -393,13 +413,16 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                         JSONArray json_array_i = jsonArray_imgs.optJSONArray(i);
                         for (int j = 0; j < json_array_i.length(); j++) {
                             try {
-                                String size = (String) ((JSONObject) json_array_i.get(j)).get("size");
-                                String file_uri = ((String) ((JSONObject) json_array_i.get(j)).get("file"));
-                                if (file_uri != null) {
-                                    for (int k = 0; k < imageSizesToUse.length; k++) {
-                                        if (size.equals(imageSizesToUse[k])) {
-                                            file_uri_ToUse = file_uri;
-                                            gotPictures = true;
+                                JSONObject obj_ij = (JSONObject) json_array_i.get(j);
+                                if (obj_ij.has("file")) {
+                                    String size = (String) obj_ij.get("size");
+                                    String file_uri = ((String) obj_ij.get("file"));
+                                    if (file_uri != null) {
+                                        for (int k = 0; k < imageSizesToUse.length; k++) {
+                                            if (size.equals(imageSizesToUse[k])) {
+                                                file_uri_ToUse = file_uri;
+                                                gotPictures = true;
+                                            }
                                         }
                                     }
                                 }
@@ -501,6 +524,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                                 public void onResourceReady(Bitmap bitmap, GlideAnimation<? super Bitmap> glideAnimation) {
                                     viewHolder.imageSwitcher.setImageDrawable(new BitmapDrawable(mActivity.getResources(), bitmap));
                                 }
+
                                 @Override
                                 public void onLoadFailed(Exception e, Drawable errorDrawable) {
                                     viewHolder.imageSwitcher.setImageResource(R.drawable.noimage);
@@ -524,7 +548,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             });
 
         }
-
 
         private void placeImagesFromURL(final ViewHolder viewHolder, final ArrayList<String> arrayListImageURLs) {
             final int size = arrayListImageURLs.size();
@@ -609,7 +632,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     public String getMillisecondsToDate(long milliseconds) {
         long timeDif = System.currentTimeMillis() - milliseconds;
 
-        if (timeDif < 60_000) { // há menos de 10 segundos atrás
+        if (timeDif < 60_000) { // há menos de 60 segundos atrás
             return "Agora";
         } else if (timeDif >= 60_000 && timeDif <= 3_600_000) { // uma hora atrás
             return TimeUnit.MILLISECONDS.toMinutes(timeDif) + " Minutos atrás";
@@ -663,24 +686,13 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     }
 
     public void getWatchingProducts() {
-/*        DBHelper dbHelper = new DBHelper(mActivity);
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-
-        //Extract full products_table Table from database (SELECT *)
-        Cursor all_products_cursor = db.rawQuery("SELECT * FROM " + ProductsContract.ProductsEntry.TABLE_NAME, null);*/
-        //Log.i("Sergio>>>", this + " getWatchingProducts: all_products_cursor\n" + dumpCursorToString(all_products_cursor));
-
-        //if (all_products_cursor.getCount() > 0) {
-        if (true) {
-            timer.cancel();
-            timer.purge();
-            timer = new Timer();
-            getLoaderManager().restartLoader(LOADER_ID, null, this);
-        } else {
-            DetailsFragment.showCustomToast(mActivity, "Empty DataBase...", R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_SHORT);
-        }
-        //db.close();
-        //all_products_cursor.close();
+        timer.cancel();
+        timer.purge();
+        timer = new Timer();
+        updatePricesOnStart(mActivity, false);
+        getLoaderManager().restartLoader(LOADER_ID, null, this);
         watchingSwipeRefreshLayout.setRefreshing(false);
     }
+
+
 }

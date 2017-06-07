@@ -12,7 +12,7 @@ import android.util.Log;
 public class DBHelper extends SQLiteOpenHelper {
 
     // If you change the database schema, you must increment the database version.
-    private static final int DATABASE_VERSION = 7;
+    private static final int DATABASE_VERSION = 1;
 
     static final String DATABASE_NAME = "pricetracker.db";
 
@@ -60,9 +60,10 @@ public class DBHelper extends SQLiteOpenHelper {
                 ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME3 + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID + " TEXT NOT NULL, " +
                 ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGES + " TEXT " +
+                " );";
 //                " FOREIGN KEY (" + ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID + ") REFERENCES " +
 //                ProductsContract.PricesEntry.TABLE_NAME + " (" + ProductsContract.PricesEntry._ID + ") " +
-                " );";
+
 
         final String SQL_CREATE_PRICES_TABLE = "CREATE TABLE " + ProductsContract.PricesEntry.TABLE_NAME + " (" +
                 ProductsContract.PricesEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -80,7 +81,7 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_CREATE_PRODUCT_TABLE);
         db.execSQL(SQL_CREATE_PRICES_TABLE);
 
-        String jobs_table = "CREATE TABLE jobs (_id INTEGER PRIMARY KEY AUTOINCREMENT, job_info TEXT NOT NULL)";
+        String jobs_table = "CREATE TABLE jobs (_id INTEGER PRIMARY KEY AUTOINCREMENT, job_info TEXT NOT NULL);";
         db.execSQL(jobs_table);
         Log.i("Sergio>", this + "\nonCreate:\njobs_table=\n" + jobs_table);
     }

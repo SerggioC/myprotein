@@ -39,7 +39,6 @@ public class MainActivity extends AppCompatActivity {
     public static float scale;
     public static int density;
 
-
     @Override
     protected void onRestart() {
         super.onRestart();
@@ -49,9 +48,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         BC_Registered = NetworkUtils.createBroadcast(mActivity);
-
     }
-
 
     @Override
     protected void onDestroy() {

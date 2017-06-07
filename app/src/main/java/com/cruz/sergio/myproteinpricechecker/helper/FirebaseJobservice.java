@@ -28,26 +28,30 @@ import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.ping;
 /**
  * Created by Sergio on 03/06/2017.
  * Extends Service
+ * https://github.com/firebase/firebase-jobdispatcher-android
  */
 public class FirebaseJobservice extends JobService {
-    static final String JSON_METHOD = "getUpdatedJSONPrice";
-    static final String BASE_METHOD = "getUpdatedBasePrice";
+    public static final String JSON_METHOD = "getUpdatedJSONPrice";
+    public static final String BASE_METHOD = "getUpdatedBasePrice";
+    private static int cursorSize;
+    private  static int currentCursor;
+    static Boolean gotIsJob;
 
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.w("Sergio>", this + "\nonDestroy: Destroying FirebaseJobservice");
+        Log.e("Sergio>", this + "\nonDestroy: Destroying FirebaseJobservice");
     }
 
-    public class CursorObj {
-        int row_id;
-        String jsonURL;
-        String baseURL;
-        double min_price;
-        double max_price;
+    public static class CursorObj {
+        public int row_id;
+        public String jsonURL;
+        public String baseURL;
+        public double min_price;
+        public double max_price;
 
-        CursorObj(int row_id, String jsonURL, String baseURL, double min_price, double max_price) {
+        public CursorObj(int row_id, String jsonURL, String baseURL, double min_price, double max_price) {
             this.row_id = row_id;
             this.jsonURL = jsonURL;
             this.baseURL = baseURL;
@@ -56,12 +60,40 @@ public class FirebaseJobservice extends JobService {
         }
     }
 
+
+
+    // Step 1 - This interface defines the type of messages I want to communicate to my owner
+    public interface UpdateCompleteListener {
+        // These methods are the different events and
+        // need to pass relevant arguments related to the event triggered
+        void onUpdateReady(Boolean isReady);
+    }
+
+    public static UpdateCompleteListener listener;
+
+    // Constructor where listener events are ignored
+    public FirebaseJobservice() {
+        // set null or default listener or accept as argument to constructor
+        this.listener = null;
+    }
+
+
+    public void setUpdateCompleteListener(UpdateCompleteListener listener) {
+        this.listener = listener;
+    }
+
+
     @Override
     public boolean onStartJob(JobParameters job) {
-        Log.d("Sergio>", this + "\nonStartJob");
-
         // Do some work here
-        DBHelper dbHelper = new DBHelper(this);
+        Log.w("Sergio>", this + "\nonStartJob");
+        updatePricesOnStart(this, true);
+        return true; // Answers the question: "Is there still work going on?"
+    }
+
+    public static void updatePricesOnStart(Context context, Boolean isJob) {
+        gotIsJob = isJob;
+        DBHelper dbHelper = new DBHelper(context);
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         Cursor cursor = db.rawQuery("SELECT " +
@@ -71,6 +103,9 @@ public class FirebaseJobservice extends JobService {
                 ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE + " , " +
                 ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE +
                 " FROM " + ProductsContract.ProductsEntry.TABLE_NAME, null);
+        cursorSize = cursor.getCount();
+
+        currentCursor = 0;
 
         while (cursor.moveToNext()) {
             int row_id = cursor.getInt(cursor.getColumnIndex(ProductsContract.ProductsEntry._ID));
@@ -81,31 +116,33 @@ public class FirebaseJobservice extends JobService {
             CursorObj cursorObj = new CursorObj(row_id, jsonURL, baseURL, min_price_value, max_price_value);
 
             if (!TextUtils.isEmpty(jsonURL)) {
-                Log.d("Sergio>", this + "\nonStartJob:\nJSON_METHOD=\n" + JSON_METHOD);
-                AsyncTask<CursorObj, Void, Boolean> checkInternet_forBGMethod = new checkInternetAsyncMethod2(JSON_METHOD);
+                Log.d("Sergio>", context + "\nonStartJob:\nJSON_METHOD= " + JSON_METHOD);
+                AsyncTask<CursorObj, Void, Boolean> checkInternet_forBGMethod = new checkInternetAsyncMethod2(JSON_METHOD, context);
                 checkInternet_forBGMethod.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, cursorObj);
             } else if (!TextUtils.isEmpty(baseURL)) {
-                Log.d("Sergio>", this + "\nonStartJob:\nBASE_METHOD=\n" + BASE_METHOD);
-                AsyncTask<CursorObj, Void, Boolean> checkInternet_forBGMethod = new checkInternetAsyncMethod2(BASE_METHOD);
+                Log.i("Sergio>", context + "\nonStartJob:\nBASE_METHOD= " + BASE_METHOD);
+                currentCursor++;
+                AsyncTask<CursorObj, Void, Boolean> checkInternet_forBGMethod = new checkInternetAsyncMethod2(BASE_METHOD, context);
                 checkInternet_forBGMethod.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, cursorObj);
             }
         }
+
         cursor.close();
         db.close();
 
-        db = dbHelper.getWritableDatabase();
-        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-        ContentValues contentValues = new ContentValues();
-        contentValues.put("job_info", timestamp.toString());
-        long jobsRowId = db.insert("jobs", null, contentValues);
-        if (jobsRowId < 0L) {
-            Log.e("Sergio>", this + "\nonStartJob: Error inserting job to DataBase!");
-        } else {
-            Log.i("Sergio>", this + "\nonStartJob: Added Job to database!");
+        if (isJob) {
+            db = dbHelper.getWritableDatabase();
+            Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+            ContentValues contentValues = new ContentValues();
+            contentValues.put("job_info", timestamp.toString());
+            long jobsRowId = db.insert("jobs", null, contentValues);
+            if (jobsRowId < 0L) {
+                Log.e("Sergio>", context + "\nonStartJob: Error inserting job to DataBase!");
+            } else {
+                Log.i("Sergio>", context + "\nonStartJob: Added Job to database!");
+            }
+            db.close();
         }
-        db.close();
-
-        return false; // Answers the question: "Is there still work going on?"
     }
 
     @Override
@@ -116,13 +153,14 @@ public class FirebaseJobservice extends JobService {
     }
 
 
-    public class checkInternetAsyncMethod2 extends AsyncTask<CursorObj, Void, Boolean> {
+    public static class checkInternetAsyncMethod2 extends AsyncTask<CursorObj, Void, Boolean> {
         String method;
+        Context context;
         CursorObj cursorObj;
 
-
-        checkInternetAsyncMethod2(String method) {
+        public checkInternetAsyncMethod2(String method, Context context) {
             this.method = method;
+            this.context = context;
         }
 
         @Override
@@ -130,11 +168,10 @@ public class FirebaseJobservice extends JobService {
             cursorObj = params[0];
 
             ConnectivityManager connManager = (ConnectivityManager)
-                    FirebaseJobservice.this.getSystemService(Context.CONNECTIVITY_SERVICE);
+                    context.getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo activeNetwork = connManager.getActiveNetworkInfo();
             boolean isConnected = activeNetwork != null && activeNetwork.isConnected() && activeNetwork.isAvailable();
-            Log.i("Sergio>", this + "doInBackground asynctaskmethod2, is connected? " +
-                    " method= " + method + " cursorObj= " + cursorObj);
+            Log.i("Sergio>", this + "\ndoInBackground asynctaskmethod2, is connected? " + isConnected + " method= " + method);
             if (isConnected) {
                 try {
                     if (ping()) {
@@ -158,12 +195,12 @@ public class FirebaseJobservice extends JobService {
             if (hasInternet) {
                 switch (method) {
                     case JSON_METHOD: {
-                        AsyncTask<CursorObj, Void, JSONObject> getUpdatedPrice = new GetUpdatedPriceJSON();
+                        AsyncTask<CursorObj, Void, JSONObject> getUpdatedPrice = new GetUpdatedPriceJSON(context);
                         getUpdatedPrice.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, cursorObj);
                         break;
                     }
                     case BASE_METHOD: {
-                        AsyncTask<CursorObj, Void, JSONObject> getUpdatedPrice = new GetUpdatedPriceBase();
+                        AsyncTask<CursorObj, Void, JSONObject> getUpdatedPrice = new GetUpdatedPriceBase(context);
                         getUpdatedPrice.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, cursorObj);
                         break;
                     }
@@ -177,8 +214,13 @@ public class FirebaseJobservice extends JobService {
         }
     }
 
-    public class GetUpdatedPriceJSON extends AsyncTask<CursorObj, Void, JSONObject> {
+    public static class GetUpdatedPriceJSON extends AsyncTask<CursorObj, Void, JSONObject> {
         CursorObj cursorObj;
+        Context context;
+
+        public GetUpdatedPriceJSON(Context context) {
+            this.context = context;
+        }
 
         @Override
         protected void onPreExecute() {
@@ -232,66 +274,69 @@ public class FirebaseJobservice extends JobService {
                 long currentTimeMillis = System.currentTimeMillis();
                 Pattern regex = Pattern.compile("[^.,\\d]+"); // matches . , e números de 0 a 9; só ficam números . e ,
                 Matcher match = regex.matcher(priceJson);
-                priceJson = match.replaceAll("");
-                priceJson = priceJson.replaceAll(",", ".");
-                double price_value = Double.parseDouble(priceJson);
 
-                Log.i("Sergio>", this + "\nonPostExecute:\ngetWritableDatabase");
+                String strPrice = match.replaceAll("");
+                strPrice = strPrice.replaceAll(",", ".");
+                double price_value = Double.parseDouble(strPrice);
 
-                DBHelper dbHelper = new DBHelper(FirebaseJobservice.this);
+                DBHelper dbHelper = new DBHelper(context);
                 SQLiteDatabase db = dbHelper.getWritableDatabase();
 
-                // Adicionar mais um registo à tabela de preços
+                //
+                // Adicionar mais um registo à tabela de preços +
+                //
                 ContentValues priceContentValues = new ContentValues(4);
                 priceContentValues.put(ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS, cursorObj.row_id); // _ID do produto
                 priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE, priceJson); // preço com o símbolo
                 priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_VALUE, price_value); // preço (valor em float)
                 priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_DATE, currentTimeMillis);
-                long priceRowID = db.insert(ProductsContract.PricesEntry.TABLE_NAME, null, priceContentValues);
-                Log.i("Sergio>", this + "\nonPostExecute:\npriceRowID=\n" + priceRowID);
+                db.insert(ProductsContract.PricesEntry.TABLE_NAME, null, priceContentValues);
 
-                // Atualizar preço atual na tabela de produtos
-                ContentValues productContentValues = new ContentValues(3);
+                // Atualizar preço atual na tabela de produtos ->
+                ContentValues productContentValues = new ContentValues();
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE, priceJson);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE, price_value);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE, currentTimeMillis);
-                db.update(ProductsContract.ProductsEntry.TABLE_NAME, productContentValues,
-                        ProductsContract.ProductsEntry._ID + " = '" + cursorObj.row_id + "'", null);
-
-                Log.d("Sergio>", this + "\nonPostExecute:\nprice_value= " + price_value + "\ncursorObj.min_price = " + cursorObj.min_price
-                + "\ncursorObj.max_price= " + cursorObj.max_price);
 
                 if (price_value < cursorObj.min_price) {
-                    // update price_value and date in db if necessary
-                    db.rawQuery("UPDATE " + ProductsContract.ProductsEntry.TABLE_NAME + " SET " +
-                                    ProductsContract.ProductsEntry.COLUMN_MIN_PRICE + " = " + priceJson + " , " +
-                                    ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE + " = " + price_value + " , " +
-                                    ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE + " = " + currentTimeMillis +
-                                    " WHERE ID = '" + cursorObj.row_id + "'"
-                            , null);
-
-                    // TODO: Send alert to user?
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, priceJson);
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE, price_value);
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, currentTimeMillis);
+                    // TODO: Send alert to user? There's a new lower price!
                 }
 
                 if (price_value > cursorObj.max_price) {
-                    // update price_value and date in db if necessary
-                    db.rawQuery("UPDATE " + ProductsContract.ProductsEntry.TABLE_NAME + " SET " +
-                                    ProductsContract.ProductsEntry.COLUMN_MAX_PRICE + " = " + priceJson + " , " +
-                                    ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE + " = " + price_value + " , " +
-                                    ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE + " = " + currentTimeMillis +
-                                    " WHERE ID = '" + cursorObj.row_id + "'"
-                            , null);
-
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, priceJson);
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE, price_value);
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, currentTimeMillis);
                 }
+
+                db.update(ProductsContract.ProductsEntry.TABLE_NAME, productContentValues,
+                        ProductsContract.ProductsEntry._ID + " = '" + cursorObj.row_id + "'", null);
                 db.close();
+
+                currentCursor++;
+                if (currentCursor == cursorSize && !gotIsJob) {
+                    Log.w("Sergio>", this + "\nonPostExecute: \n" +
+                            "currentCursor= " + currentCursor +  "\n" +
+                            "cursorSize " + cursorSize);
+                    listener.onUpdateReady(true);
+                }
+
 
             }
 
         }
+
     }
 
+    private static class GetUpdatedPriceBase extends AsyncTask<CursorObj, Void, JSONObject> {
+        Context context;
 
-    private class GetUpdatedPriceBase extends AsyncTask<CursorObj, Void, JSONObject> {
+        public GetUpdatedPriceBase(Context context) {
+            this.context = context;
+        }
+
         /**
          * Override this method to perform a computation on a background thread. The
          * specified parameters are the parameters passed to {@link #execute}
@@ -309,6 +354,15 @@ public class FirebaseJobservice extends JobService {
         @Override
         protected JSONObject doInBackground(CursorObj... params) {
             return null;
+        }
+
+        @Override
+        protected void onPostExecute(JSONObject jsonObject) {
+            super.onPostExecute(jsonObject);
+            listener.onUpdateReady(true);
+
+
+
         }
     }
 }

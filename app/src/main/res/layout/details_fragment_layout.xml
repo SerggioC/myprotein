@@ -328,18 +328,6 @@
 
             </LinearLayout>
 
-            <Button
-                android:id="@+id/drop_db"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="16dp"
-                android:background="@drawable/button_statelist"
-                android:padding="16dp"
-                android:text="RESET DATABASE"
-                android:textAllCaps="false"
-                android:textColor="@color/white"/>
-
         </LinearLayout>
 
 
