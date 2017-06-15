@@ -45,7 +45,7 @@ public class NetworkUtils {
     public static final void UnregisterBroadcastReceiver(Activity mActivity) {
         if (BCReceiver != null) {
             LocalBroadcastManager.getInstance(mActivity).unregisterReceiver(BCReceiver);
-            showCustomSlimToast(mActivity, "Unregistering Broadcast Receiver", Toast.LENGTH_SHORT);
+            //showCustomSlimToast(mActivity, "Unregistering Broadcast Receiver", Toast.LENGTH_SHORT);
         }
     }
 

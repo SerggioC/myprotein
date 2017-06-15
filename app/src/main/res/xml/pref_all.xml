@@ -80,4 +80,11 @@
         android:key="cache_images"
         android:title="@string/pref_title_cache"/>
 
+    <SwitchPreference
+
+        android:defaultValue="true"
+        android:icon="@mipmap/ic_poweron"
+        android:key="update_on_start"
+        android:title="@string/pref_update_on_start"/>
+
 </PreferenceScreen>

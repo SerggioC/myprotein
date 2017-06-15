@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -12,6 +13,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
@@ -24,10 +26,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.animation.Transformation;
 import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ImageSwitcher;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -60,10 +64,13 @@ import static android.util.DisplayMetrics.DENSITY_LOW;
 import static android.util.DisplayMetrics.DENSITY_MEDIUM;
 import static android.util.DisplayMetrics.DENSITY_XHIGH;
 import static android.util.DisplayMetrics.DENSITY_XXHIGH;
+import static android.util.TypedValue.COMPLEX_UNIT_SP;
 import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.CACHE_IMAGES;
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.UPDATE_ONSTART;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.density;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
+import static com.cruz.sergio.myproteinpricechecker.TabFragment.tabLayout;
 import static com.cruz.sergio.myproteinpricechecker.helper.FirebaseJobservice.updatePricesOnStart;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.ALL_PRODUCT_COLUMNS_PROJECTION;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.CONTENT_DIR_TYPE;
@@ -81,7 +88,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     static Loader<Cursor> loaderManager;
     static String[] imageSizesToUse;
     Timer timer = new Timer();
-
+    Boolean[] isExpandedArray = null;
 
 
     public static class ViewHolder {
@@ -131,23 +138,46 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             imageSizesToUse = new String[]{"270x270", "300x300", "350x350"};
         }
 
-
         FirebaseJobservice jobservice = new FirebaseJobservice();
         jobservice.setUpdateCompleteListener(new FirebaseJobservice.UpdateCompleteListener() {
             @Override
             public void onUpdateReady(Boolean isReady) {
-                Log.w("Sergio>", this + "\n" + "onUpdateReady2= " + isReady);
+                Log.w("Sergio>", this + "\n" + "onUpdateReady= " + isReady);
                 timer.cancel();
                 timer.purge();
                 timer = new Timer();
                 getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
+                if (watchingSwipeRefreshLayout != null) {
+                    watchingSwipeRefreshLayout.setRefreshing(false);
+                }
+
             }
         });
 
-        updatePricesOnStart(mActivity, false);
+        DetailsFragment detailsFragment = new DetailsFragment();
+        detailsFragment.setNewProductListener(new DetailsFragment.AddedNewProductListener() {
+            @Override
+            public void onProductAdded(Boolean addedNew) {
+                Log.w("Sergio>", this + "\n" + "addedNewProduct= " + addedNew);
+                timer.cancel();
+                timer.purge();
+                timer = new Timer();
+                TabLayout.Tab tab = tabLayout.getTabAt(0);
+                tabLayout.setScrollPosition(0, 0f, true);
+                tab.select();
+                getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
+            }
+        });
 
     }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (UPDATE_ONSTART) {
+            updatePricesOnStart(mActivity, false);
+        }
+    }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
@@ -168,8 +198,20 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
                 Cursor cursor = (Cursor) adapterView.getItemAtPosition(position);
                 if (cursor != null) {
-                    //((Callback) mActivity).onItemSelected("Altamente");
-                    Log.i("Sergio>>>", this + " onItemClick: callback dumpCursorToString= " + dumpCursorToString(cursor));
+                    Log.i("Sergio>>>", this + "\n" +
+                            "cursor get position = " + cursor.getPosition() + "\n" +
+                            "list item position = " + position);
+
+                    Boolean isExpanded = isExpandedArray[position];
+                    View under_view = view.findViewById(R.id.under_cardview);
+                    if (isExpanded) {
+                        collapseIt(under_view);
+                        isExpandedArray[position] = false;
+                    } else {
+                        expandIt(under_view);
+                        isExpandedArray[position] = true;
+                    }
+
                 }
             }
         });
@@ -179,11 +221,63 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {
-                        getWatchingProducts();
+                        timer.cancel();
+                        timer.purge();
+                        timer = new Timer();
+                        updatePricesOnStart(mActivity, false);
                     }
                 }
         );
+
         return rootview;
+    }
+
+    public static void expandIt(final View v) {
+        v.measure(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        final int targetHeight = v.getMeasuredHeight();
+        // Older versions of android (pre API 21) cancel animations for views with a height of 0.
+        v.getLayoutParams().height = 1;
+        v.setVisibility(View.VISIBLE);
+        Animation a = new Animation() {
+            @Override
+            protected void applyTransformation(float interpolatedTime, Transformation t) {
+                v.getLayoutParams().height = interpolatedTime == 1
+                        ? LinearLayout.LayoutParams.WRAP_CONTENT
+                        : (int) (targetHeight * interpolatedTime);
+                v.requestLayout();
+            }
+
+            @Override
+            public boolean willChangeBounds() {
+                return true;
+            }
+        };
+        // 1dp/ms
+        a.setDuration((int) (targetHeight / v.getContext().getResources().getDisplayMetrics().density));
+        v.startAnimation(a);
+    }
+
+    public static void collapseIt(final View v) {
+        final int initialHeight = v.getMeasuredHeight();
+        Animation a = new Animation() {
+            @Override
+            protected void applyTransformation(float interpolatedTime, Transformation t) {
+                if (interpolatedTime == 1) {
+                    v.setVisibility(View.GONE);
+                } else {
+                    v.getLayoutParams().height = initialHeight - (int) (initialHeight * interpolatedTime);
+                    v.requestLayout();
+                }
+            }
+
+            @Override
+            public boolean willChangeBounds() {
+                return true;
+            }
+        };
+        // 1dp/ms
+        a.setDuration((int) (initialHeight / v.getContext().getResources().getDisplayMetrics().density));
+        v.startAnimation(a);
     }
 
     @Override
@@ -240,6 +334,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         if (data.getCount() == 0) {
             DetailsFragment.showCustomToast(mActivity, "Empty DataBase! Add products to track their prices.",
                     R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_SHORT);
+            if (watchingSwipeRefreshLayout != null) {
+                watchingSwipeRefreshLayout.setRefreshing(false);
+            }
         }
         cursorDBAdapter.swapCursor(data);
     }
@@ -252,21 +349,17 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     public class cursorDBAdapter extends CursorAdapter {
         private LayoutInflater cursorItemInflater;
 
-        Cursor localCursor;
-
         public cursorDBAdapter(Context context, Cursor c, int flags) {
             super(context, c, flags);
             cursorItemInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            localCursor = c;
         }
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
 
             // quando convertView != null recicla as views anteriores já existentes
-            // mas misturava as imagens do imageSwitcher
-            // as views não visíveis eram recriadas com imageSwitcher das views que desapareciam
-            // multiplicando timers e imagens misturando tudo
+            // mas misturava as imagens do imageSwitcher. As views não visíveis eram recriadas
+            // com imageSwitcher das views que desapareciam multiplicando timers e imagens misturando tudo,
             // mas fica mais lento
             // TODO: melhorar performance
             View view;
@@ -276,11 +369,10 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 bindView(view, mContext, (Cursor) getItem(position));
             } else {
                 view = super.getView(position, convertView, parent);
-                //view = convertView; // error
             }
+            expandOrCollapse(view, mCursor);
 
             return view;
-
         }
 
         // The newView method is used to inflate a new view and return it,
@@ -288,7 +380,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         @Override
         public View newView(Context context, Cursor cursor, ViewGroup parent) {
             View item_root = cursorItemInflater.inflate(R.layout.watching_item_layout, null, false);
-
             ViewHolder viewHolder = new ViewHolder(item_root);
             item_root.setTag(R.id.viewholder, viewHolder);
             return item_root;
@@ -309,6 +400,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             long minPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE));
             long maxPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE));
             long actualPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE));
+            double min_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE));
+            double actual_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE));
+
 
             if (options_sabor == null) options_sabor = "";
             if (options_caixa == null) options_caixa = "";
@@ -343,7 +437,33 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             viewHolder.highestPriceDate.setText(getMillisecondsToDate(maxPriceDate));
             viewHolder.lowestPriceDate.setText(getMillisecondsToDate(minPriceDate));
             viewHolder.currentPriceDate.setText(getMillisecondsToDate(actualPriceDate));
+
+            if (actual_price_value <= min_price_value) {
+                viewHolder.lowestPriceView.setTypeface(null, Typeface.BOLD);
+                viewHolder.lowestPriceView.setTextSize(COMPLEX_UNIT_SP, 16);
+                viewHolder.currentPriceView.setTypeface(null, Typeface.BOLD);
+                viewHolder.currentPriceView.setTextSize(COMPLEX_UNIT_SP, 16);
+            }
+
         }   // End bindView
+
+        public void expandOrCollapse(View view, Cursor cursor) {
+            if (isExpandedArray == null || isExpandedArray.length != cursor.getCount()) {
+                isExpandedArray = new Boolean[cursor.getCount()];
+                for (int i = 0; i < cursor.getCount(); i++) {
+                    isExpandedArray[i] = false;
+                }
+            }
+            if (isExpandedArray[cursor.getPosition()]) {
+                expandIt(view.findViewById(R.id.under_cardview));
+            }
+        }
+
+        @Override
+        protected void onContentChanged() {
+            super.onContentChanged();
+            Log.w("Sergio>", this + "onContentChanged");
+        }
 
         private Boolean extractImagesFromJSON_URL(final ViewHolder viewHolder, String string_array_images) {
             ArrayList<String> arrayListImageURLs = new ArrayList<>();
@@ -635,10 +755,10 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         if (timeDif < 60_000) { // há menos de 60 segundos atrás
             return "Agora";
         } else if (timeDif >= 60_000 && timeDif <= 3_600_000) { // uma hora atrás
-            return TimeUnit.MILLISECONDS.toMinutes(timeDif) + " Minutos atrás";
+            return TimeUnit.MILLISECONDS.toMinutes(timeDif) + " Minutos";
 
         } else if (timeDif > 3_600_000 && timeDif <= 86_400_000) { // Dentro do dia de hoje até 24h atrás
-            return TimeUnit.MILLISECONDS.toHours(timeDif) + " Horas atrás";
+            return TimeUnit.MILLISECONDS.toHours(timeDif) + " Horas";
 
         } else if (timeDif > 86_400_000 && timeDif <= 172_800_000) { // Ontem 24 a 48h
             DateFormat df = getTimeInstance(SHORT);
@@ -683,15 +803,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                         }.execute();
                     }
                 });
-    }
-
-    public void getWatchingProducts() {
-        timer.cancel();
-        timer.purge();
-        timer = new Timer();
-        updatePricesOnStart(mActivity, false);
-        getLoaderManager().restartLoader(LOADER_ID, null, this);
-        watchingSwipeRefreshLayout.setRefreshing(false);
     }
 
 

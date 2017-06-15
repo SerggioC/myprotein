@@ -34,14 +34,25 @@ public class FirebaseJobservice extends JobService {
     public static final String JSON_METHOD = "getUpdatedJSONPrice";
     public static final String BASE_METHOD = "getUpdatedBasePrice";
     private static int cursorSize;
-    private  static int currentCursor;
-    static Boolean gotIsJob;
+    private static int currentCursor;
+    static Boolean isJob;
+    public static UpdateCompleteListener listener;
 
+    // This interface defines the type of messages I want to communicate to my owner
+    public interface UpdateCompleteListener {
+        void onUpdateReady(Boolean isReady);
+    }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        Log.e("Sergio>", this + "\nonDestroy: Destroying FirebaseJobservice");
+/*
+    // Constructor where listener events are ignored
+    public FirebaseJobservice() {
+        // set null or default listener or accept as argument to constructor
+        this.listener = null;
+    }
+*/
+
+    public void setUpdateCompleteListener(UpdateCompleteListener listener) {
+        this.listener = listener;
     }
 
     public static class CursorObj {
@@ -60,39 +71,28 @@ public class FirebaseJobservice extends JobService {
         }
     }
 
-
-
-    // Step 1 - This interface defines the type of messages I want to communicate to my owner
-    public interface UpdateCompleteListener {
-        // These methods are the different events and
-        // need to pass relevant arguments related to the event triggered
-        void onUpdateReady(Boolean isReady);
-    }
-
-    public static UpdateCompleteListener listener;
-
-    // Constructor where listener events are ignored
-    public FirebaseJobservice() {
-        // set null or default listener or accept as argument to constructor
-        this.listener = null;
-    }
-
-
-    public void setUpdateCompleteListener(UpdateCompleteListener listener) {
-        this.listener = listener;
-    }
-
-
     @Override
     public boolean onStartJob(JobParameters job) {
         // Do some work here
         Log.w("Sergio>", this + "\nonStartJob");
         updatePricesOnStart(this, true);
-        return true; // Answers the question: "Is there still work going on?"
+        return false; // Answers the question: "Is there still work going on?"
+    }
+
+    @Override
+    public boolean onStopJob(JobParameters job) {
+        Log.w("Sergio>", this + "\nonStopJob: FirebaseJobservice");
+        return true; // Answers the question: "Should this job be retried?"
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.e("Sergio>", this + "\nonDestroy: Destroying FirebaseJobservice");
     }
 
     public static void updatePricesOnStart(Context context, Boolean isJob) {
-        gotIsJob = isJob;
+        FirebaseJobservice.isJob = isJob;
         DBHelper dbHelper = new DBHelper(context);
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
@@ -105,53 +105,48 @@ public class FirebaseJobservice extends JobService {
                 " FROM " + ProductsContract.ProductsEntry.TABLE_NAME, null);
         cursorSize = cursor.getCount();
 
-        currentCursor = 0;
+        if (cursorSize > 0) {
+            currentCursor = 0;
 
-        while (cursor.moveToNext()) {
-            int row_id = cursor.getInt(cursor.getColumnIndex(ProductsContract.ProductsEntry._ID));
-            String jsonURL = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS));
-            String baseURL = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL));
-            double min_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE));
-            double max_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE));
-            CursorObj cursorObj = new CursorObj(row_id, jsonURL, baseURL, min_price_value, max_price_value);
+            while (cursor.moveToNext()) {
+                int row_id = cursor.getInt(cursor.getColumnIndex(ProductsContract.ProductsEntry._ID));
+                String jsonURL = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS));
+                String baseURL = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL));
+                double min_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE));
+                double max_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE));
+                CursorObj cursorObj = new CursorObj(row_id, jsonURL, baseURL, min_price_value, max_price_value);
 
-            if (!TextUtils.isEmpty(jsonURL)) {
-                Log.d("Sergio>", context + "\nonStartJob:\nJSON_METHOD= " + JSON_METHOD);
-                AsyncTask<CursorObj, Void, Boolean> checkInternet_forBGMethod = new checkInternetAsyncMethod2(JSON_METHOD, context);
-                checkInternet_forBGMethod.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, cursorObj);
-            } else if (!TextUtils.isEmpty(baseURL)) {
-                Log.i("Sergio>", context + "\nonStartJob:\nBASE_METHOD= " + BASE_METHOD);
-                currentCursor++;
-                AsyncTask<CursorObj, Void, Boolean> checkInternet_forBGMethod = new checkInternetAsyncMethod2(BASE_METHOD, context);
-                checkInternet_forBGMethod.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, cursorObj);
+                if (!TextUtils.isEmpty(jsonURL)) {
+                    Log.d("Sergio>", context + "\nonStartJob:\nJSON_METHOD= " + JSON_METHOD);
+                    AsyncTask<CursorObj, Void, Boolean> checkInternet_forBGMethod = new checkInternetAsyncMethod2(JSON_METHOD, context);
+                    checkInternet_forBGMethod.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, cursorObj);
+                } else if (!TextUtils.isEmpty(baseURL)) {
+                    Log.i("Sergio>", context + "\nonStartJob:\nBASE_METHOD= " + BASE_METHOD);
+                    currentCursor++;
+                    AsyncTask<CursorObj, Void, Boolean> checkInternet_forBGMethod = new checkInternetAsyncMethod2(BASE_METHOD, context);
+                    checkInternet_forBGMethod.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, cursorObj);
+                }
             }
+        } else {
+            Log.w("Sergio>", "updatePricesOnStart: " + "cursor Size = 0, empty database!");
         }
-
-        cursor.close();
-        db.close();
 
         if (isJob) {
             db = dbHelper.getWritableDatabase();
             Timestamp timestamp = new Timestamp(System.currentTimeMillis());
             ContentValues contentValues = new ContentValues();
-            contentValues.put("job_info", timestamp.toString());
+            contentValues.put("info", timestamp.toString());
             long jobsRowId = db.insert("jobs", null, contentValues);
             if (jobsRowId < 0L) {
                 Log.e("Sergio>", context + "\nonStartJob: Error inserting job to DataBase!");
             } else {
                 Log.i("Sergio>", context + "\nonStartJob: Added Job to database!");
             }
-            db.close();
         }
+
+        cursor.close();
+        db.close();
     }
-
-    @Override
-    public boolean onStopJob(JobParameters job) {
-        Log.w("Sergio>", this + "\nonStopJob: FirebaseJobservice");
-
-        return true; // Answers the question: "Should this job be retried?"
-    }
-
 
     public static class checkInternetAsyncMethod2 extends AsyncTask<CursorObj, Void, Boolean> {
         String method;
@@ -171,7 +166,6 @@ public class FirebaseJobservice extends JobService {
                     context.getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo activeNetwork = connManager.getActiveNetworkInfo();
             boolean isConnected = activeNetwork != null && activeNetwork.isConnected() && activeNetwork.isAvailable();
-            Log.i("Sergio>", this + "\ndoInBackground asynctaskmethod2, is connected? " + isConnected + " method= " + method);
             if (isConnected) {
                 try {
                     if (ping()) {
@@ -200,7 +194,7 @@ public class FirebaseJobservice extends JobService {
                         break;
                     }
                     case BASE_METHOD: {
-                        AsyncTask<CursorObj, Void, JSONObject> getUpdatedPrice = new GetUpdatedPriceBase(context);
+                        AsyncTask<CursorObj, Void, Document> getUpdatedPrice = new GetUpdatedPriceBase(context);
                         getUpdatedPrice.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, cursorObj);
                         break;
                     }
@@ -253,6 +247,7 @@ public class FirebaseJobservice extends JobService {
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
+                Log.e("Sergio>", " onPostExecute GetUpdatedPriceJSON JSONException error" + e);
             }
             return jsonObject;
         }
@@ -267,103 +262,116 @@ public class FirebaseJobservice extends JobService {
                     priceJson = (String) json.get("price");
                 } catch (JSONException e) {
                     e.printStackTrace();
+                    Log.e("Sergio>", " onPostExecute GetUpdatedPriceJSON JSONException error" + e);
                 }
             }
 
             if (priceJson != null) {
-                long currentTimeMillis = System.currentTimeMillis();
-                Pattern regex = Pattern.compile("[^.,\\d]+"); // matches . , e números de 0 a 9; só ficam números . e ,
-                Matcher match = regex.matcher(priceJson);
-
-                String strPrice = match.replaceAll("");
-                strPrice = strPrice.replaceAll(",", ".");
-                double price_value = Double.parseDouble(strPrice);
-
-                DBHelper dbHelper = new DBHelper(context);
-                SQLiteDatabase db = dbHelper.getWritableDatabase();
-
-                //
-                // Adicionar mais um registo à tabela de preços +
-                //
-                ContentValues priceContentValues = new ContentValues(4);
-                priceContentValues.put(ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS, cursorObj.row_id); // _ID do produto
-                priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE, priceJson); // preço com o símbolo
-                priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_VALUE, price_value); // preço (valor em float)
-                priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_DATE, currentTimeMillis);
-                db.insert(ProductsContract.PricesEntry.TABLE_NAME, null, priceContentValues);
-
-                // Atualizar preço atual na tabela de produtos ->
-                ContentValues productContentValues = new ContentValues();
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE, priceJson);
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE, price_value);
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE, currentTimeMillis);
-
-                if (price_value < cursorObj.min_price) {
-                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, priceJson);
-                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE, price_value);
-                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, currentTimeMillis);
-                    // TODO: Send alert to user? There's a new lower price!
-                }
-
-                if (price_value > cursorObj.max_price) {
-                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, priceJson);
-                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE, price_value);
-                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, currentTimeMillis);
-                }
-
-                db.update(ProductsContract.ProductsEntry.TABLE_NAME, productContentValues,
-                        ProductsContract.ProductsEntry._ID + " = '" + cursorObj.row_id + "'", null);
-                db.close();
-
-                currentCursor++;
-                if (currentCursor == cursorSize && !gotIsJob) {
-                    Log.w("Sergio>", this + "\nonPostExecute: \n" +
-                            "currentCursor= " + currentCursor +  "\n" +
-                            "cursorSize " + cursorSize);
-                    listener.onUpdateReady(true);
-                }
-
-
+                savePriceToDB(context, cursorObj, priceJson);
             }
 
         }
 
+
     }
 
-    private static class GetUpdatedPriceBase extends AsyncTask<CursorObj, Void, JSONObject> {
+    private static class GetUpdatedPriceBase extends AsyncTask<CursorObj, Void, Document> {
         Context context;
+        CursorObj cursorObj;
 
         public GetUpdatedPriceBase(Context context) {
             this.context = context;
         }
 
-        /**
-         * Override this method to perform a computation on a background thread. The
-         * specified parameters are the parameters passed to {@link #execute}
-         * by the caller of this task.
-         * <p>
-         * This method can call {@link #publishProgress} to publish updates
-         * on the UI thread.
-         *
-         * @param params The parameters of the task.
-         * @return A result, defined by the subclass of this task.
-         * @see #onPreExecute()
-         * @see #onPostExecute
-         * @see #publishProgress
-         */
         @Override
-        protected JSONObject doInBackground(CursorObj... params) {
-            return null;
+        protected Document doInBackground(CursorObj... params) {
+            cursorObj = params[0];
+            Document resultDocument = null;
+            String base_url = cursorObj.baseURL;
+            try {
+                resultDocument = Jsoup.connect(base_url)
+                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
+                        .timeout(0) //sem limite de tempo
+                        .maxBodySize(0) //sem limite de tamanho do doc recebido
+                        .get();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return resultDocument;
         }
 
         @Override
-        protected void onPostExecute(JSONObject jsonObject) {
-            super.onPostExecute(jsonObject);
-            listener.onUpdateReady(true);
+        protected void onPostExecute(Document resultDocument) {
+            super.onPostExecute(resultDocument);
 
+            if (resultDocument != null) {
+                String price = resultDocument.getElementsByClass("priceBlock_current_price").text();
+
+                if (price != null) {
+                    savePriceToDB(context, cursorObj, price);
+                }
+            }
 
 
         }
     }
+
+    private static void savePriceToDB(Context context, CursorObj cursorObj, String priceString) {
+        long currentTimeMillis = System.currentTimeMillis();
+        Pattern regex = Pattern.compile("[^.,\\d]+"); // matches . , e números de 0 a 9; só ficam números . e ,
+        Matcher match = regex.matcher(priceString);
+
+        String strPrice = match.replaceAll("");
+        strPrice = strPrice.replaceAll(",", ".");
+        double price_value = Double.parseDouble(strPrice);
+
+        DBHelper dbHelper = new DBHelper(context);
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        //
+        // Adicionar mais um registo à tabela de preços +
+        //
+        ContentValues priceContentValues = new ContentValues(4);
+        priceContentValues.put(ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS, cursorObj.row_id); // _ID do produto
+        priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE, priceString); // preço com o símbolo
+        priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_VALUE, price_value); // preço (valor em float)
+        priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_DATE, currentTimeMillis);
+        db.insert(ProductsContract.PricesEntry.TABLE_NAME, null, priceContentValues);
+
+        // Atualizar preço atual na tabela de produtos ->
+        ContentValues productContentValues = new ContentValues();
+        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE, priceString);
+        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE, price_value);
+        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE, currentTimeMillis);
+
+        if (price_value < cursorObj.min_price) {
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, priceString);
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE, price_value);
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, currentTimeMillis);
+            // TODO: Send alert to user? There's a new lower price!
+        }
+
+        if (price_value > cursorObj.max_price) {
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, priceString);
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE, price_value);
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, currentTimeMillis);
+        }
+
+        db.update(ProductsContract.ProductsEntry.TABLE_NAME, productContentValues,
+                ProductsContract.ProductsEntry._ID + " = '" + cursorObj.row_id + "'", null);
+        db.close();
+
+        currentCursor++;
+        if (currentCursor == cursorSize && !isJob) {
+            Log.w("Sergio>", context + "\nonPostExecute: \n" +
+                    "currentCursor= " + currentCursor + "\n" +
+                    "cursorSize " + cursorSize);
+
+            if (listener != null) {
+                listener.onUpdateReady(true);
+            }
+        }
+    }
+
 }
 

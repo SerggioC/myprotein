@@ -81,7 +81,7 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_CREATE_PRODUCT_TABLE);
         db.execSQL(SQL_CREATE_PRICES_TABLE);
 
-        String jobs_table = "CREATE TABLE jobs (_id INTEGER PRIMARY KEY AUTOINCREMENT, job_info TEXT NOT NULL);";
+        String jobs_table = "CREATE TABLE jobs (info TEXT NOT NULL);";
         db.execSQL(jobs_table);
         Log.i("Sergio>", this + "\nonCreate:\njobs_table=\n" + jobs_table);
     }

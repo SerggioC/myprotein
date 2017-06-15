@@ -60,6 +60,7 @@ import com.cruz.sergio.myproteinpricechecker.helper.ProductsContract;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.DataNode;
 import org.jsoup.nodes.Document;
@@ -159,6 +160,16 @@ public class DetailsFragment extends Fragment {
             "/960/960/",      // 960/960
             "/1600/1600/"};   // 1600/1600
 
+    public static AddedNewProductListener listener;
+
+    interface AddedNewProductListener {
+        void onProductAdded(Boolean addedNew);
+    }
+
+    public void setNewProductListener(AddedNewProductListener listener) {
+        this.listener = listener;
+    }
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -176,9 +187,8 @@ public class DetailsFragment extends Fragment {
         ft.hide(getParentFragment());
         ft.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
         ft.show(SearchFragment.thisSearchFragment);
-        if (addedNewProduct) {
-            WatchingFragment.loaderManager.forceLoad();
-            Log.d("Sergio>", this + "onPause:\nI paused and forceloaded because addedNewProduct= " + addedNewProduct);
+        if (addedNewProduct && listener != null) {
+            listener.onProductAdded(true);
         }
     }
 
@@ -247,6 +257,7 @@ public class DetailsFragment extends Fragment {
             description = extras.getStringArrayList("description");
             String imgURL = extras.getString("image_url");
             customProductID = "loc" + pref_MP_Locale + "pid" + productID;
+            url += "?" + URL_suffix;
 
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID, customProductID);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL, url);
@@ -278,7 +289,7 @@ public class DetailsFragment extends Fragment {
             }
 
             AsyncTask<String, Void, Boolean> get_product_page = new checkInternetAsyncMethods("getProductPage");
-            get_product_page.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url + "?" + URL_suffix);
+            get_product_page.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url);
 
         } else {
             showCustomToast(mActivity, "Error getting product details. Try again.", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
@@ -290,7 +301,7 @@ public class DetailsFragment extends Fragment {
         mActivity.findViewById(R.id.open_in_browser).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Uri address = Uri.parse(url + "?" + URL_suffix);
+                Uri address = Uri.parse(url);
                 Intent browser = new Intent(Intent.ACTION_VIEW, address);
                 startActivity(browser);
             }
@@ -537,7 +548,8 @@ public class DetailsFragment extends Fragment {
             Document resultDocument = null;
             try {
                 resultDocument = Jsoup.connect(params[0])
-                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
+                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36")
+                        .method(Connection.Method.GET)
                         .timeout(0) //sem limite de tempo
                         .maxBodySize(0) //sem limite de tamanho do doc recebido
                         .get();
@@ -552,77 +564,67 @@ public class DetailsFragment extends Fragment {
             super.onPostExecute(resultDocument);
 
             if (thisFragment.isVisible()) {
-                Element titleElem = resultDocument.getElementsByClass("product-title").first();  // Titulo ou nome do produto
-                String title;
-                if (titleElem != null) {
-                    title = titleElem.text();
-                } else {
-                    title = "N/A";
-                }
-                ((TextView) mActivity.findViewById(R.id.title_tv)).append(title);
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME, title);
-
-                Elements subtitle_element = resultDocument.getElementsByClass("product-sub-name");
-                String subtitle;
-                if (subtitle_element != null) {
-                    subtitle = subtitle_element.text(); //Subtítulo
-                } else {
-                    subtitle = "N/A";
-                }
-                ((TextView) mActivity.findViewById(R.id.p_subtitle)).append(subtitle);
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_SUBTITLE, subtitle);
-
-                // Labels: Sabor, Quantidade, Embalagem
-                Elements productVariationsLabels = resultDocument.getElementsByClass("productVariations__label");
-                int pvl_size = productVariationsLabels.size();
-                if (pvl_size > 0) {
-                    for (int i = 0; i < pvl_size; i++) {
-                        String variationText = productVariationsLabels.get(i).text();
-                        TextView textView_Variations = (TextView) ll_variations.getChildAt(i);
-                        textView_Variations.setText(variationText);
-                        textView_Variations.setVisibility(View.VISIBLE);
-                        RelativeLayout rL_Spiners = (RelativeLayout) linearLayoutSpiners.getChildAt(i);
-                        rL_Spiners.setVisibility(View.VISIBLE);
-                        int vIndex = i + 1;
-                        productContentValues.put("mp_variation_name" + vIndex, variationText);
+                if (resultDocument != null) {
+                    Element titleElem = resultDocument.getElementsByClass("product-title").first();  // Titulo ou nome do produto
+                    String title;
+                    if (titleElem != null) {
+                        title = titleElem.text();
+                    } else {
+                        title = "N/A";
                     }
-                    get_Available_Options();
+                    ((TextView) mActivity.findViewById(R.id.title_tv)).append(title);
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME, title);
 
+                    Elements subtitle_element = resultDocument.getElementsByClass("product-sub-name");
+                    String subtitle;
+                    if (subtitle_element != null) {
+                        subtitle = subtitle_element.text(); //Subtítulo
+                    } else {
+                        subtitle = "N/A";
+                    }
+                    ((TextView) mActivity.findViewById(R.id.p_subtitle)).append(subtitle);
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_SUBTITLE, subtitle);
+
+                    // Labels: Sabor, Quantidade, Embalagem
+                    Elements productVariationsLabels = resultDocument.getElementsByClass("productVariations__label");
+                    int pvl_size = productVariationsLabels.size();
+                    if (pvl_size > 0) {
+                        for (int i = 0; i < pvl_size; i++) {
+                            String variationText = productVariationsLabels.get(i).text();
+                            TextView textView_Variations = (TextView) ll_variations.getChildAt(i);
+                            textView_Variations.setText(variationText);
+                            textView_Variations.setVisibility(View.VISIBLE);
+                            RelativeLayout rL_Spiners = (RelativeLayout) linearLayoutSpiners.getChildAt(i);
+                            rL_Spiners.setVisibility(View.VISIBLE);
+                            int vIndex = i + 1;
+                            productContentValues.put("mp_variation_name" + vIndex, variationText);
+                        }
+                        get_Available_Options();
+
+                    } else {
+                        // Sem opções de sabor, embalagem, tamanho para selecionar
+                        String price = resultDocument.getElementsByClass("priceBlock_current_price").text();
+
+                        Log.w("Sergio>", this + " onPostExecute: \n" + "price=\n" + price);
+
+                        Pattern regex = Pattern.compile("[.,\\d]+"); // matches . , e números de 0 a 9
+                        Matcher match = regex.matcher(price);
+                        String currency_symbol = match.replaceAll("");
+                        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL, currency_symbol);
+
+                        getImagesFromScriptTag(resultDocument);
+
+                        priceTV.setText(price);
+                        gotPrice = true;
+                        mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
+                        mActivity.findViewById(R.id.button_add_to_db).setEnabled(true);
+                        mActivity.findViewById(R.id.ll_description).setVisibility(View.VISIBLE);
+
+                    }
                 } else {
-                    // Sem opções de sabor, embalagem, tamanho para selecionar
-                    String price = resultDocument.getElementsByClass("priceBlock_current_price").text();
-
-                    Log.w("Sergio>", this + " onPostExecute: \n" + "price=\n" + price);
-
-                    Pattern regex = Pattern.compile("[.,\\d]+"); // matches . , e números de 0 a 9
-                    Matcher match = regex.matcher(price);
-                    String currency_symbol = match.replaceAll("");
-                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL, currency_symbol);
-
-                    getImagesFromScriptTag(resultDocument);
-//                    // Imagem 480x480
-//                    Element first_prod_img = resultDocument.getElementsByClass("product-img").first();
-//                    if (first_prod_img != null) {
-//                        String url_img480 = first_prod_img.attr("src"); // https://s1.thcdn.com/ às vezes retorna apenas isto ou spacer gif
-//                        if (url_img480 != null && (url_img480.contains(".jpg") || url_img480.contains(".jpeg") || url_img480.contains(".png") || url_img480.contains(".bmp"))) {
-//                            arrayListImageURL.add(url_img480);
-//                        }
-//                    }
-//
-//                    // Imagem 600x600
-//                    Element first_img_zoom_action = resultDocument.getElementsByClass("product-img-zoom-action").first();
-//                    if (first_img_zoom_action != null) {
-//                        String url_img600 = first_img_zoom_action.attr("href");
-//                        if (url_img600 != null && (url_img600.contains(".jpg") || url_img600.contains(".jpeg") || url_img600.contains(".png") || url_img600.contains(".bmp"))) {
-//                            arrayListImageURL.add(url_img600);
-//                        }
-//                    }
-                    priceTV.setText(price);
-                    gotPrice = true;
-                    mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
-                    mActivity.findViewById(R.id.button_add_to_db).setEnabled(true);
-                    mActivity.findViewById(R.id.ll_description).setVisibility(View.VISIBLE);
-
+                    showCustomToast(mActivity, "Error getting webpage. " + "\n" +
+                                    "Submit fix request.",
+                            R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
                 }
 
             } else {

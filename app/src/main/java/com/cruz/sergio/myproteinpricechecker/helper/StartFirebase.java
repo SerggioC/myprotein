@@ -2,7 +2,6 @@ package com.cruz.sergio.myproteinpricechecker.helper;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.Bundle;
 import android.preference.PreferenceManager;
 
 import com.firebase.jobdispatcher.Constraint;
@@ -20,31 +19,29 @@ import com.firebase.jobdispatcher.Trigger;
  */
 
 public class StartFirebase {
-    static int START_INTERVAL;
-    static int DEFAULT_START_INTERVAL = 0; // em segundos
-    static int DELTA_INTERVAL = 1 * 60 * 60; // em segundos , 10 minutos
+    static int START_INTERVAL = 0;
+    static int DELTA_INTERVAL; // em segundos
+    static int DEFAULT_DELTA_INTERVAL = 3 * 60 * 60; // em segundos
 
     public static void createJobDispatcher(Context context) {
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
-        START_INTERVAL = Integer.parseInt(sharedPrefs.getString("sync_frequency", String.valueOf(DEFAULT_START_INTERVAL)));
+        DELTA_INTERVAL = Integer.parseInt(sharedPrefs.getString("sync_frequency", String.valueOf(DEFAULT_DELTA_INTERVAL)));
+        if (DELTA_INTERVAL < 0) DELTA_INTERVAL = DEFAULT_DELTA_INTERVAL;
         if (START_INTERVAL < 0) START_INTERVAL = 0;
+        START_INTERVAL = 0;
+        DELTA_INTERVAL = 1800; // 30 minutos
 
         // Create a new dispatcher using the Google Play driver.
         FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(context));
-
-        Bundle myExtrasBundle = new Bundle();
-        myExtrasBundle.putString("some_key", "some_value"); // unused
-
         Job myJob = dispatcher.newJobBuilder()
                 .setService(FirebaseJobservice.class) // the JobService that will be called
-                .setTag("Sergio_tag-update_prices") // uniquely identifies the job
+                .setTag("update_prices") // uniquely identifies the job
                 .setRecurring(true)
                 .setLifetime(Lifetime.FOREVER) // persist past a device reboot
                 .setTrigger(Trigger.executionWindow(START_INTERVAL, START_INTERVAL + DELTA_INTERVAL)) // start between START_INTERVAL and START + DELTA seconds from now
                 .setReplaceCurrent(true) // overwrite an existing job with the same tag
                 .setRetryStrategy(RetryStrategy.DEFAULT_LINEAR) // retry with exponential backoff
                 .setConstraints(Constraint.ON_ANY_NETWORK) // constraints that need to be satisfied for the job to run
-                .setExtras(myExtrasBundle)
                 .build();
         dispatcher.mustSchedule(myJob);
     }

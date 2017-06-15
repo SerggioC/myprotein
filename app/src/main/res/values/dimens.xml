@@ -6,4 +6,5 @@
     <dimen name="inner_fragment_margin_top">8dp</dimen>
     <dimen name="edittextsize">45dp</dimen>
     <dimen name="navigation_icon_padding">8dp</dimen>
+    <dimen name="prices_text_size">14sp</dimen>
 </resources>

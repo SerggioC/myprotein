@@ -22,19 +22,22 @@ import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
 import com.cruz.sergio.myproteinpricechecker.helper.StartFirebase;
 
 import static com.cruz.sergio.myproteinpricechecker.TabFragment.viewPager;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.UnregisterBroadcastReceiver;
 
 public class MainActivity extends AppCompatActivity {
     public static NavigationView mNavigationView;
     DrawerLayout mDrawerLayout;
     static FragmentManager mFragmentManager;
     FragmentTransaction mFragmentTransaction;
-    static Activity mActivity;
+    Activity mActivity;
     Handler mHandler;
     Bundle indexBundle;
     int index = 0;
     public static String DETAILS_FRAGMENT_TAG = "DETAILS_FRAGMENT";
     Boolean addedNewProduct = false;
     public static Boolean CACHE_IMAGES = true;
+    public static Boolean UPDATE_ONSTART = true;
+
     public static Boolean BC_Registered = false;
     public static float scale;
     public static int density;
@@ -51,6 +54,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        UnregisterBroadcastReceiver(mActivity);
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
     }
@@ -62,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
 
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
         CACHE_IMAGES = sharedPrefs.getBoolean("cache_images", true);
+        UPDATE_ONSTART = sharedPrefs.getBoolean("update_on_start", true);
 
         StartFirebase.createJobDispatcher(this);
 
