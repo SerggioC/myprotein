@@ -83,7 +83,9 @@ import java.util.regex.Pattern;
 import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
 import static com.cruz.sergio.myproteinpricechecker.WatchingFragment.imageSizesToUse;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
 
 public class DetailsFragment extends Fragment {
     Activity mActivity;
@@ -339,6 +341,7 @@ public class DetailsFragment extends Fragment {
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE, priceString);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE, price_value);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE, timeMillis);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRICE_VARIATION, 0);
 
                 if (JSON_ArrayArray_Images != null) { // Imagens do JSON (Mais completo)
                     ArrayList<ArrayList<String>> arrayListArrayListImageURIs = new ArrayList<>();
@@ -548,9 +551,9 @@ public class DetailsFragment extends Fragment {
             Document resultDocument = null;
             try {
                 resultDocument = Jsoup.connect(params[0])
-                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36")
+                        .userAgent(userAgent)
                         .method(Connection.Method.GET)
-                        .timeout(0) //sem limite de tempo
+                        .timeout(NET_TIMEOUT) //sem limite de tempo
                         .maxBodySize(0) //sem limite de tamanho do doc recebido
                         .get();
             } catch (IOException e) {
@@ -566,22 +569,12 @@ public class DetailsFragment extends Fragment {
             if (thisFragment.isVisible()) {
                 if (resultDocument != null) {
                     Element titleElem = resultDocument.getElementsByClass("product-title").first();  // Titulo ou nome do produto
-                    String title;
-                    if (titleElem != null) {
-                        title = titleElem.text();
-                    } else {
-                        title = "N/A";
-                    }
+                    String title = titleElem != null ? titleElem.text() : "N/A";
                     ((TextView) mActivity.findViewById(R.id.title_tv)).append(title);
                     productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME, title);
 
                     Elements subtitle_element = resultDocument.getElementsByClass("product-sub-name");
-                    String subtitle;
-                    if (subtitle_element != null) {
-                        subtitle = subtitle_element.text(); //Subtítulo
-                    } else {
-                        subtitle = "N/A";
-                    }
+                    String subtitle = subtitle_element != null ? subtitle_element.text() : "N/A";
                     ((TextView) mActivity.findViewById(R.id.p_subtitle)).append(subtitle);
                     productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_SUBTITLE, subtitle);
 
@@ -622,8 +615,7 @@ public class DetailsFragment extends Fragment {
 
                     }
                 } else {
-                    showCustomToast(mActivity, "Error getting webpage. " + "\n" +
-                                    "Submit fix request.",
+                    showCustomToast(mActivity, "Error getting webpage.",
                             R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
                 }
 
@@ -746,8 +738,8 @@ public class DetailsFragment extends Fragment {
             Document resultDocument = null;
             try {
                 resultDocument = Jsoup.connect(url_param[0])
-                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
-                        .timeout(0) //sem limite de tempo para receber a página
+                        .userAgent(userAgent)
+                        .timeout(NET_TIMEOUT) //sem limite de tempo para receber a página
                         .ignoreContentType(true) // ignorar o tipo de conteúdo
                         .maxBodySize(0) //sem limite de tamanho do doc recebido
                         .get();
@@ -756,13 +748,10 @@ public class DetailsFragment extends Fragment {
             }
             JSONObject jsonObject = null;
             try {
-                if (resultDocument == null) {
-                    jsonObject = null;
-                } else {
-                    jsonObject = new JSONObject(resultDocument.text());
-                }
+                jsonObject = resultDocument == null ? null : new JSONObject(resultDocument.text());
             } catch (JSONException e) {
                 e.printStackTrace();
+                return null;
             }
             return jsonObject;
         }
@@ -922,21 +911,18 @@ public class DetailsFragment extends Fragment {
             Document resultDocument = null;
             try {
                 resultDocument = Jsoup.connect(url_param[0])
-                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
-                        .timeout(0) //sem limite de tempo para receber a página
+                        .userAgent(userAgent)
+                        .timeout(NET_TIMEOUT) //sem limite de tempo para receber a página
                         .ignoreContentType(true) // ignorar o tipo de conteúdo
                         .maxBodySize(0) //sem limite de tamanho do doc recebido
                         .get();
             } catch (IOException e) {
                 e.printStackTrace();
+                return null;
             }
             JSONObject jsonObject = null;
             try {
-                if (resultDocument == null) {
-                    jsonObject = null;
-                } else {
-                    jsonObject = new JSONObject(resultDocument.text());
-                }
+                jsonObject = resultDocument == null ? null : new JSONObject(resultDocument.text());
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -1184,13 +1170,14 @@ public class DetailsFragment extends Fragment {
             Document resultDocument = null;
             try {
                 resultDocument = Jsoup.connect(params[0])
-                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
-                        .timeout(0)
+                        .userAgent(userAgent)
+                        .timeout(NET_TIMEOUT)
                         .ignoreContentType(true)
                         .maxBodySize(0) //sem limite de tamanho do doc recebido
                         .get();
             } catch (IOException e) {
                 e.printStackTrace();
+                return null;
             }
 
             JSONObject jsonObject = null;

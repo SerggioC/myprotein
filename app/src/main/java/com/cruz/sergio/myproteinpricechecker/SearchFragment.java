@@ -46,8 +46,10 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.DETAILS_FRAGMENT_TAG;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetworkSnackBar;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
 
 public class SearchFragment extends Fragment {
     static SearchFragment thisSearchFragment;
@@ -220,8 +222,8 @@ public class SearchFragment extends Fragment {
             Document resultDocument = null;
             try {
                 resultDocument = Jsoup.connect(params[0])
-                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
-                        .timeout(5000)
+                        .userAgent(userAgent)
+                        .timeout(NET_TIMEOUT)
                         .maxBodySize(0) //sem limite de tamanho do doc recebido
                         .get();
 
@@ -457,8 +459,8 @@ public class SearchFragment extends Fragment {
             String price = null;
             try {
                 Document doc = Jsoup.connect(params[0])
-                        .userAgent("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")
-                        .timeout(5000)
+                        .userAgent(userAgent)
+                        .timeout(NET_TIMEOUT)
                         .get();
                 price = doc.getElementsByClass("priceBlock_current_price").text();
             } catch (IOException e) {

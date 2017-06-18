@@ -13,8 +13,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:cardBackgroundColor="@color/cardsColor"
-        app:cardCornerRadius="2dp"
-        app:cardElevation="4dp"
+        app:cardCornerRadius="@dimen/card_radius"
+        app:cardElevation="@dimen/card_elevation"
         app:cardPreventCornerOverlap="true">
 
         <WebView

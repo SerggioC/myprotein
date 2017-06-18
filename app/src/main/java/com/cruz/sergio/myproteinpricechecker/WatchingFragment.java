@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
-import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -16,6 +15,7 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.CursorAdapter;
@@ -64,7 +64,6 @@ import static android.util.DisplayMetrics.DENSITY_LOW;
 import static android.util.DisplayMetrics.DENSITY_MEDIUM;
 import static android.util.DisplayMetrics.DENSITY_XHIGH;
 import static android.util.DisplayMetrics.DENSITY_XXHIGH;
-import static android.util.TypedValue.COMPLEX_UNIT_SP;
 import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.CACHE_IMAGES;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.UPDATE_ONSTART;
@@ -101,6 +100,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         public final TextView lowestPriceDate;
         public final TextView currentPriceDate;
         public final ImageSwitcher imageSwitcher;
+        public final LinearLayout ll_current_price;
+        public final ImageView up_down_icon;
+
 
         public ViewHolder(View view) {
             iconView = (ImageView) view.findViewById(R.id.item_icon);
@@ -111,7 +113,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             highestPriceDate = (TextView) view.findViewById(R.id.item_highest_price_date);
             lowestPriceDate = (TextView) view.findViewById(R.id.item_lowest_price_date);
             currentPriceDate = (TextView) view.findViewById(R.id.item_current_price_date);
+            ll_current_price = (LinearLayout) view.findViewById(R.id.ll_current_price);
             imageSwitcher = (ImageSwitcher) view.findViewById(R.id.image_switcher);
+            up_down_icon = (ImageView) view.findViewById(R.id.up_down_arrow);
         }
     }
 
@@ -143,12 +147,16 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             @Override
             public void onUpdateReady(Boolean isReady) {
                 Log.w("Sergio>", this + "\n" + "onUpdateReady= " + isReady);
-                timer.cancel();
-                timer.purge();
-                timer = new Timer();
-                getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
-                if (watchingSwipeRefreshLayout != null) {
-                    watchingSwipeRefreshLayout.setRefreshing(false);
+                if (WatchingFragment.this.isAdded()) {
+                    if (isReady) {
+                        timer.cancel();
+                        timer.purge();
+                        timer = new Timer();
+                        getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
+                    }
+                    if (watchingSwipeRefreshLayout != null) {
+                        watchingSwipeRefreshLayout.setRefreshing(false);
+                    }
                 }
 
             }
@@ -379,7 +387,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         // you don't bind any data to the view at this point.
         @Override
         public View newView(Context context, Cursor cursor, ViewGroup parent) {
-            View item_root = cursorItemInflater.inflate(R.layout.watching_item_layout, null, false);
+            View item_root = cursorItemInflater.inflate(R.layout.watching_item_layout2, null, false);
             ViewHolder viewHolder = new ViewHolder(item_root);
             item_root.setTag(R.id.viewholder, viewHolder);
             return item_root;
@@ -402,6 +410,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             long actualPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE));
             double min_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE));
             double actual_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE));
+            double max_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE));
+            long up_or_down = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRICE_VARIATION));
 
 
             if (options_sabor == null) options_sabor = "";
@@ -437,12 +447,19 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             viewHolder.highestPriceDate.setText(getMillisecondsToDate(maxPriceDate));
             viewHolder.lowestPriceDate.setText(getMillisecondsToDate(minPriceDate));
             viewHolder.currentPriceDate.setText(getMillisecondsToDate(actualPriceDate));
+            ((TextView) mActivity.findViewById(R.id.updated_tv)).setText(getMillisecondsToDate(actualPriceDate) + " atrás");
 
-            if (actual_price_value <= min_price_value) {
-                viewHolder.lowestPriceView.setTypeface(null, Typeface.BOLD);
-                viewHolder.lowestPriceView.setTextSize(COMPLEX_UNIT_SP, 16);
-                viewHolder.currentPriceView.setTypeface(null, Typeface.BOLD);
-                viewHolder.currentPriceView.setTextSize(COMPLEX_UNIT_SP, 16);
+            up_or_down = 1L;
+
+            if (up_or_down == -1L) {
+                viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.down_arrow));
+            } else if (up_or_down == 1L) {
+                viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.up_arrow));
+            }
+
+            if (actual_price_value <= min_price_value && actual_price_value != max_price_value) {
+                viewHolder.ll_current_price.setBackground(ContextCompat.getDrawable(mActivity, R.drawable.ll_green_bg));
+
             }
 
         }   // End bindView
@@ -757,7 +774,10 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         } else if (timeDif >= 60_000 && timeDif <= 3_600_000) { // uma hora atrás
             return TimeUnit.MILLISECONDS.toMinutes(timeDif) + " Minutos";
 
-        } else if (timeDif > 3_600_000 && timeDif <= 86_400_000) { // Dentro do dia de hoje até 24h atrás
+        } else if (timeDif > 3_600_000 && timeDif < 7_200_000) { // Dentro do dia de hoje até 24h atrás
+            return TimeUnit.MILLISECONDS.toHours(timeDif) + " Hora";
+
+        } else if (timeDif >= 7_200_000 && timeDif <= 86_400_000) { // Dentro do dia de hoje até 24h atrás
             return TimeUnit.MILLISECONDS.toHours(timeDif) + " Horas";
 
         } else if (timeDif > 86_400_000 && timeDif <= 172_800_000) { // Ontem 24 a 48h

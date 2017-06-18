@@ -52,6 +52,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE + " REAL, " +
                 ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE + " INTEGER, " +
+                ProductsContract.ProductsEntry.COLUMN_PRICE_VARIATION + " INTEGER, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_VARIATION_NAME1 + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_VARIATION_NAME2 + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_VARIATION_NAME3 + " TEXT, " +
@@ -81,7 +82,7 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_CREATE_PRODUCT_TABLE);
         db.execSQL(SQL_CREATE_PRICES_TABLE);
 
-        String jobs_table = "CREATE TABLE jobs (info TEXT NOT NULL);";
+        String jobs_table = "CREATE TABLE jobs (_id INTEGER PRIMARY KEY AUTOINCREMENT, time TEXT NOT NULL, diff TEXT NOT NULL);";
         db.execSQL(jobs_table);
         Log.i("Sergio>", this + "\nonCreate:\njobs_table=\n" + jobs_table);
     }

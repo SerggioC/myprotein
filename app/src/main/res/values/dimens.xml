@@ -7,4 +7,7 @@
     <dimen name="edittextsize">45dp</dimen>
     <dimen name="navigation_icon_padding">8dp</dimen>
     <dimen name="prices_text_size">14sp</dimen>
+    <dimen name="card_radius">2dp</dimen>
+    <dimen name="card_elevation">3dp</dimen>
+    <dimen name="list_divider_height">4dp</dimen>
 </resources>

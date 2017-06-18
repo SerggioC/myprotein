@@ -89,6 +89,7 @@ public class ProductsContract {
         public static final String COLUMN_ACTUAL_PRICE = "actual_price";
         public static final String COLUMN_ACTUAL_PRICE_VALUE = "actual_price_value";
         public static final String COLUMN_ACTUAL_PRICE_DATE = "actual_price_date";
+        public static final String COLUMN_PRICE_VARIATION = "price_variation";
         public static final String COLUMN_MP_VARIATION_NAME1 = "mp_variation_name1";
         public static final String COLUMN_MP_VARIATION_NAME2 = "mp_variation_name2";
         public static final String COLUMN_MP_VARIATION_NAME3 = "mp_variation_name3";
@@ -127,6 +128,7 @@ public class ProductsContract {
                 ProductsEntry.COLUMN_ACTUAL_PRICE,
                 ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE,
                 ProductsEntry.COLUMN_ACTUAL_PRICE_DATE,
+                ProductsEntry.COLUMN_PRICE_VARIATION,
                 ProductsEntry.COLUMN_MP_VARIATION_NAME1,
                 ProductsEntry.COLUMN_MP_VARIATION_NAME2,
                 ProductsEntry.COLUMN_MP_VARIATION_NAME3,

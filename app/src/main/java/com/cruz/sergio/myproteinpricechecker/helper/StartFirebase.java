@@ -19,17 +19,16 @@ import com.firebase.jobdispatcher.Trigger;
  */
 
 public class StartFirebase {
-    static int START_INTERVAL = 0;
-    static int DELTA_INTERVAL; // em segundos
-    static int DEFAULT_DELTA_INTERVAL = 3 * 60 * 60; // em segundos
 
+    // Só repete os jobs com o aparelho em carga ou sem o modo de economia de energia ativado
     public static void createJobDispatcher(Context context) {
+        int START_INTERVAL = 0;
+        int DELTA_INTERVAL; // em segundos
+        int DEFAULT_DELTA_INTERVAL = 3 * 60 * 60; // em segundos
+
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
         DELTA_INTERVAL = Integer.parseInt(sharedPrefs.getString("sync_frequency", String.valueOf(DEFAULT_DELTA_INTERVAL)));
-        if (DELTA_INTERVAL < 0) DELTA_INTERVAL = DEFAULT_DELTA_INTERVAL;
-        if (START_INTERVAL < 0) START_INTERVAL = 0;
-        START_INTERVAL = 0;
-        DELTA_INTERVAL = 1800; // 30 minutos
+        if (DELTA_INTERVAL < DEFAULT_DELTA_INTERVAL || DELTA_INTERVAL < 0) DELTA_INTERVAL = DEFAULT_DELTA_INTERVAL;
 
         // Create a new dispatcher using the Google Play driver.
         FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(context));

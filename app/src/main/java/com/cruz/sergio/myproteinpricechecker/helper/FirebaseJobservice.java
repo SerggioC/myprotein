@@ -20,10 +20,14 @@ import org.jsoup.nodes.Document;
 
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static android.database.DatabaseUtils.dumpCursorToString;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.ping;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
 
 /**
  * Created by Sergio on 03/06/2017.
@@ -31,8 +35,8 @@ import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.ping;
  * https://github.com/firebase/firebase-jobdispatcher-android
  */
 public class FirebaseJobservice extends JobService {
-    public static final String JSON_METHOD = "getUpdatedJSONPrice";
-    public static final String BASE_METHOD = "getUpdatedBasePrice";
+    static final String JSON_METHOD = "getUpdatedJSONPrice";
+    static final String BASE_METHOD = "getUpdatedBasePrice";
     private static int cursorSize;
     private static int currentCursor;
     static Boolean isJob;
@@ -52,17 +56,17 @@ public class FirebaseJobservice extends JobService {
 */
 
     public void setUpdateCompleteListener(UpdateCompleteListener listener) {
-        this.listener = listener;
+        FirebaseJobservice.listener = listener;
     }
 
-    public static class CursorObj {
-        public int row_id;
-        public String jsonURL;
-        public String baseURL;
-        public double min_price;
-        public double max_price;
+    static class CursorObj {
+        int row_id;
+        String jsonURL;
+        String baseURL;
+        double min_price;
+        double max_price;
 
-        public CursorObj(int row_id, String jsonURL, String baseURL, double min_price, double max_price) {
+        CursorObj(int row_id, String jsonURL, String baseURL, double min_price, double max_price) {
             this.row_id = row_id;
             this.jsonURL = jsonURL;
             this.baseURL = baseURL;
@@ -97,13 +101,24 @@ public class FirebaseJobservice extends JobService {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         Cursor cursor = db.rawQuery("SELECT " +
-                ProductsContract.ProductsEntry._ID + " , " +
-                ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL + " , " +
-                ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS + " , " +
-                ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE + " , " +
-                ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE +
-                " FROM " + ProductsContract.ProductsEntry.TABLE_NAME, null);
+                        ProductsContract.ProductsEntry.TABLE_NAME + "." + ProductsContract.ProductsEntry._ID + " , " +
+                        ProductsContract.ProductsEntry.TABLE_NAME + "." + ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL + " , " +
+                        ProductsContract.ProductsEntry.TABLE_NAME + "." + ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS + " , " +
+                        ProductsContract.ProductsEntry.TABLE_NAME + "." + ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE + " , " +
+                        ProductsContract.ProductsEntry.TABLE_NAME + "." + ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE +
+                " FROM " + ProductsContract.ProductsEntry.TABLE_NAME +
+                " INNER JOIN " + ProductsContract.PricesEntry.TABLE_NAME + " ON " +
+                ProductsContract.ProductsEntry.TABLE_NAME + "." + ProductsContract.ProductsEntry._ID + " = " +
+                ProductsContract.PricesEntry.TABLE_NAME + "." + ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS +
+                " WHERE " + ProductsContract.PricesEntry.TABLE_NAME + "." + ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS + " = " +
+                "(SELECT MAX(" + ProductsContract.PricesEntry.TABLE_NAME + "." + ProductsContract.PricesEntry._ID + ")" + " FROM " + ProductsContract.PricesEntry.TABLE_NAME +
+                ");"
+
+
+                , null);
         cursorSize = cursor.getCount();
+        String cursorToString = dumpCursorToString(cursor);
+        Log.i("Sergio>", "updatePricesOnStart\ncursorToString= " + cursorToString);
 
         if (cursorSize > 0) {
             currentCursor = 0;
@@ -122,20 +137,35 @@ public class FirebaseJobservice extends JobService {
                     checkInternet_forBGMethod.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, cursorObj);
                 } else if (!TextUtils.isEmpty(baseURL)) {
                     Log.i("Sergio>", context + "\nonStartJob:\nBASE_METHOD= " + BASE_METHOD);
-                    currentCursor++;
                     AsyncTask<CursorObj, Void, Boolean> checkInternet_forBGMethod = new checkInternetAsyncMethod2(BASE_METHOD, context);
                     checkInternet_forBGMethod.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, cursorObj);
                 }
             }
         } else {
             Log.w("Sergio>", "updatePricesOnStart: " + "cursor Size = 0, empty database!");
+            if (listener != null) {
+                listener.onUpdateReady(false);
+            }
         }
 
         if (isJob) {
             db = dbHelper.getWritableDatabase();
-            Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+
+            String lastTimeStr = null;
+            cursor = db.rawQuery("SELECT time FROM jobs WHERE _id = (SELECT MAX(_id) FROM jobs)", null);
+            if (cursor.getCount() > 0 && cursor.moveToFirst()) {
+                lastTimeStr = cursor.getString(cursor.getColumnIndex("time"));
+            }
+
+            long now = System.currentTimeMillis();
+            long lastTime = lastTimeStr != null ? Timestamp.valueOf(lastTimeStr).getTime() : now;
+            long duration = now - lastTime;
+            String time_diff = TimeUnit.MILLISECONDS.toMinutes(duration) + "min " + TimeUnit.MILLISECONDS.toSeconds(duration) + "s";
+
+            Timestamp timestamp = new Timestamp(now);
             ContentValues contentValues = new ContentValues();
-            contentValues.put("info", timestamp.toString());
+            contentValues.put("time", timestamp.toString());
+            contentValues.put("diff", time_diff);
             long jobsRowId = db.insert("jobs", null, contentValues);
             if (jobsRowId < 0L) {
                 Log.e("Sergio>", context + "\nonStartJob: Error inserting job to DataBase!");
@@ -148,7 +178,7 @@ public class FirebaseJobservice extends JobService {
         db.close();
     }
 
-    public static class checkInternetAsyncMethod2 extends AsyncTask<CursorObj, Void, Boolean> {
+    static class checkInternetAsyncMethod2 extends AsyncTask<CursorObj, Void, Boolean> {
         String method;
         Context context;
         CursorObj cursorObj;
@@ -203,16 +233,19 @@ public class FirebaseJobservice extends JobService {
                         break;
                     }
                 }
-
+            } else {
+                if (listener != null) {
+                    listener.onUpdateReady(false);
+                }
             }
         }
     }
 
-    public static class GetUpdatedPriceJSON extends AsyncTask<CursorObj, Void, JSONObject> {
+    static class GetUpdatedPriceJSON extends AsyncTask<CursorObj, Void, JSONObject> {
         CursorObj cursorObj;
         Context context;
 
-        public GetUpdatedPriceJSON(Context context) {
+        GetUpdatedPriceJSON(Context context) {
             this.context = context;
         }
 
@@ -230,8 +263,8 @@ public class FirebaseJobservice extends JobService {
             Document resultDocument = null;
             try {
                 resultDocument = Jsoup.connect(json_url)
-                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
-                        .timeout(0) //sem limite de tempo para receber a página
+                        .userAgent(userAgent)
+                        .timeout(NET_TIMEOUT) //sem limite de tempo para receber a página
                         .ignoreContentType(true) // ignorar o tipo de conteúdo
                         .maxBodySize(0) //sem limite de tamanho do doc recebido
                         .get();
@@ -240,11 +273,7 @@ public class FirebaseJobservice extends JobService {
             }
             JSONObject jsonObject = null;
             try {
-                if (resultDocument == null) {
-                    jsonObject = null;
-                } else {
-                    jsonObject = new JSONObject(resultDocument.text());
-                }
+                jsonObject = resultDocument == null ? null : new JSONObject(resultDocument.text());
             } catch (JSONException e) {
                 e.printStackTrace();
                 Log.e("Sergio>", " onPostExecute GetUpdatedPriceJSON JSONException error" + e);
@@ -279,7 +308,7 @@ public class FirebaseJobservice extends JobService {
         Context context;
         CursorObj cursorObj;
 
-        public GetUpdatedPriceBase(Context context) {
+        GetUpdatedPriceBase(Context context) {
             this.context = context;
         }
 
@@ -290,8 +319,8 @@ public class FirebaseJobservice extends JobService {
             String base_url = cursorObj.baseURL;
             try {
                 resultDocument = Jsoup.connect(base_url)
-                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
-                        .timeout(0) //sem limite de tempo
+                        .userAgent(userAgent)
+                        .timeout(NET_TIMEOUT) //sem limite de tempo
                         .maxBodySize(0) //sem limite de tamanho do doc recebido
                         .get();
             } catch (IOException e) {
@@ -303,16 +332,10 @@ public class FirebaseJobservice extends JobService {
         @Override
         protected void onPostExecute(Document resultDocument) {
             super.onPostExecute(resultDocument);
-
             if (resultDocument != null) {
                 String price = resultDocument.getElementsByClass("priceBlock_current_price").text();
-
-                if (price != null) {
-                    savePriceToDB(context, cursorObj, price);
-                }
+                if (price != null) savePriceToDB(context, cursorObj, price);
             }
-
-
         }
     }
 
@@ -348,13 +371,15 @@ public class FirebaseJobservice extends JobService {
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, priceString);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE, price_value);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, currentTimeMillis);
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRICE_VARIATION, -1);
             // TODO: Send alert to user? There's a new lower price!
-        }
-
-        if (price_value > cursorObj.max_price) {
+        } else if (price_value > cursorObj.max_price) {
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, priceString);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE, price_value);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, currentTimeMillis);
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRICE_VARIATION, 1);
+        } else {
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRICE_VARIATION, 0);
         }
 
         db.update(ProductsContract.ProductsEntry.TABLE_NAME, productContentValues,
@@ -371,6 +396,7 @@ public class FirebaseJobservice extends JobService {
                 listener.onUpdateReady(true);
             }
         }
+
     }
 
 }

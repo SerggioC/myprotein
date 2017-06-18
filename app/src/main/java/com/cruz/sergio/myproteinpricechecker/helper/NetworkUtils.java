@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.support.design.internal.SnackbarContentLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,7 +27,6 @@ import java.io.IOException;
 
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.BC_Registered;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
-import static com.cruz.sergio.myproteinpricechecker.R.id.snackbar_text;
 
 /*****
  *
@@ -37,14 +37,17 @@ import static com.cruz.sergio.myproteinpricechecker.R.id.snackbar_text;
  ******/
 
 public class NetworkUtils {
+    public static final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36";
     private static final String PING_URL = "www.myprotein.com";
     public static BroadcastReceiver BCReceiver = null;
     public static Snackbar noNetworkSnackBar = null;
     static Snackbar.SnackbarLayout snack_layout;
+    public static int NET_TIMEOUT = 10000; // milliseconds
 
     public static final void UnregisterBroadcastReceiver(Activity mActivity) {
         if (BCReceiver != null) {
             LocalBroadcastManager.getInstance(mActivity).unregisterReceiver(BCReceiver);
+            Log.i("Sergio>", "NetworkUtils: UnregisterBroadcastReceiver");
             //showCustomSlimToast(mActivity, "Unregistering Broadcast Receiver", Toast.LENGTH_SHORT);
         }
     }
@@ -59,7 +62,7 @@ public class NetworkUtils {
                 public void onReceive(Context context, Intent intent) {
                     Bundle extras = intent.getExtras();
                     NetworkInfo info = extras.getParcelable("networkInfo");
-                    NetworkInfo.State state = info.getState();
+                    NetworkInfo.State state = info != null ? info.getState() : null;
                     if (state == NetworkInfo.State.CONNECTED) {
                         noNetworkSnackBar.dismiss();
                     } else if (state != NetworkInfo.State.CONNECTED) {
@@ -111,7 +114,7 @@ public class NetworkUtils {
                 params.gravity = Gravity.CENTER_VERTICAL;
                 imageView.setLayoutParams(params);
                 snack_layout.setForegroundGravity(Gravity.CENTER_VERTICAL);
-                ((SnackbarContentLayout) snack_layout.findViewById(snackbar_text).getParent()).addView(imageView, 0);
+                ((SnackbarContentLayout) snack_layout.findViewById(R.id.snackbar_text).getParent()).addView(imageView, 0);
             }
         }
     }

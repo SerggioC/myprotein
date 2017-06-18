@@ -32,8 +32,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import static com.cruz.sergio.myproteinpricechecker.R.id.webview;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetworkSnackBar;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
 
 /**
  * Created by Sergio on 06/03/2017.
@@ -140,8 +142,8 @@ public class VoucherFragment extends Fragment {
             Document resultDocument = null;
             try {
                 resultDocument = Jsoup.connect(params[0])
-                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36")
-                        .timeout(5000)
+                        .userAgent(userAgent)
+                        .timeout(NET_TIMEOUT)
                         .maxBodySize(0) //sem limite de tamanho do doc recebido
                         .get();
 
