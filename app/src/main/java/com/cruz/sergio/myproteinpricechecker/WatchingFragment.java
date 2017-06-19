@@ -98,7 +98,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         public final TextView currentPriceView;
         public final TextView highestPriceDate;
         public final TextView lowestPriceDate;
-        public final TextView currentPriceDate;
+        public final TextView currentInfo;
         public final ImageSwitcher imageSwitcher;
         public final LinearLayout ll_current_price;
         public final ImageView up_down_icon;
@@ -112,7 +112,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             currentPriceView = (TextView) view.findViewById(R.id.item_current_price_textview);
             highestPriceDate = (TextView) view.findViewById(R.id.item_highest_price_date);
             lowestPriceDate = (TextView) view.findViewById(R.id.item_lowest_price_date);
-            currentPriceDate = (TextView) view.findViewById(R.id.item_current_price_date);
+            currentInfo = (TextView) view.findViewById(R.id.current_info);
             ll_current_price = (LinearLayout) view.findViewById(R.id.ll_current_price);
             imageSwitcher = (ImageSwitcher) view.findViewById(R.id.image_switcher);
             up_down_icon = (ImageView) view.findViewById(R.id.up_down_arrow);
@@ -210,14 +210,14 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                             "cursor get position = " + cursor.getPosition() + "\n" +
                             "list item position = " + position);
 
-                    Boolean isExpanded = isExpandedArray[position];
+                    Boolean isExpanded = isExpandedArray[cursor.getPosition()];
                     View under_view = view.findViewById(R.id.under_cardview);
                     if (isExpanded) {
                         collapseIt(under_view);
-                        isExpandedArray[position] = false;
+                        isExpandedArray[cursor.getPosition()] = false;
                     } else {
                         expandIt(under_view);
-                        isExpandedArray[position] = true;
+                        isExpandedArray[cursor.getPosition()] = true;
                     }
 
                 }
@@ -408,10 +408,11 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             long minPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE));
             long maxPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE));
             long actualPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE));
+            long previousPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_DATE));
             double min_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE));
             double actual_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE));
             double max_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE));
-            long up_or_down = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRICE_VARIATION));
+            double previous_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE));
 
 
             if (options_sabor == null) options_sabor = "";
@@ -446,20 +447,38 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             viewHolder.currentPriceView.setText(current_price);
             viewHolder.highestPriceDate.setText(getMillisecondsToDate(maxPriceDate));
             viewHolder.lowestPriceDate.setText(getMillisecondsToDate(minPriceDate));
-            viewHolder.currentPriceDate.setText(getMillisecondsToDate(actualPriceDate));
-            ((TextView) mActivity.findViewById(R.id.updated_tv)).setText(getMillisecondsToDate(actualPriceDate) + " atrás");
+            ((TextView) mActivity.findViewById(R.id.updated_tv)).setText(getMillisecondsToDate(actualPriceDate));
 
-            up_or_down = 1L;
-
-            if (up_or_down == -1L) {
+            if (actual_price_value < previous_price_value && previous_price_value != 0L) {
                 viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.down_arrow));
-            } else if (up_or_down == 1L) {
-                viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.up_arrow));
+                double diff = actual_price_value - previous_price_value;
+                String str_diff = diff != 0 ? " " + diff : "";
+                viewHolder.currentInfo.setVisibility(View.VISIBLE);
+                viewHolder.currentInfo.setText("" + str_diff);
+                viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.dark_green));
             }
-
-            if (actual_price_value <= min_price_value && actual_price_value != max_price_value) {
+            if (actual_price_value > previous_price_value && previous_price_value != 0L) {
+                viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.up_arrow));
+                double diff = actual_price_value - previous_price_value;
+                String str_diff = diff != 0 ? " " + diff : "";
+                viewHolder.currentInfo.setVisibility(View.VISIBLE);
+                viewHolder.currentInfo.setText("" + str_diff);
+                viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.red));
+            }
+            if (actual_price_value >= max_price_value && min_price_value != max_price_value) {
+                double diff = actual_price_value - max_price_value;
+                String str_diff = diff != 0 ? " " + diff : "";
+                viewHolder.currentInfo.setVisibility(View.VISIBLE);
+                viewHolder.currentInfo.setText("Highest price" + str_diff);
+                viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.red));
+            }
+            if (actual_price_value <= min_price_value && min_price_value != max_price_value) {
                 viewHolder.ll_current_price.setBackground(ContextCompat.getDrawable(mActivity, R.drawable.ll_green_bg));
-
+                double diff = min_price_value - actual_price_value;
+                String str_diff = diff != 0 ? " " + diff : "";
+                viewHolder.currentInfo.setVisibility(View.VISIBLE);
+                viewHolder.currentInfo.setText("Best price" + str_diff);
+                viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.dark_green));
             }
 
         }   // End bindView
@@ -472,6 +491,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 }
             }
             if (isExpandedArray[cursor.getPosition()]) {
+                expandIt(view.findViewById(R.id.under_cardview));
                 expandIt(view.findViewById(R.id.under_cardview));
             }
         }
@@ -772,13 +792,13 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         if (timeDif < 60_000) { // há menos de 60 segundos atrás
             return "Agora";
         } else if (timeDif >= 60_000 && timeDif <= 3_600_000) { // uma hora atrás
-            return TimeUnit.MILLISECONDS.toMinutes(timeDif) + " Minutos";
+            return TimeUnit.MILLISECONDS.toMinutes(timeDif) + " Minutos atrás";
 
-        } else if (timeDif > 3_600_000 && timeDif < 7_200_000) { // Dentro do dia de hoje até 24h atrás
-            return TimeUnit.MILLISECONDS.toHours(timeDif) + " Hora";
+        } else if (timeDif > 3_600_000 && timeDif < 7_200_000) { // Dentro de 1h - 2hr
+            return TimeUnit.MILLISECONDS.toHours(timeDif) + " Hora atrás";
 
         } else if (timeDif >= 7_200_000 && timeDif <= 86_400_000) { // Dentro do dia de hoje até 24h atrás
-            return TimeUnit.MILLISECONDS.toHours(timeDif) + " Horas";
+            return TimeUnit.MILLISECONDS.toHours(timeDif) + " Horas atrás";
 
         } else if (timeDif > 86_400_000 && timeDif <= 172_800_000) { // Ontem 24 a 48h
             DateFormat df = getTimeInstance(SHORT);

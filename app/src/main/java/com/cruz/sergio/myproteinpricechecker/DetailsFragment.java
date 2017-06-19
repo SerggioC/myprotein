@@ -341,7 +341,7 @@ public class DetailsFragment extends Fragment {
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE, priceString);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE, price_value);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE, timeMillis);
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRICE_VARIATION, 0);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE, 0);
 
                 if (JSON_ArrayArray_Images != null) { // Imagens do JSON (Mais completo)
                     ArrayList<ArrayList<String>> arrayListArrayListImageURIs = new ArrayList<>();
@@ -1109,9 +1109,9 @@ public class DetailsFragment extends Fragment {
                 //Called every 5000 milliseconds
                 mActivity.runOnUiThread(new Runnable() {
                     public void run() {
+                        image_switcher_details.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
                         currentIndex[0]++;
                         if (currentIndex[0] == size) currentIndex[0] = 0;
-                        image_switcher_details.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
                     }
                 });
             }
@@ -1122,9 +1122,9 @@ public class DetailsFragment extends Fragment {
             public void onClick(View v) {
                 mActivity.runOnUiThread(new Runnable() {
                     public void run() {
+                        image_switcher_details.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
                         currentIndex[0]++;
                         if (currentIndex[0] == size) currentIndex[0] = 0;
-                        image_switcher_details.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
                     }
                 });
             }

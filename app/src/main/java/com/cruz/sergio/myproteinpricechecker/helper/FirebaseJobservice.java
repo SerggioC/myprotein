@@ -65,13 +65,17 @@ public class FirebaseJobservice extends JobService {
         String baseURL;
         double min_price;
         double max_price;
+        Double actual_price;
+        long actual_price_date;
 
-        CursorObj(int row_id, String jsonURL, String baseURL, double min_price, double max_price) {
+        CursorObj(int row_id, String jsonURL, String baseURL, double min_price, double max_price, double actual_price, long actual_price_date) {
             this.row_id = row_id;
             this.jsonURL = jsonURL;
             this.baseURL = baseURL;
             this.min_price = min_price;
             this.max_price = max_price;
+            this.actual_price = actual_price;
+            this.actual_price_date = actual_price_date;
         }
     }
 
@@ -101,21 +105,15 @@ public class FirebaseJobservice extends JobService {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         Cursor cursor = db.rawQuery("SELECT " +
-                        ProductsContract.ProductsEntry.TABLE_NAME + "." + ProductsContract.ProductsEntry._ID + " , " +
-                        ProductsContract.ProductsEntry.TABLE_NAME + "." + ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL + " , " +
-                        ProductsContract.ProductsEntry.TABLE_NAME + "." + ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS + " , " +
-                        ProductsContract.ProductsEntry.TABLE_NAME + "." + ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE + " , " +
-                        ProductsContract.ProductsEntry.TABLE_NAME + "." + ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE +
-                " FROM " + ProductsContract.ProductsEntry.TABLE_NAME +
-                " INNER JOIN " + ProductsContract.PricesEntry.TABLE_NAME + " ON " +
-                ProductsContract.ProductsEntry.TABLE_NAME + "." + ProductsContract.ProductsEntry._ID + " = " +
-                ProductsContract.PricesEntry.TABLE_NAME + "." + ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS +
-                " WHERE " + ProductsContract.PricesEntry.TABLE_NAME + "." + ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS + " = " +
-                "(SELECT MAX(" + ProductsContract.PricesEntry.TABLE_NAME + "." + ProductsContract.PricesEntry._ID + ")" + " FROM " + ProductsContract.PricesEntry.TABLE_NAME +
-                ");"
+                ProductsContract.ProductsEntry._ID + " , " +
+                ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL + " , " +
+                ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS + " , " +
+                ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE + " , " +
+                ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE + " , " +
+                ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE + " , " +
+                ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE +
+                " FROM " + ProductsContract.ProductsEntry.TABLE_NAME, null);
 
-
-                , null);
         cursorSize = cursor.getCount();
         String cursorToString = dumpCursorToString(cursor);
         Log.i("Sergio>", "updatePricesOnStart\ncursorToString= " + cursorToString);
@@ -129,7 +127,10 @@ public class FirebaseJobservice extends JobService {
                 String baseURL = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL));
                 double min_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE));
                 double max_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE));
-                CursorObj cursorObj = new CursorObj(row_id, jsonURL, baseURL, min_price_value, max_price_value);
+                double actual_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE));
+                long actual_price_date = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE));
+
+                CursorObj cursorObj = new CursorObj(row_id, jsonURL, baseURL, min_price_value, max_price_value, actual_price_value, actual_price_date);
 
                 if (!TextUtils.isEmpty(jsonURL)) {
                     Log.d("Sergio>", context + "\nonStartJob:\nJSON_METHOD= " + JSON_METHOD);
@@ -366,20 +367,18 @@ public class FirebaseJobservice extends JobService {
         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE, priceString);
         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE, price_value);
         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE, currentTimeMillis);
+        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE, cursorObj.actual_price);
+        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_DATE, cursorObj.actual_price_date);
 
         if (price_value < cursorObj.min_price) {
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, priceString);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE, price_value);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, currentTimeMillis);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRICE_VARIATION, -1);
             // TODO: Send alert to user? There's a new lower price!
         } else if (price_value > cursorObj.max_price) {
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, priceString);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE, price_value);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, currentTimeMillis);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRICE_VARIATION, 1);
-        } else {
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRICE_VARIATION, 0);
         }
 
         db.update(ProductsContract.ProductsEntry.TABLE_NAME, productContentValues,

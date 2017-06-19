@@ -52,7 +52,8 @@ public class DBHelper extends SQLiteOpenHelper {
                 ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE + " REAL, " +
                 ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE + " INTEGER, " +
-                ProductsContract.ProductsEntry.COLUMN_PRICE_VARIATION + " INTEGER, " +
+                ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE + " REAL, " +
+                ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_DATE + " INTEGER, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_VARIATION_NAME1 + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_VARIATION_NAME2 + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_VARIATION_NAME3 + " TEXT, " +
