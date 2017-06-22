@@ -370,7 +370,7 @@ public class DetailsFragment extends Fragment {
                         }
                         arrayListArrayListImageURIs.add(arrayListImageURIs);
                     }
-                    Log.w("Sergio>", this + "\nonClick: \n" + "JSON_ArrayArray_Images=\n" + JSON_ArrayArray_Images);
+                    Log.w("Sergio>", this + "\nonClick: \n" + "JSON_ArrayArray_Images=\n" + JSON_ArrayArray_Images.toString().replace("\\", ""));
 
                     Log.i("Sergio>", this + "onClick:\narrayListArrayListImageURIs=\n" + arrayListArrayListImageURIs);
                     productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGES, JSON_ArrayArray_Images.toString().replace("\\", ""));
@@ -868,29 +868,29 @@ public class DetailsFragment extends Fragment {
 
         Log.i("Sergio>>>", "getPriceMethod: \nJSON_URL_Details=\n" + JSON_URL_Details);
 
-        DBHelper dbHelper = new DBHelper(getContext());
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + ProductsContract.ProductsEntry.TABLE_NAME, null);
-
-        int rows = 0;
-        if (cursor.getCount() > 0) {
-            //rows = cursor.getInt(0);
-        }
-
-        if (rows < 2) {
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, 0);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, 0);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, 0);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, 0);
-        } else {
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, 0);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, 0);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, 0);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, 0);
-        }
-
-        cursor.close();
-        db.close();
+//        DBHelper dbHelper = new DBHelper(getContext());
+//        SQLiteDatabase db = dbHelper.getReadableDatabase();
+//        Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + ProductsContract.ProductsEntry.TABLE_NAME, null);
+//
+//        int rows = 0;
+//        if (cursor.getCount() > 0) {
+//            //rows = cursor.getInt(0);
+//        }
+//
+//        if (rows < 2) {
+//            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, 0);
+//            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, 0);
+//            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, 0);
+//            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, 0);
+//        } else {
+//            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, 0);
+//            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, 0);
+//            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, 0);
+//            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, 0);
+//        }
+//
+//        cursor.close();
+//        db.close();
 
         AsyncTask<String, Void, Boolean> checkinternetAsyncTask = new checkInternetAsyncMethods("GetPriceFromJSON");
         checkinternetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, JSON_URL_Details);

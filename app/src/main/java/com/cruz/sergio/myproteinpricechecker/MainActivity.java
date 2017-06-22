@@ -53,6 +53,57 @@ public class MainActivity extends AppCompatActivity {
         BC_Registered = NetworkUtils.createBroadcast(mActivity);
     }
 
+
+    String getCurrencyCode(String symbol) {
+//    http://www.xe.com/symbols.php
+
+        String currencyCode = null;
+//        switch (symbol) {
+//            case "£": {
+//                currencyCode = "GBP";
+//            }
+//            break;
+//            case 2:
+//                currencyCode = "February";
+//                break;
+//            case 3:
+//                currencyCode = "March";
+//                break;
+//            case 4:
+//                currencyCode = "April";
+//                break;
+//            case 5:
+//                currencyCode = "May";
+//                break;
+//            case 6:
+//                currencyCode = "June";
+//                break;
+//            case 7:
+//                currencyCode = "July";
+//                break;
+//            case 8:
+//                currencyCode = "August";
+//                break;
+//            case 9:
+//                currencyCode = "September";
+//                break;
+//            case 10:
+//                currencyCode = "October";
+//                break;
+//            case 11:
+//                currencyCode = "November";
+//                break;
+//            case 12:
+//                currencyCode = "December";
+//                break;
+//            default:
+//                currencyCode = null;
+//                break;
+//        }
+
+        return currencyCode;
+    }
+
     @Override
     protected void onPause() {
         super.onPause();

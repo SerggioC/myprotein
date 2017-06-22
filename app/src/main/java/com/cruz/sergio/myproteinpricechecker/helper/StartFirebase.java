@@ -24,7 +24,7 @@ public class StartFirebase {
     public static void createJobDispatcher(Context context) {
         int START_INTERVAL = 0;
         int DELTA_INTERVAL; // em segundos
-        int DEFAULT_DELTA_INTERVAL = 10 * 60; // em segundos
+        int DEFAULT_DELTA_INTERVAL = 6 * 60 * 60; // 6hr em segundos
 
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
         DELTA_INTERVAL = Integer.parseInt(sharedPrefs.getString("sync_frequency", String.valueOf(DEFAULT_DELTA_INTERVAL)));
