@@ -50,9 +50,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        BC_Registered = NetworkUtils.createBroadcast(mActivity);
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        BC_Registered = NetworkUtils.createBroadcast(mActivity);
+    }
 
     String getCurrencyCode(String symbol) {
 //    http://www.xe.com/symbols.php

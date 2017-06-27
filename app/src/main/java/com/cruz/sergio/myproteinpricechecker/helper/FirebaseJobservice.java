@@ -28,6 +28,7 @@ import static android.database.DatabaseUtils.dumpCursorToString;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.ping;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
+import static com.cruz.sergio.myproteinpricechecker.helper.StartFirebase.MINIMUM_DELTA_INTERVAL;
 
 /**
  * Created by Sergio on 03/06/2017.
@@ -47,14 +48,6 @@ public class FirebaseJobservice extends JobService {
         void onUpdateReady(Boolean isReady);
     }
 
-/*
-    // Constructor where listener events are ignored
-    public FirebaseJobservice() {
-        // set null or default listener or accept as argument to constructor
-        this.listener = null;
-    }
-*/
-
     public void setUpdateCompleteListener(UpdateCompleteListener listener) {
         FirebaseJobservice.listener = listener;
     }
@@ -65,10 +58,11 @@ public class FirebaseJobservice extends JobService {
         String baseURL;
         double min_price;
         double max_price;
-        Double actual_price;
+        double actual_price;
         long actual_price_date;
+        double previous_price;
 
-        CursorObj(int row_id, String jsonURL, String baseURL, double min_price, double max_price, double actual_price, long actual_price_date) {
+        CursorObj(int row_id, String jsonURL, String baseURL, double min_price, double max_price, double actual_price, long actual_price_date, double previous_price) {
             this.row_id = row_id;
             this.jsonURL = jsonURL;
             this.baseURL = baseURL;
@@ -76,6 +70,7 @@ public class FirebaseJobservice extends JobService {
             this.max_price = max_price;
             this.actual_price = actual_price;
             this.actual_price_date = actual_price_date;
+            this.previous_price = previous_price;
         }
     }
 
@@ -104,48 +99,68 @@ public class FirebaseJobservice extends JobService {
         DBHelper dbHelper = new DBHelper(context);
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-        Cursor cursor = db.rawQuery("SELECT " +
-                ProductsContract.ProductsEntry._ID + " , " +
-                ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL + " , " +
-                ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS + " , " +
-                ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE + " , " +
-                ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE + " , " +
-                ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE + " , " +
-                ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE +
-                " FROM " + ProductsContract.ProductsEntry.TABLE_NAME, null);
+        Cursor cursor = db.rawQuery("SELECT " + ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_DATE +
+                        " FROM " + ProductsContract.PricesEntry.TABLE_NAME +
+                        " WHERE " + ProductsContract.PricesEntry._ID + " = " +
+                        "(SELECT MAX(" + ProductsContract.PricesEntry._ID + ") FROM " +
+                        ProductsContract.PricesEntry.TABLE_NAME + ");"
+                , null);
 
-        cursorSize = cursor.getCount();
-        String cursorToString = dumpCursorToString(cursor);
-        Log.i("Sergio>", "updatePricesOnStart\ncursorToString= " + cursorToString);
+        long now = System.currentTimeMillis();
+        long last_saved_date = now;
+        if (cursor.getCount() > 0 && cursor.moveToFirst()) {
+            last_saved_date = cursor.getLong(cursor.getColumnIndex(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_DATE));
+        }
 
-        if (cursorSize > 0) {
-            currentCursor = 0;
-
-            while (cursor.moveToNext()) {
-                int row_id = cursor.getInt(cursor.getColumnIndex(ProductsContract.ProductsEntry._ID));
-                String jsonURL = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS));
-                String baseURL = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL));
-                double min_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE));
-                double max_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE));
-                double actual_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE));
-                long actual_price_date = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE));
-
-                CursorObj cursorObj = new CursorObj(row_id, jsonURL, baseURL, min_price_value, max_price_value, actual_price_value, actual_price_date);
-
-                if (!TextUtils.isEmpty(jsonURL)) {
-                    Log.d("Sergio>", context + "\nonStartJob:\nJSON_METHOD= " + JSON_METHOD);
-                    AsyncTask<CursorObj, Void, Boolean> checkInternet_forBGMethod = new checkInternetAsyncMethod2(JSON_METHOD, context);
-                    checkInternet_forBGMethod.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, cursorObj);
-                } else if (!TextUtils.isEmpty(baseURL)) {
-                    Log.i("Sergio>", context + "\nonStartJob:\nBASE_METHOD= " + BASE_METHOD);
-                    AsyncTask<CursorObj, Void, Boolean> checkInternet_forBGMethod = new checkInternetAsyncMethod2(BASE_METHOD, context);
-                    checkInternet_forBGMethod.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, cursorObj);
-                }
-            }
+        // Limitar fazer demasiados requests quando o tempo é menor que MINIMUM_DELTA_INTERVAL
+        if (TimeUnit.MILLISECONDS.toHours(now - last_saved_date) < MINIMUM_DELTA_INTERVAL && isJob) {
+            Log.w("Sergio>", "FirebaseJobservice updatePricesOnStart: \n" + "Too soon to save to database wait up Job!");
         } else {
-            Log.w("Sergio>", "updatePricesOnStart: " + "cursor Size = 0, empty database!");
-            if (listener != null) {
-                listener.onUpdateReady(false);
+            cursor = db.rawQuery("SELECT " +
+                    ProductsContract.ProductsEntry._ID + " , " +
+                    ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL + " , " +
+                    ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS + " , " +
+                    ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE + " , " +
+                    ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE + " , " +
+                    ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE + " , " +
+                    ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE + " , " +
+                    ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE +
+                    " FROM " + ProductsContract.ProductsEntry.TABLE_NAME, null);
+
+            cursorSize = cursor.getCount();
+            String cursorToString = dumpCursorToString(cursor);
+            Log.i("Sergio>", "updatePricesOnStart\ncursorToString= " + cursorToString);
+
+            if (cursorSize > 0) {
+                currentCursor = 0;
+
+                while (cursor.moveToNext()) {
+                    int row_id = cursor.getInt(cursor.getColumnIndex(ProductsContract.ProductsEntry._ID));
+                    String jsonURL = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS));
+                    String baseURL = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL));
+                    double min_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE));
+                    double max_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE));
+                    double actual_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE));
+                    long actual_price_date = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE));
+                    double previous_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE));
+
+                    CursorObj cursorObj = new CursorObj(row_id, jsonURL, baseURL, min_price_value, max_price_value, actual_price_value, actual_price_date, previous_price_value);
+
+                    if (!TextUtils.isEmpty(jsonURL)) {
+                        Log.d("Sergio>", context + "\nonStartJob:\nJSON_METHOD= " + JSON_METHOD);
+                        AsyncTask<CursorObj, Void, Boolean> checkInternet_forBGMethod = new checkInternetAsyncMethod2(JSON_METHOD, context);
+                        checkInternet_forBGMethod.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, cursorObj);
+                    } else if (!TextUtils.isEmpty(baseURL)) {
+                        Log.i("Sergio>", context + "\nonStartJob:\nBASE_METHOD= " + BASE_METHOD);
+                        AsyncTask<CursorObj, Void, Boolean> checkInternet_forBGMethod = new checkInternetAsyncMethod2(BASE_METHOD, context);
+                        checkInternet_forBGMethod.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, cursorObj);
+                    }
+                }
+            } else {
+                Log.w("Sergio>", "updatePricesOnStart: " + "cursor Size = 0, empty database!");
+                if (listener != null) {
+                    listener.onUpdateReady(false);
+                }
             }
         }
 
@@ -158,10 +173,13 @@ public class FirebaseJobservice extends JobService {
                 lastTimeStr = cursor.getString(cursor.getColumnIndex("time"));
             }
 
-            long now = System.currentTimeMillis();
             long lastTime = lastTimeStr != null ? Timestamp.valueOf(lastTimeStr).getTime() : now;
             long duration = now - lastTime;
-            String time_diff = TimeUnit.MILLISECONDS.toMinutes(duration) + "min " + TimeUnit.MILLISECONDS.toSeconds(duration) + "s";
+            long hr = TimeUnit.MILLISECONDS.toHours(duration);
+            long min = TimeUnit.MILLISECONDS.toMinutes(duration -= TimeUnit.HOURS.toMillis(hr));
+            long sec = TimeUnit.MILLISECONDS.toSeconds(duration - TimeUnit.MINUTES.toMillis(min));
+
+            String time_diff = hr + "hr " + min + "min " + sec + "s";
 
             Timestamp timestamp = new Timestamp(now);
             ContentValues contentValues = new ContentValues();
@@ -367,8 +385,11 @@ public class FirebaseJobservice extends JobService {
         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE, priceString);
         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE, price_value);
         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE, currentTimeMillis);
-        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE, cursorObj.actual_price);
-        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_DATE, cursorObj.actual_price_date);
+
+        if (price_value != cursorObj.actual_price) {
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE, cursorObj.actual_price);
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_DATE, cursorObj.actual_price_date);
+        }
 
         if (price_value < cursorObj.min_price) {
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, priceString);

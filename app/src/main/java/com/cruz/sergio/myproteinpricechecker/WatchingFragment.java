@@ -58,7 +58,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
-import static android.database.DatabaseUtils.dumpCursorToString;
 import static android.util.DisplayMetrics.DENSITY_HIGH;
 import static android.util.DisplayMetrics.DENSITY_LOW;
 import static android.util.DisplayMetrics.DENSITY_MEDIUM;
@@ -321,21 +320,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-        String cursorToString = dumpCursorToString(data);
-        if (cursorToString.length() > 4000) {
-            Log.v("Sergio", "cursorToString.length = " + cursorToString.length());
-            int chunkCount = cursorToString.length() / 4000;     // integer division
-            for (int i = 0; i <= chunkCount; i++) {
-                int max = 4000 * (i + 1);
-                if (max >= cursorToString.length()) {
-                    Log.v("Sergio", "chunk " + i + " of " + chunkCount + ":" + cursorToString.substring(4000 * i));
-                } else {
-                    Log.v("Sergio", "chunk " + i + " of " + chunkCount + ":" + cursorToString.substring(4000 * i, max));
-                }
-            }
-        } else {
-            Log.v("Sergio", cursorToString);
-        }
+
+//        dump_BIGdata_toLog(dumpCursorToString(data));
+
         if (data.getCount() == 0) {
             DetailsFragment.showCustomToast(mActivity, "Empty DataBase! Add products to track their prices.",
                     R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_SHORT);
@@ -344,6 +331,24 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             }
         }
         cursorDBAdapter.swapCursor(data);
+    }
+
+    public void dump_BIGdata_toLog(String data) {
+        // String cursorToString = dumpCursorToString(data);
+        if (data.length() > 4000) {
+            Log.v("Sergio", "data.length = " + data.length());
+            int chunkCount = data.length() / 4000;     // integer division
+            for (int i = 0; i <= chunkCount; i++) {
+                int max = 4000 * (i + 1);
+                if (max >= data.length()) {
+                    Log.v("Sergio", "chunk " + i + " of " + chunkCount + ":" + data.substring(4000 * i));
+                } else {
+                    Log.v("Sergio", "chunk " + i + " of " + chunkCount + ":" + data.substring(4000 * i, max));
+                }
+            }
+        } else {
+            Log.v("Sergio", data);
+        }
     }
 
     @Override
@@ -406,9 +411,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             long maxPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE));
             long actualPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE));
             long previousPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_DATE));
-            double min_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE));
             double actual_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE));
-            double max_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE));
+            double min_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE));
+            double max_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE));
             double previous_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE));
 
 
@@ -446,40 +451,46 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             viewHolder.lowestPriceDate.setText(getMillisecondsToDate(minPriceDate));
             ((TextView) mActivity.findViewById(R.id.updated_tv)).setText(getMillisecondsToDate(actualPriceDate));
 
-            if (actual_price_value < previous_price_value && previous_price_value != 0L) {
-                viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.down_arrow));
+            if (actual_price_value < previous_price_value && previous_price_value != 0d) {
                 double diff = actual_price_value - previous_price_value;
-                String str_diff = diff != 0 ? " " + diff : "";
+                String str_diff = diff < 0 ? diff + "" : "";
                 viewHolder.currentInfo.setVisibility(View.VISIBLE);
-                viewHolder.currentInfo.setText("" + str_diff);
+                viewHolder.currentInfo.setText(str_diff);
                 viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.dark_green));
+                viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.down_arrow));
             }
-            if (actual_price_value > previous_price_value && previous_price_value != 0L) {
-                viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.up_arrow));
+            if (actual_price_value > previous_price_value && previous_price_value != 0d) {
                 double diff = actual_price_value - previous_price_value;
-                String str_diff = diff != 0 ? " " + diff : "";
+                String str_diff = diff > 0 ? diff + "" : "";
                 viewHolder.currentInfo.setVisibility(View.VISIBLE);
-                viewHolder.currentInfo.setText("" + str_diff);
+                viewHolder.currentInfo.setText(str_diff);
                 viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.red));
+                viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.up_arrow));
             }
             if (actual_price_value >= max_price_value && min_price_value != max_price_value) {
-                viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.up_arrow));
-                double diff = actual_price_value - max_price_value;
-                String str_diff = diff != 0 ? " " + diff : "";
+                previous_price_value = previous_price_value == 0d ? actual_price_value : previous_price_value;
+                double diff = actual_price_value - previous_price_value;
+                String str_diff = diff > 0d ? "" + diff : "";
                 viewHolder.currentInfo.setVisibility(View.VISIBLE);
-                viewHolder.currentInfo.setText("Highest price!" + str_diff);
+                viewHolder.currentInfo.setText("Highest price! " + str_diff);
                 viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.red));
+                viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.up_arrow));
             }
             if (actual_price_value <= min_price_value && min_price_value != max_price_value) {
+                previous_price_value = previous_price_value == 0d ? actual_price_value : previous_price_value;
+                double diff = min_price_value - actual_price_value;
+                String str_diff = diff != 0d ? "" + diff : "";
+                viewHolder.currentInfo.setVisibility(View.VISIBLE);
+                viewHolder.currentInfo.setText("Best price! " + str_diff);
+                viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.dark_green));
                 viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.down_arrow));
                 viewHolder.ll_current_price.setBackground(ContextCompat.getDrawable(mActivity, R.drawable.ll_green_bg));
-                double diff = min_price_value - actual_price_value;
-                String str_diff = diff != 0 ? " " + diff : "";
-                viewHolder.currentInfo.setVisibility(View.VISIBLE);
-                viewHolder.currentInfo.setText("Best price!" + str_diff);
-                viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.dark_green));
             }
-
+            Log.i("Sergio>", this + " bindView\n" +
+                    "previous_price_value= " + previous_price_value + "\n" +
+                    "actual_price_value= " + actual_price_value + "\n" +
+                    "min_price_value= " + min_price_value + "\n" +
+                    "max_price_value= " + max_price_value);
         }   // End bindView
 
         public void expandOrCollapse(View view, Cursor cursor) {
@@ -805,9 +816,16 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             return "Ontem " + df.format(resultDate);
 
         } else {
+            String pattern;
+            if (timeDif < TimeUnit.DAYS.toMillis(365L)) {
+                pattern = "dd MMM kk:mm";
+            } else {
+                pattern = "dd MMM yy kk:mm";
+            }
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(pattern); // dia Mês 14:55 p.ex.
             DateFormat dateFormat = getDateTimeInstance(SHORT, SHORT);
             Date resultdate = new Date(milliseconds);
-            return dateFormat.format(resultdate);
+            return sdf.format(resultdate);
         }
 
     }
