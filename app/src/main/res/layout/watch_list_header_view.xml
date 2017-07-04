@@ -17,6 +17,7 @@
         android:layout_height="wrap_content"
         android:text="Swipe down to update"
         android:textAlignment="center"
+        android:gravity="center_horizontal"
         android:textColor="@color/colorPrimaryAlpha"
         android:textSize="16sp"/>
 
@@ -49,6 +50,5 @@
             android:textSize="14sp"/>
 
     </LinearLayout>
-
 
 </RelativeLayout>

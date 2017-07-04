@@ -6,7 +6,9 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.PersistableBundle;
 import android.preference.PreferenceManager;
+import android.support.annotation.Nullable;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -35,27 +37,35 @@ public class MainActivity extends AppCompatActivity {
     int index = 0;
     public static String DETAILS_FRAGMENT_TAG = "DETAILS_FRAGMENT";
     Boolean addedNewProduct = false;
-    public static Boolean CACHE_IMAGES = true;
-    public static Boolean UPDATE_ONSTART = true;
-
+    public static Boolean CACHE_IMAGES;
+    public static Boolean UPDATE_ONSTART;
     public static Boolean BC_Registered = false;
     public static float scale;
     public static int density;
 
     @Override
+    public void onCreate(@Nullable Bundle savedInstanceState, @Nullable PersistableBundle persistentState) {
+        super.onCreate(savedInstanceState, persistentState);
+        Log.e("Sergio>", this + " onCreate\nBC_Registered= " + BC_Registered);
+    }
+
+    @Override
     protected void onRestart() {
         super.onRestart();
+        Log.e("Sergio>", this + " onRestart\nBC_Registered= " + BC_Registered);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+        BC_Registered = NetworkUtils.createBroadcast(mActivity);
+        Log.e("Sergio>", this + " onStart\nBC_Registered= " + BC_Registered);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        BC_Registered = NetworkUtils.createBroadcast(mActivity);
+        Log.e("Sergio>", this + " onResume\nBC_Registered= " + BC_Registered);
     }
 
     String getCurrencyCode(String symbol) {

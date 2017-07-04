@@ -25,6 +25,7 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by Ratan on 7/29/2015.
@@ -46,7 +47,6 @@ public class GraphsFragment extends Fragment {
 
         DBHelper dbHelper = new DBHelper(getContext());
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-
 
 
         String query1 = "SELECT DISTINCT " + ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS +
@@ -99,9 +99,9 @@ public class GraphsFragment extends Fragment {
 
         db.close();
         long elapsed = System.nanoTime() - startTime;
-        Log.d("Sergio>", this + " onCreate\npriceValues_Array_arrayList= " + priceValues_Array_arrayList);
-        Log.d("Sergio>", this + " dates_Array_arrayList= " + dates_Array_arrayList + "\n");
-        Log.d("Sergio>", this + " onCreate\nelapsed= " + elapsed);
+//        Log.d("Sergio>", this + " onCreate\npriceValues_Array_arrayList= " + priceValues_Array_arrayList);
+//        Log.d("Sergio>", this + " dates_Array_arrayList= " + dates_Array_arrayList + "\n");
+        Log.d("Sergio>", this + " onCreate\nelapsed Millis= " + TimeUnit.NANOSECONDS.toMillis(elapsed));
     }
 
     @Override
@@ -139,26 +139,31 @@ public class GraphsFragment extends Fragment {
         yAxis.setDrawZeroLine(true);
         yAxis.setDrawGridLines(true);
 
-        int numgraphs = dates_Array_arrayList.size();
-        ArrayList<ILineDataSet> dataSets = new ArrayList<>(numgraphs);
-        for (int k = 0; k < numgraphs; k++) {
-            ArrayList<Long> datesArray = dates_Array_arrayList.get(k);
-            ArrayList<Double> pricesArray = priceValues_Array_arrayList.get(k);
+        if (dates_Array_arrayList != null && priceValues_Array_arrayList != null) {
+            int numgraphs = dates_Array_arrayList.size();
+            ArrayList<ILineDataSet> dataSets = new ArrayList<>(numgraphs);
+            for (int k = 0; k < numgraphs; k++) {
+                ArrayList<Long> datesArray = dates_Array_arrayList.get(k);
+                ArrayList<Double> pricesArray = priceValues_Array_arrayList.get(k);
 
-            List<Entry> entries = new ArrayList<>();
-            int datasize = dates_Array_arrayList.get(k).size();
-            for (int i = 0; i < datasize; i++) {
-                // cada ponto -> (x,y) => Entry(float x, float y);
-                entries.add(new Entry(datesArray.get(i).floatValue(), pricesArray.get(i).floatValue()));
+                List<Entry> entries = new ArrayList<>();
+                int datasize = dates_Array_arrayList.get(k).size();
+                for (int i = 0; i < datasize; i++) {
+                    // cada ponto -> (x,y) => Entry(float x, float y);
+                    float y = pricesArray.get(i).floatValue();
+                    if (y > 0) {
+                        entries.add(new Entry(datesArray.get(i).floatValue(), y));
+                    }
+                }
+
+                LineDataSet lineDataSet = new LineDataSet(entries, "Product one " + k); // add entries to dataset
+                lineDataSet.setMode(LineDataSet.Mode.LINEAR);
+                dataSets.add(lineDataSet);
             }
 
-            LineDataSet lineDataSet = new LineDataSet(entries, "Product one " + k); // add entries to dataset
-            lineDataSet.setMode(LineDataSet.Mode.LINEAR);
-            dataSets.add(lineDataSet);
+            LineData data = new LineData(dataSets);
+            lineChart.setData(data);
         }
-
-        LineData data = new LineData(dataSets);
-        lineChart.setData(data);
 
 
     }

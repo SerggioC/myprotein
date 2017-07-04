@@ -370,9 +370,6 @@ public class DetailsFragment extends Fragment {
                         }
                         arrayListArrayListImageURIs.add(arrayListImageURIs);
                     }
-                    Log.w("Sergio>", this + "\nonClick: \n" + "JSON_ArrayArray_Images=\n" + JSON_ArrayArray_Images.toString().replace("\\", ""));
-
-                    Log.i("Sergio>", this + "onClick:\narrayListArrayListImageURIs=\n" + arrayListArrayListImageURIs);
                     productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGES, JSON_ArrayArray_Images.toString().replace("\\", ""));
 
                 }
@@ -475,9 +472,6 @@ public class DetailsFragment extends Fragment {
                                     R.mipmap.ic_ok2, R.color.green, Toast.LENGTH_LONG);
                             addedNewProduct = true;
                         }
-                        Log.w("Sergio>>>", this + " onClick: db= " + db);
-                        Log.i("Sergio>>>", this + " onClick: productRowID= " + productRowID + " PriceRowId= " + priceRowId);
-                        Log.d("Sergio>>>", this + " onClick: productContentValues= " + productContentValues);
                     }
                 }
                 db.close();
@@ -597,9 +591,6 @@ public class DetailsFragment extends Fragment {
                     } else {
                         // Sem opções de sabor, embalagem, tamanho para selecionar
                         String price = resultDocument.getElementsByClass("priceBlock_current_price").text();
-
-                        Log.w("Sergio>", this + " onPostExecute: \n" + "price=\n" + price);
-
                         Pattern regex = Pattern.compile("[.,\\d]+"); // matches . , e números de 0 a 9
                         Matcher match = regex.matcher(price);
                         String currency_symbol = match.replaceAll("");
@@ -666,7 +657,6 @@ public class DetailsFragment extends Fragment {
 
                             indexOfarray = script.indexOf("arProductImages[", indexOfarray + 1);
                         }
-                        Log.i("Sergio>", this + "\ngetImagesFromScriptTag:\nJSON_ArrayArray_Images from Base=\n" + JSON_ArrayArray_Images);
                     }
                 }
             }
@@ -811,9 +801,6 @@ public class DetailsFragment extends Fragment {
                                 }
                             });
                         }
-                        Log.d("Sergio>", this + " onPostExecute: \nvariation_ids=\n" + variation_ids);
-                        Log.d("Sergio>", this + " onPostExecute: \narrayArray_opt_ids=\n" + arrayArray_opt_ids);
-                        Log.d("Sergio>", this + " onPostExecute: \narraylist_options_names=\n" + arrayArray_opt_names);
 
                         getPriceMethod(arrayArray_opt_ids, variation_ids);
 
@@ -864,33 +851,9 @@ public class DetailsFragment extends Fragment {
         //String options = "&selected=3 &variation1=5 &option1=2413 &variation2=6 &option2=2407 &variation3=7 &option3=5935"
         //String mais = "&settingsSaved=Y&shippingcountry=PT&switchcurrency=GBP&countrySelected=Y"
 
-        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS, JSON_URL_Details);
-
         Log.i("Sergio>>>", "getPriceMethod: \nJSON_URL_Details=\n" + JSON_URL_Details);
 
-//        DBHelper dbHelper = new DBHelper(getContext());
-//        SQLiteDatabase db = dbHelper.getReadableDatabase();
-//        Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + ProductsContract.ProductsEntry.TABLE_NAME, null);
-//
-//        int rows = 0;
-//        if (cursor.getCount() > 0) {
-//            //rows = cursor.getInt(0);
-//        }
-//
-//        if (rows < 2) {
-//            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, 0);
-//            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, 0);
-//            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, 0);
-//            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, 0);
-//        } else {
-//            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, 0);
-//            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, 0);
-//            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, 0);
-//            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, 0);
-//        }
-//
-//        cursor.close();
-//        db.close();
+        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS, JSON_URL_Details);
 
         AsyncTask<String, Void, Boolean> checkinternetAsyncTask = new checkInternetAsyncMethods("GetPriceFromJSON");
         checkinternetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, JSON_URL_Details);
@@ -997,7 +960,6 @@ public class DetailsFragment extends Fragment {
                             }
                         }
                         JSON_ArrayArray_Images.put(inner_array);
-                        Log.i("Sergio>", this + "onPostExecute:\nJSON_ArrayArray_Images=\n" + JSON_ArrayArray_Images.toString().replace("\\", ""));
 
                         // Carregar imagens no ecrã atual (details)
                         ArrayList<String> arrayListImageURLsToLoad = new ArrayList<>();
@@ -1029,7 +991,6 @@ public class DetailsFragment extends Fragment {
                             placeImagesFromURL_Details(arrayListImageURLsToLoad);
                             productImageView.setVisibility(View.GONE);
                             image_switcher_details.setVisibility(View.VISIBLE);
-                            Log.i("Sergio>", this + "bindView:\narrayListImageURLsToLoad=\n" + arrayListImageURLsToLoad);
                         }
 
                     } catch (JSONException erro) {

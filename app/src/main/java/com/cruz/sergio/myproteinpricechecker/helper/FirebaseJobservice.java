@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -24,10 +25,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static android.database.DatabaseUtils.dumpCursorToString;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.ping;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
+import static com.cruz.sergio.myproteinpricechecker.helper.StartFirebase.JOB_BUNDLE;
 import static com.cruz.sergio.myproteinpricechecker.helper.StartFirebase.MINIMUM_DELTA_INTERVAL;
 
 /**
@@ -42,6 +43,7 @@ public class FirebaseJobservice extends JobService {
     private static int currentCursor;
     static Boolean isJob;
     public static UpdateCompleteListener listener;
+    static int delta_time = 0;
 
     // This interface defines the type of messages I want to communicate to my owner
     public interface UpdateCompleteListener {
@@ -78,6 +80,13 @@ public class FirebaseJobservice extends JobService {
     public boolean onStartJob(JobParameters job) {
         // Do some work here
         Log.w("Sergio>", this + "\nonStartJob");
+        Bundle extras = job.getExtras();
+        if (extras != null) {
+            delta_time = extras.getInt(JOB_BUNDLE);
+        } else {
+            delta_time = MINIMUM_DELTA_INTERVAL;
+        }
+
         updatePricesOnStart(this, true);
         return false; // Answers the question: "Is there still work going on?"
     }
@@ -112,10 +121,13 @@ public class FirebaseJobservice extends JobService {
             last_saved_date = cursor.getLong(cursor.getColumnIndex(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_DATE));
         }
 
+        long calculated_delta_t = TimeUnit.MILLISECONDS.toSeconds(now - last_saved_date);
+
         // Limitar fazer demasiados requests quando o tempo é menor que MINIMUM_DELTA_INTERVAL
-        if (TimeUnit.MILLISECONDS.toHours(now - last_saved_date) < MINIMUM_DELTA_INTERVAL && isJob) {
+        if (calculated_delta_t < delta_time && isJob) {
             Log.w("Sergio>", "FirebaseJobservice updatePricesOnStart: \n" + "Too soon to save to database wait up Job!");
-        } else {
+        } else if (calculated_delta_t > delta_time && isJob || !isJob) {
+            Log.w("Sergio>", "FirebaseJobservice updatePricesOnStart: \n" + "Starting update!");
             cursor = db.rawQuery("SELECT " +
                     ProductsContract.ProductsEntry._ID + " , " +
                     ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL + " , " +
@@ -128,8 +140,8 @@ public class FirebaseJobservice extends JobService {
                     " FROM " + ProductsContract.ProductsEntry.TABLE_NAME, null);
 
             cursorSize = cursor.getCount();
-            String cursorToString = dumpCursorToString(cursor);
-            Log.i("Sergio>", "updatePricesOnStart\ncursorToString= " + cursorToString);
+//            String cursorToString = dumpCursorToString(cursor);
+//            Log.i("Sergio>", "updatePricesOnStart\ncursorToString= " + cursorToString);
 
             if (cursorSize > 0) {
                 currentCursor = 0;
@@ -189,7 +201,7 @@ public class FirebaseJobservice extends JobService {
             if (jobsRowId < 0L) {
                 Log.e("Sergio>", context + "\nonStartJob: Error inserting job to DataBase!");
             } else {
-                Log.i("Sergio>", context + "\nonStartJob: Added Job to database!");
+                Log.i("Sergio>", context + "\nonStartJob: Added Job info to database!");
             }
         }
 
@@ -294,8 +306,8 @@ public class FirebaseJobservice extends JobService {
             try {
                 jsonObject = resultDocument == null ? null : new JSONObject(resultDocument.text());
             } catch (JSONException e) {
-                e.printStackTrace();
                 Log.e("Sergio>", " onPostExecute GetUpdatedPriceJSON JSONException error" + e);
+                e.printStackTrace();
             }
             return jsonObject;
         }
@@ -303,21 +315,16 @@ public class FirebaseJobservice extends JobService {
         @Override
         protected void onPostExecute(JSONObject json) {
             super.onPostExecute(json);
-
             String priceJson = null;
             if (json != null) {
                 try {
                     priceJson = (String) json.get("price");
                 } catch (JSONException e) {
-                    e.printStackTrace();
                     Log.e("Sergio>", " onPostExecute GetUpdatedPriceJSON JSONException error" + e);
+                    e.printStackTrace();
                 }
             }
-
-            if (priceJson != null) {
-                savePriceToDB(context, cursorObj, priceJson);
-            }
-
+            savePriceToDB(context, cursorObj, priceJson);
         }
 
 
@@ -351,21 +358,33 @@ public class FirebaseJobservice extends JobService {
         @Override
         protected void onPostExecute(Document resultDocument) {
             super.onPostExecute(resultDocument);
+            String price = null;
             if (resultDocument != null) {
-                String price = resultDocument.getElementsByClass("priceBlock_current_price").text();
-                if (price != null) savePriceToDB(context, cursorObj, price);
+                try {
+                    price = resultDocument.getElementsByClass("priceBlock_current_price").text();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
             }
+            savePriceToDB(context, cursorObj, price);
         }
     }
 
     private static void savePriceToDB(Context context, CursorObj cursorObj, String priceString) {
         long currentTimeMillis = System.currentTimeMillis();
-        Pattern regex = Pattern.compile("[^.,\\d]+"); // matches . , e números de 0 a 9; só ficam números . e ,
-        Matcher match = regex.matcher(priceString);
+        double price_value;
+        if (priceString != null) {
+            Pattern regex = Pattern.compile("[^.,\\d]+"); // matches . , e números de 0 a 9; só ficam números . e ,
+            Matcher match = regex.matcher(priceString);
 
-        String strPrice = match.replaceAll("");
-        strPrice = strPrice.replaceAll(",", ".");
-        double price_value = Double.parseDouble(strPrice);
+            String strPrice = match.replaceAll("");
+            strPrice = strPrice.replaceAll(",", ".");
+            price_value = Double.parseDouble(strPrice);
+        } else {
+            price_value = 0d;
+            priceString = "";
+        }
 
         DBHelper dbHelper = new DBHelper(context);
         SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -386,12 +405,12 @@ public class FirebaseJobservice extends JobService {
         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE, price_value);
         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE, currentTimeMillis);
 
-        if (price_value != cursorObj.actual_price) {
+        if (price_value != cursorObj.actual_price && price_value != 0) {
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE, cursorObj.actual_price);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_DATE, cursorObj.actual_price_date);
         }
 
-        if (price_value < cursorObj.min_price) {
+        if (price_value < cursorObj.min_price && price_value != 0) {
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, priceString);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE, price_value);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, currentTimeMillis);
@@ -407,11 +426,8 @@ public class FirebaseJobservice extends JobService {
         db.close();
 
         currentCursor++;
-        if (currentCursor == cursorSize && !isJob) {
-            Log.w("Sergio>", context + "\nonPostExecute: \n" +
-                    "currentCursor= " + currentCursor + "\n" +
-                    "cursorSize " + cursorSize);
-
+        if (currentCursor == cursorSize) {
+            Log.w("Sergio>", "savePriceToDB: \n" + "listener= " + listener);
             if (listener != null) {
                 listener.onUpdateReady(true);
             }

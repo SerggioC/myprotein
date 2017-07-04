@@ -18,8 +18,13 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.widget.CursorAdapter;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.widget.CardView;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+import android.text.style.ImageSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -51,6 +56,8 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -68,6 +75,7 @@ import static com.cruz.sergio.myproteinpricechecker.MainActivity.CACHE_IMAGES;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.UPDATE_ONSTART;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.density;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
+import static com.cruz.sergio.myproteinpricechecker.R.id.main_cardview;
 import static com.cruz.sergio.myproteinpricechecker.TabFragment.tabLayout;
 import static com.cruz.sergio.myproteinpricechecker.helper.FirebaseJobservice.updatePricesOnStart;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.ALL_PRODUCT_COLUMNS_PROJECTION;
@@ -79,15 +87,17 @@ import static java.text.DateFormat.getTimeInstance;
 
 public class WatchingFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
     public static final int LOADER_ID = 0;
+    public static final int IMAGE_PERIOD = 5400;
     Activity mActivity;
     SwipeRefreshLayout watchingSwipeRefreshLayout;
     static cursorDBAdapter cursorDBAdapter;
-    ListView listViewItems;
+    static ListView listViewItems;
     static Loader<Cursor> loaderManager;
     static String[] imageSizesToUse;
     Timer timer = new Timer();
     Boolean[] isExpandedArray = null;
-
+    Boolean addedNewProduct = false;
+    int current_position;
 
     public static class ViewHolder {
         public final TextView titleView; // ou Product Name
@@ -97,10 +107,12 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         public final TextView highestPriceDate;
         public final TextView lowestPriceDate;
         public final TextView currentInfo;
+        public final TextView under_cardview;
         public final ImageSwitcher imageSwitcher;
         public final LinearLayout ll_current_price;
         public final ImageView up_down_icon;
-
+        public final CardView main_cardView;
+        public final CardView under_view;
 
         public ViewHolder(View view) {
             titleView = (TextView) view.findViewById(R.id.item_title_textview);
@@ -113,6 +125,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             ll_current_price = (LinearLayout) view.findViewById(R.id.ll_current_price);
             imageSwitcher = (ImageSwitcher) view.findViewById(R.id.image_switcher);
             up_down_icon = (ImageView) view.findViewById(R.id.up_down_arrow);
+            under_view = (CardView) view.findViewById(R.id.under_cardview);
+            main_cardView = (CardView) view.findViewById(main_cardview);
+            under_cardview = (TextView) view.findViewById(R.id.description_undercard);
         }
     }
 
@@ -171,6 +186,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 tabLayout.setScrollPosition(0, 0f, true);
                 tab.select();
                 getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
+                addedNewProduct = addedNew;
             }
         });
 
@@ -180,7 +196,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     public void onStart() {
         super.onStart();
         if (UPDATE_ONSTART) {
-            updatePricesOnStart(mActivity, false);
+            FirebaseJobservice.updatePricesOnStart(mActivity, false);
         }
     }
 
@@ -196,30 +212,45 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
         cursorDBAdapter = new cursorDBAdapter(mActivity, null, 0);
         listViewItems = (ListView) rootview.findViewById(R.id.watching_listview);
-        listViewItems.setAdapter(cursorDBAdapter);
         listViewItems.addHeaderView(View.inflate(mActivity, R.layout.watch_list_header_view, null));
+        listViewItems.setAdapter(cursorDBAdapter);
+
         listViewItems.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-                Cursor cursor = (Cursor) adapterView.getItemAtPosition(position);
-                if (cursor != null) {
-                    Log.i("Sergio>>>", this + "\n" +
-                            "cursor get position = " + cursor.getPosition() + "\n" +
-                            "list item position = " + position);
-
-                    Boolean isExpanded = isExpandedArray[cursor.getPosition()];
-                    View under_view = view.findViewById(R.id.under_cardview);
-                    if (isExpanded) {
-                        collapseIt(under_view);
-                        isExpandedArray[cursor.getPosition()] = false;
-                    } else {
-                        expandIt(under_view);
-                        isExpandedArray[cursor.getPosition()] = true;
-                    }
-
-                }
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                current_position = position;
             }
         });
+
+//        listViewItems.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+//            @Override
+//            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+//
+//                Cursor cursor = (Cursor) adapterView.getItemAtPosition(position);
+//                if (cursor != null) {
+//                    int cursorPosition = cursor.getPosition();
+//                    Log.i("Sergio>>>", this + "\n" +
+//                            "cursor get position = " + cursorPosition + "\n" +
+//                            "list item position = " + position);
+//
+//                    Boolean isExpanded = isExpandedArray[cursorPosition];
+//                    View under_view = view.findViewById(R.id.under_cardview);
+//
+//                    if (isExpanded) {
+//                        collapseIt(under_view);
+//                        isExpandedArray[cursorPosition] = false;
+//                    } else {
+//                        if (cursorPosition == cursor.getCount() - 1) {
+//                            expandIt(under_view, true);
+//                        } else {
+//                            expandIt(under_view, false);
+//                        }
+//                        isExpandedArray[cursorPosition] = true;
+//                    }
+//
+//                }
+//            }
+//        });
 
         watchingSwipeRefreshLayout = (SwipeRefreshLayout) rootview.findViewById(R.id.watching_swiperefresh);
         watchingSwipeRefreshLayout.setOnRefreshListener(
@@ -237,14 +268,13 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         return rootview;
     }
 
-    public static void expandIt(final View view) {
-        Log.i("Sergio>", " expandIt\nview= " + view.getHeight() + " " + view.getVisibility() + " " + view.getLayoutParams().height);
+    public static void expandIt(final View view, Boolean isLastItem) {
         view.measure(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         final int targetHeight = view.getMeasuredHeight();
         // Older versions of android (pre API 21) cancel animations for views with a height of 0.
         view.getLayoutParams().height = 1;
         view.setVisibility(View.VISIBLE);
-        Animation a = new Animation() {
+        Animation animation = new Animation() {
             @Override
             protected void applyTransformation(float interpolatedTime, Transformation t) {
                 view.getLayoutParams().height = interpolatedTime == 1 ? LinearLayout.LayoutParams.WRAP_CONTENT : (int) (targetHeight * interpolatedTime);
@@ -257,20 +287,37 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             }
         };
         // 1dp/ms
-        a.setDuration((int) (targetHeight / view.getContext().getResources().getDisplayMetrics().density));
-        view.startAnimation(a);
+        animation.setDuration((int) (targetHeight / view.getContext().getResources().getDisplayMetrics().density));
+        view.startAnimation(animation);
+
+        if (isLastItem) {
+            animation.setAnimationListener(new Animation.AnimationListener() {
+                @Override
+                public void onAnimationStart(Animation arg0) {
+                }
+
+                @Override
+                public void onAnimationRepeat(Animation arg0) {
+                }
+
+                @Override
+                public void onAnimationEnd(Animation arg0) {
+                    listViewItems.smoothScrollToPosition(listViewItems.getMaxScrollAmount());
+                }
+            });
+        }
     }
 
-    public static void collapseIt(final View v) {
-        final int initialHeight = v.getMeasuredHeight();
-        Animation a = new Animation() {
+    public static void collapseIt(final View view) {
+        final int initialHeight = view.getMeasuredHeight();
+        Animation animation = new Animation() {
             @Override
             protected void applyTransformation(float interpolatedTime, Transformation t) {
                 if (interpolatedTime == 1) {
-                    v.setVisibility(View.GONE);
+                    view.setVisibility(View.GONE);
                 } else {
-                    v.getLayoutParams().height = initialHeight - (int) (initialHeight * interpolatedTime);
-                    v.requestLayout();
+                    view.getLayoutParams().height = initialHeight - (int) (initialHeight * interpolatedTime);
+                    view.requestLayout();
                 }
             }
 
@@ -280,8 +327,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             }
         };
         // 1dp/ms
-        a.setDuration((int) (initialHeight / v.getContext().getResources().getDisplayMetrics().density));
-        v.startAnimation(a);
+        animation.setDuration((int) (initialHeight / view.getContext().getResources().getDisplayMetrics().density));
+        view.startAnimation(animation);
     }
 
     @Override
@@ -331,6 +378,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             }
         }
         cursorDBAdapter.swapCursor(data);
+        if (addedNewProduct) {
+            listViewItems.smoothScrollToPosition(listViewItems.getMaxScrollAmount());
+        }
     }
 
     public void dump_BIGdata_toLog(String data) {
@@ -365,7 +415,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         }
 
         @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
+        public View getView(final int position, View convertView, ViewGroup parent) {
 
             // quando convertView != null recicla as views anteriores já existentes
             // mas misturava as imagens do imageSwitcher. As views não visíveis eram recriadas
@@ -380,16 +430,40 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             } else {
                 view = super.getView(position, convertView, parent);
             }
-            expandOrCollapse(view, mCursor);
 
+            final View under_view = view.findViewById(R.id.under_cardview);
+            expandOrCollapse(under_view, mCursor);
+
+//            CardView mainView = (CardView) view.findViewById(R.id.main_cardview);
+//            mainView.setOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View v) {
+//                    if (mCursor != null) {
+//                        Boolean isExpanded = isExpandedArray[position];
+//                        Log.i("Sergio>>>", this + "\n" + "list item position = " + position);
+//                        Log.i("Sergio>", this + " onClick\nisExpanded= " + isExpanded);
+//                        if (isExpanded) {
+//                            collapseIt(under_view);
+//                            isExpandedArray[position] = false;
+//                        } else {
+//                            if (position == mCursor.getCount() - 1) {
+//                                expandIt(under_view, true);
+//                            } else {
+//                                expandIt(under_view, false);
+//                            }
+//                            isExpandedArray[position] = true;
+//                        }
+//                    }
+//                }
+//            });
             return view;
         }
 
         // The newView method is used to inflate a new view and return it,
         // you don't bind any data to the view at this point.
         @Override
-        public View newView(Context context, Cursor cursor, ViewGroup parent) {
-            View item_root = cursorItemInflater.inflate(R.layout.watching_item_layout2, null, false);
+        public View newView(Context context, final Cursor cursor, ViewGroup parent) {
+            final View item_root = cursorItemInflater.inflate(R.layout.watching_item_layout2, null, false);
             ViewHolder viewHolder = new ViewHolder(item_root);
             item_root.setTag(R.id.viewholder, viewHolder);
             return item_root;
@@ -398,33 +472,83 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         // The bindView method is used to bind all data to a given view
         // such as setting the text on a TextView.
         @Override
-        public void bindView(View view, Context context, Cursor cursor) {
+        public void bindView(final View view, Context context, final Cursor cursor) {
+            ViewHolder viewHolder = (ViewHolder) view.getTag(R.id.viewholder);
+
+
+            CardView mainCardView = (CardView) view.findViewById(R.id.main_cardview);
+
+            mainCardView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (mCursor != null) {
+                        CardView under_view = (CardView) view.findViewById(R.id.under_cardview);
+                        Boolean isExpanded = isExpandedArray[current_position];
+                        Log.i("Sergio>>>", this + "\n" + "list item position = " + current_position);
+                        Log.i("Sergio>", this + " onClick\ncursor position= " + cursor.getPosition());
+                        Log.i("Sergio>", this + " onClick\nisExpanded= " + isExpanded);
+                        if (isExpanded) {
+                            collapseIt(under_view);
+                            isExpandedArray[current_position] = false;
+                        } else {
+                            if (current_position == mCursor.getCount() - 1) {
+                                expandIt(under_view, true);
+                            } else {
+                                expandIt(under_view, false);
+                            }
+                            isExpandedArray[current_position] = true;
+                        }
+                    }
+                }
+            });
+
+
+
             String prod_name = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME));
-            String min_price = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE));
-            String max_price = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE));
-            String current_price = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE));
             String options_sabor = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME1));
             String options_caixa = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME2));
             String options_quant = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME3));
             String string_array_images = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGES));
-            long minPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE));
-            long maxPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE));
-            long actualPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE));
-            long previousPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_DATE));
-            double actual_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE));
-            double min_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE));
-            double max_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE));
-            double previous_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE));
 
+            String current_price_string = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE));
+            double actual_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE));
+            long actualPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE));
+
+            String min_price_string = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE));
+            long minPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE));
+            double min_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE));
+
+            String max_price_string = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE));
+            long maxPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE));
+            double max_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE));
+
+            long previousPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_DATE));
+            double previous_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE));
 
             if (options_sabor == null) options_sabor = "";
             if (options_caixa == null) options_caixa = "";
             if (options_quant == null) options_quant = "";
-            if (max_price == null || max_price.equals("0")) max_price = "-";
-            if (min_price == null || min_price.equals("0")) min_price = "-";
-            if (current_price == null || current_price.equals("0")) current_price = "-";
+            if (current_price_string == null || current_price_string.equals("")) current_price_string = "---";
 
-            ViewHolder viewHolder = (ViewHolder) view.getTag(R.id.viewholder);
+
+            String[] prod_description_array = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION)).split("\n");
+
+            Drawable drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.tick, null);
+            drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+            String drawableStr = drawable.toString();
+            SpannableStringBuilder pptList_SSB = new SpannableStringBuilder();
+            for (int i = 0; i < prod_description_array.length; i++) {
+                pptList_SSB.append(drawableStr);
+                pptList_SSB.setSpan(new ImageSpan(drawable), pptList_SSB.length() - drawableStr.length(), pptList_SSB.length(),
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                pptList_SSB.append(" " + prod_description_array[i] + "\n");
+            }
+
+            if (pptList_SSB.length() > 0) {
+                pptList_SSB.subSequence(0, pptList_SSB.length() - 1);
+            }
+
+            viewHolder.under_cardview.setText(pptList_SSB);
 
             Boolean gotPictures = null;
             if (string_array_images != null && CACHE_IMAGES) {
@@ -444,54 +568,63 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             }
 
             viewHolder.titleView.setText(prod_name + " " + options_sabor + " " + options_caixa + " " + options_quant);
-            viewHolder.highestPriceView.setText(max_price);
-            viewHolder.lowestPriceView.setText(min_price);
-            viewHolder.currentPriceView.setText(current_price);
+            viewHolder.highestPriceView.setText(max_price_string);
+            viewHolder.lowestPriceView.setText(min_price_string);
+            viewHolder.currentPriceView.setText(current_price_string);
             viewHolder.highestPriceDate.setText(getMillisecondsToDate(maxPriceDate));
             viewHolder.lowestPriceDate.setText(getMillisecondsToDate(minPriceDate));
             ((TextView) mActivity.findViewById(R.id.updated_tv)).setText(getMillisecondsToDate(actualPriceDate));
 
-            if (actual_price_value < previous_price_value && previous_price_value != 0d) {
-                double diff = actual_price_value - previous_price_value;
-                String str_diff = diff < 0 ? diff + "" : "";
+            // pode dar erro ao atualizar o preço, ou o produto/opção não disponivel
+            // guardo o preço = 0 nesta situação
+            if (actual_price_value != 0) {
+                if (actual_price_value < previous_price_value && previous_price_value != 0d) {
+                    double diff = actual_price_value - previous_price_value;
+                    String str_diff = diff < 0 ? round(diff) : "";
+                    viewHolder.currentInfo.setVisibility(View.VISIBLE);
+                    viewHolder.currentInfo.setText(str_diff);
+                    viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.dark_green));
+                    viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.down_arrow));
+                }
+                if (actual_price_value > previous_price_value && previous_price_value != 0d) {
+                    double diff = actual_price_value - previous_price_value;
+                    String str_diff = diff > 0 ? "+" + round(diff) : "";
+                    viewHolder.currentInfo.setVisibility(View.VISIBLE);
+                    viewHolder.currentInfo.setText(str_diff);
+                    viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.red));
+                    viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.up_arrow));
+                }
+                if (actual_price_value >= max_price_value && min_price_value != max_price_value) {
+                    previous_price_value = previous_price_value == 0d ? actual_price_value : previous_price_value;
+                    double diff = actual_price_value - previous_price_value;
+                    String str_diff = diff > 0d ? "+" + round(diff) : "";
+                    viewHolder.currentInfo.setVisibility(View.VISIBLE);
+                    viewHolder.currentInfo.setText("Highest price! " + str_diff);
+                    viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.red));
+                    viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.up_arrow));
+                }
+                if (actual_price_value <= min_price_value && min_price_value != max_price_value) {
+                    previous_price_value = previous_price_value == 0d ? actual_price_value : previous_price_value;
+                    double diff = min_price_value - previous_price_value;
+                    String str_diff = diff < 0d ? round(diff) : "";
+                    viewHolder.currentInfo.setVisibility(View.VISIBLE);
+                    viewHolder.currentInfo.setText("Best price! " + str_diff);
+                    viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.dark_green));
+                    viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.down_arrow));
+                    viewHolder.ll_current_price.setBackground(ContextCompat.getDrawable(mActivity, R.drawable.ll_green_bg));
+                }
+            } else {
                 viewHolder.currentInfo.setVisibility(View.VISIBLE);
-                viewHolder.currentInfo.setText(str_diff);
-                viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.dark_green));
-                viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.down_arrow));
-            }
-            if (actual_price_value > previous_price_value && previous_price_value != 0d) {
-                double diff = actual_price_value - previous_price_value;
-                String str_diff = diff > 0 ? diff + "" : "";
-                viewHolder.currentInfo.setVisibility(View.VISIBLE);
-                viewHolder.currentInfo.setText(str_diff);
+                viewHolder.currentInfo.setText("option not available");
                 viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.red));
-                viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.up_arrow));
             }
-            if (actual_price_value >= max_price_value && min_price_value != max_price_value) {
-                previous_price_value = previous_price_value == 0d ? actual_price_value : previous_price_value;
-                double diff = actual_price_value - previous_price_value;
-                String str_diff = diff > 0d ? "" + diff : "";
-                viewHolder.currentInfo.setVisibility(View.VISIBLE);
-                viewHolder.currentInfo.setText("Highest price! " + str_diff);
-                viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.red));
-                viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.up_arrow));
-            }
-            if (actual_price_value <= min_price_value && min_price_value != max_price_value) {
-                previous_price_value = previous_price_value == 0d ? actual_price_value : previous_price_value;
-                double diff = min_price_value - actual_price_value;
-                String str_diff = diff != 0d ? "" + diff : "";
-                viewHolder.currentInfo.setVisibility(View.VISIBLE);
-                viewHolder.currentInfo.setText("Best price! " + str_diff);
-                viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.dark_green));
-                viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.down_arrow));
-                viewHolder.ll_current_price.setBackground(ContextCompat.getDrawable(mActivity, R.drawable.ll_green_bg));
-            }
-            Log.i("Sergio>", this + " bindView\n" +
-                    "previous_price_value= " + previous_price_value + "\n" +
-                    "actual_price_value= " + actual_price_value + "\n" +
-                    "min_price_value= " + min_price_value + "\n" +
-                    "max_price_value= " + max_price_value);
         }   // End bindView
+
+        public String round(double value) {
+            BigDecimal bd = new BigDecimal(value);
+            bd = bd.setScale(2, RoundingMode.HALF_UP);
+            return bd.toString();
+        }
 
         public void expandOrCollapse(View view, Cursor cursor) {
             if (isExpandedArray == null || isExpandedArray.length != cursor.getCount()) {
@@ -501,8 +634,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 }
             }
             if (isExpandedArray[cursor.getPosition()]) {
-                expandIt(view.findViewById(R.id.under_cardview));
-                expandIt(view.findViewById(R.id.under_cardview));
+                expandIt(view, false);
+                expandIt(view, false);
+                Log.w("Sergio>", this + "expandOrCollapse: \n" + "cursor.getPosition()= " + cursor.getPosition());
             }
         }
 
@@ -632,6 +766,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             viewHolder.imageSwitcher.setOutAnimation(fadeOut);
 
             final int[] currentIndex = {0};
+            viewHolder.imageSwitcher.setImageURI(Uri.fromFile(arrayListImageFiles.get(currentIndex[0])));
+
             final Runnable runnable = new Runnable() {
                 public void run() {
                     currentIndex[0]++;
@@ -639,14 +775,14 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                     viewHolder.imageSwitcher.setImageURI(Uri.fromFile(arrayListImageFiles.get(currentIndex[0])));
                 }
             };
-            TimerTask timerTask = new TimerTask() {
-                public void run() {
-                    mActivity.runOnUiThread(runnable);
-                }
-            };
 
-            Timer timer = new Timer();
-            timer.scheduleAtFixedRate(timerTask, 0, 5400);
+//            TimerTask timerTask = new TimerTask() {
+//                public void run() {
+//                    mActivity.runOnUiThread(runnable);
+//                }
+//            };
+//            Timer timer = new Timer();
+//            timer.scheduleAtFixedRate(timerTask, 0, IMAGE_PERIOD);
 
             viewHolder.imageSwitcher.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -699,13 +835,13 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                             });
                 }
             };
-            TimerTask timerTask = new TimerTask() {
-                public void run() {
-                    mActivity.runOnUiThread(runnable);
-                }
-            };
-            //Called every 5400 milliseconds
-            timer.scheduleAtFixedRate(timerTask, 0, 5400);
+//            TimerTask timerTask = new TimerTask() {
+//                public void run() {
+//                    mActivity.runOnUiThread(runnable);
+//                }
+//            };
+//            //Called every 5400 milliseconds
+//            timer.scheduleAtFixedRate(timerTask, 0, IMAGE_PERIOD);
 
             viewHolder.imageSwitcher.setOnClickListener(new View.OnClickListener() {
                 @Override

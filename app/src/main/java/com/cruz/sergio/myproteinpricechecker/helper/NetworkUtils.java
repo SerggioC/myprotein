@@ -42,13 +42,14 @@ public class NetworkUtils {
     public static BroadcastReceiver BCReceiver = null;
     public static Snackbar noNetworkSnackBar = null;
     static Snackbar.SnackbarLayout snack_layout;
-    public static int NET_TIMEOUT = 10000; // milliseconds
+    public static int NET_TIMEOUT = 11111; // milliseconds
 
     public static final void UnregisterBroadcastReceiver(Activity mActivity) {
         if (BCReceiver != null) {
             LocalBroadcastManager.getInstance(mActivity).unregisterReceiver(BCReceiver);
+            BCReceiver = null;
+            BC_Registered = false;
             Log.i("Sergio>", "NetworkUtils: UnregisterBroadcastReceiver");
-            //showCustomSlimToast(mActivity, "Unregistering Broadcast Receiver", Toast.LENGTH_SHORT);
         }
     }
 
