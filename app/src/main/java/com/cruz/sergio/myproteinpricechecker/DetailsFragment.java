@@ -232,7 +232,6 @@ public class DetailsFragment extends Fragment {
         String shippingCountry = prefManager.getString("mp_shipping_location", "GB"); //"PT";
         String currency = prefManager.getString("mp_currencies", "GBP"); //"EUR";
         MP_Domain = MyProteinDomain.getHref(pref_MP_Locale);
-        //URL_suffix = "&settingsSaved=Y&shippingcountry=" + shippingCountry + "&switchcurrency=" + currency + "&countrySelected=Y";
         URL_suffix = "settingsSaved=Y&shippingcountry=" + shippingCountry + "&switchcurrency=" + currency + "&countrySelected=Y";
 
         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_WEBSTORE_DOMAIN_URL, MP_Domain);
@@ -253,6 +252,8 @@ public class DetailsFragment extends Fragment {
         image_switcher_details = (ImageSwitcher) mActivity.findViewById(R.id.image_switcher_details);
         Bundle extras = getArguments();
         if (extras != null) {
+            mActivity.findViewById(R.id.progressBarRound).setVisibility(View.VISIBLE);
+
             url = extras.getString("url");
             Log.i("Sergio>", this + " onViewCreated: url=\n" + url);
             productID = extras.getString("productID");
@@ -534,11 +535,6 @@ public class DetailsFragment extends Fragment {
 
 
     private class getProductPage extends AsyncTask<String, Void, Document> {
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            mActivity.findViewById(R.id.progressBarRound).setVisibility(View.VISIBLE);
-        }
 
         @Override
         protected Document doInBackground(String... params) {
@@ -611,7 +607,9 @@ public class DetailsFragment extends Fragment {
                 }
 
             } else {
-                Toast.makeText(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT).show();
+                NetworkUtils.showCustomSlimToast(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT);
+
+                //Toast.makeText(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT).show();
             }
 
         }
@@ -817,7 +815,8 @@ public class DetailsFragment extends Fragment {
                 }
 
             } else {
-                Toast.makeText(mActivity, "Details Fragment Terminated", Toast.LENGTH_SHORT).show();
+                NetworkUtils.showCustomSlimToast(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT);
+//                Toast.makeText(mActivity, "Details Fragment Terminated", Toast.LENGTH_SHORT).show();
             }
 
         }
@@ -875,7 +874,7 @@ public class DetailsFragment extends Fragment {
             try {
                 resultDocument = Jsoup.connect(url_param[0])
                         .userAgent(userAgent)
-                        .timeout(NET_TIMEOUT) //sem limite de tempo para receber a página
+                        .timeout(NET_TIMEOUT) // limite de tempo para receber a página
                         .ignoreContentType(true) // ignorar o tipo de conteúdo
                         .maxBodySize(0) //sem limite de tamanho do doc recebido
                         .get();
@@ -1008,7 +1007,9 @@ public class DetailsFragment extends Fragment {
                 mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
 
             } else {
-                Toast.makeText(mActivity, "Details Fragment Terminated", Toast.LENGTH_SHORT).show();
+                NetworkUtils.showCustomSlimToast(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT);
+
+                //Toast.makeText(mActivity, "Details Fragment Terminated", Toast.LENGTH_SHORT).show();
             }
 
         }
@@ -1214,60 +1215,6 @@ public class DetailsFragment extends Fragment {
 
     }
 
-
-    public class checkInternetAsync extends AsyncTask<Void, Void, Boolean> {
-        @Override
-        protected Boolean doInBackground(Void... params) {
-            return NetworkUtils.hasActiveNetworkConnection(mActivity);
-        }
-
-        @Override
-        protected void onPostExecute(Boolean hasInternet) {
-            super.onPostExecute(hasInternet);
-
-            if (hasInternet) {
-                // Aqui saca a página do produto em html para depois aplicar o parse com jsoup
-                AsyncTask<String, Void, Document> getProductPage = new getProductPage();
-                getProductPage.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url);
-            } else {
-                if (noNetworkSnackBar != null && !noNetworkSnackBar.isShown()) {
-                    noNetworkSnackBar.show();
-                } else {
-                    makeNoNetworkSnackBar(mActivity);
-                }
-            }
-
-        }
-    }
-
-    public class checkInternetPriceMethodAsync extends AsyncTask<String, Void, Boolean> {
-        String json_url;
-
-        @Override
-        protected Boolean doInBackground(String... params) {
-            json_url = params[0];
-            return NetworkUtils.hasActiveNetworkConnection(mActivity);
-        }
-
-        @Override
-        protected void onPostExecute(Boolean hasInternet) {
-            super.onPostExecute(hasInternet);
-
-            if (hasInternet) {
-                // Aqui saca a página do produto em html para depois aplicar o parse com jsoup
-                AsyncTask<String, Void, JSONObject> GetPriceFromJSON = new GetPriceFromJSON();
-                GetPriceFromJSON.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, json_url);
-            } else {
-                if (noNetworkSnackBar != null && !noNetworkSnackBar.isShown()) {
-                    noNetworkSnackBar.show();
-                } else {
-                    makeNoNetworkSnackBar(mActivity);
-                }
-            }
-            mActivity.findViewById(R.id.priceProgressBarRound).setVisibility(View.GONE);
-            priceTV.setVisibility(View.VISIBLE);
-        }
-    }
 }
 
 

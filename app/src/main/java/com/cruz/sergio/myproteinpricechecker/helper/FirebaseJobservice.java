@@ -107,6 +107,7 @@ public class FirebaseJobservice extends JobService {
         FirebaseJobservice.isJob = isJob;
         DBHelper dbHelper = new DBHelper(context);
         SQLiteDatabase db = dbHelper.getReadableDatabase();
+        String job_status = "null";
 
         Cursor cursor = db.rawQuery("SELECT " + ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_DATE +
                         " FROM " + ProductsContract.PricesEntry.TABLE_NAME +
@@ -126,6 +127,7 @@ public class FirebaseJobservice extends JobService {
         // Limitar fazer demasiados requests quando o tempo é menor que MINIMUM_DELTA_INTERVAL
         if (calculated_delta_t < delta_time && isJob) {
             Log.w("Sergio>", "FirebaseJobservice updatePricesOnStart: \n" + "Too soon to save to database wait up Job!");
+            job_status = "too soon";
         } else if (calculated_delta_t > delta_time && isJob || !isJob) {
             Log.w("Sergio>", "FirebaseJobservice updatePricesOnStart: \n" + "Starting update!");
             cursor = db.rawQuery("SELECT " +
@@ -140,8 +142,6 @@ public class FirebaseJobservice extends JobService {
                     " FROM " + ProductsContract.ProductsEntry.TABLE_NAME, null);
 
             cursorSize = cursor.getCount();
-//            String cursorToString = dumpCursorToString(cursor);
-//            Log.i("Sergio>", "updatePricesOnStart\ncursorToString= " + cursorToString);
 
             if (cursorSize > 0) {
                 currentCursor = 0;
@@ -168,8 +168,10 @@ public class FirebaseJobservice extends JobService {
                         checkInternet_forBGMethod.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, cursorObj);
                     }
                 }
+                job_status = "done";
             } else {
                 Log.w("Sergio>", "updatePricesOnStart: " + "cursor Size = 0, empty database!");
+                job_status = "empty db";
                 if (listener != null) {
                     listener.onUpdateReady(false);
                 }
@@ -197,6 +199,7 @@ public class FirebaseJobservice extends JobService {
             ContentValues contentValues = new ContentValues();
             contentValues.put("time", timestamp.toString());
             contentValues.put("diff", time_diff);
+            contentValues.put("status", job_status);
             long jobsRowId = db.insert("jobs", null, contentValues);
             if (jobsRowId < 0L) {
                 Log.e("Sergio>", context + "\nonStartJob: Error inserting job to DataBase!");

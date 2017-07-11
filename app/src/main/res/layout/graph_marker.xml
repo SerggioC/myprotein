@@ -2,25 +2,24 @@
 
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/slim_toast_root"
+    android:id="@+id/ll_marker_root"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:background="@drawable/slim_toast_overlay"
-    android:paddingBottom="12dp"
-    android:paddingLeft="14dp"
-    android:paddingRight="14dp"
-    android:paddingTop="8dp">
+    android:background="@drawable/marker_overlay"
+    android:paddingBottom="6dp"
+    android:paddingLeft="4dp"
+    android:paddingRight="4dp"
+    android:paddingTop="4dp">
 
     <TextView
-        android:id="@+id/slimtoast"
+        android:id="@+id/marker_tv"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:gravity="center"
-        android:text="Custom Slim Toast"
-        android:textAlignment="center"
+        android:text="Marker"
         android:textColor="@color/colorPrimaryAlpha"
-        android:textSize="16sp">
+        android:textSize="14sp">
 
     </TextView>
 </LinearLayout>

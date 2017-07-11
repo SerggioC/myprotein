@@ -3,7 +3,6 @@ package com.cruz.sergio.myproteinpricechecker.helper;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.util.Log;
 
 /**
  * Created by Sergio on 12/03/2017.
@@ -63,9 +62,6 @@ public class DBHelper extends SQLiteOpenHelper {
                 ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID + " TEXT NOT NULL, " +
                 ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGES + " TEXT " +
                 " );";
-//                " FOREIGN KEY (" + ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID + ") REFERENCES " +
-//                ProductsContract.PricesEntry.TABLE_NAME + " (" + ProductsContract.PricesEntry._ID + ") " +
-
 
         final String SQL_CREATE_PRICES_TABLE = "CREATE TABLE " + ProductsContract.PricesEntry.TABLE_NAME + " (" +
                 ProductsContract.PricesEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -74,18 +70,26 @@ public class DBHelper extends SQLiteOpenHelper {
                 ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_VALUE + " REAL NOT NULL, " +
                 ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_DATE + " INTEGER NOT NULL, " +
                 " FOREIGN KEY (" + ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS + ") REFERENCES " +
-                ProductsContract.ProductsEntry.TABLE_NAME + " (" + ProductsContract.ProductsEntry._ID + ") " +
-                " );";
+                ProductsContract.ProductsEntry.TABLE_NAME + " (" + ProductsContract.ProductsEntry._ID + ")" +
+                " ON DELETE CASCADE);";
 
-        Log.i("Sergio>>>", "SQL_CREATE_PRODUCT_TABLE= " + SQL_CREATE_PRODUCT_TABLE);
-        Log.i("Sergio>>>", "SQL_CREATE_PRICES_TABLE= " + SQL_CREATE_PRICES_TABLE);
+        final String SQL_CREATE_VOUCHERS_TABLE = "CREATE TABLE " + ProductsContract.VouchersEntry.TABLE_NAME + " (" +
+                ProductsContract.VouchersEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                ProductsContract.VouchersEntry.COLUMN_VOUCHER_CODE + " TEXT NOT NULL, " +
+                ProductsContract.VouchersEntry.COLUMN_VOUCHER_DISCOUNT + " TEXT, " +
+                ProductsContract.VouchersEntry.COLUMN_VOUCHER_VALIDITY + " TEXT, " +
+                ProductsContract.VouchersEntry.COLUMN_VOUCHER_WEBSTORE + " TEXT NOT NULL, " +
+                ProductsContract.VouchersEntry.COLUMN_VOUCHER_COUNTRY_CODE + " TEXT, " +
+                ProductsContract.VouchersEntry.COLUMN_VOUCHER_IS_ACTIVE + " INTEGER NOT NULL" +
+                ");";
+
+        String SQL_CREATE_JOBS_TABLE = "CREATE TABLE jobs (_id INTEGER PRIMARY KEY AUTOINCREMENT, time TEXT NOT NULL, diff TEXT NOT NULL, status TEXT NOT NULL);";
 
         db.execSQL(SQL_CREATE_PRODUCT_TABLE);
         db.execSQL(SQL_CREATE_PRICES_TABLE);
+        db.execSQL(SQL_CREATE_VOUCHERS_TABLE);
+        db.execSQL(SQL_CREATE_JOBS_TABLE);
 
-        String jobs_table = "CREATE TABLE jobs (_id INTEGER PRIMARY KEY AUTOINCREMENT, time TEXT NOT NULL, diff TEXT NOT NULL);";
-        db.execSQL(jobs_table);
-        Log.i("Sergio>", this + "\nonCreate:\njobs_table=\n" + jobs_table);
     }
 
     @Override
@@ -109,4 +113,22 @@ public class DBHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
+    @Override
+    public void onOpen(SQLiteDatabase db) {
+        super.onOpen(db);
+        if (!db.isReadOnly()) {
+            // Enable foreign key constraints
+            db.execSQL("PRAGMA foreign_keys=ON;");
+        }
+    }
+
+    @Override
+    public void onConfigure(SQLiteDatabase db) {
+        super.onConfigure(db);
+        if (!db.isReadOnly()) {
+            // Enable foreign key constraints
+            // db.execSQL("PRAGMA foreign_keys=ON;");
+            db.setForeignKeyConstraintsEnabled(true);
+        }
+    }
 }

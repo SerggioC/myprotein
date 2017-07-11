@@ -29,7 +29,7 @@ public class ProductsContract {
     // At least, let's hope not.
     public static final String PATH_PRODUCTS = "products";
     public static final String PATH_PRICES = "prices";
-    public static final String PATH_MINMAX = "minmax";
+    public static final String PATH_VOUCHERS = "vouchers";
 
     // To make it easy to query for the exact date, we normalize all dates that go into
     // the database to the start of the the Julian day at UTC.
@@ -167,5 +167,34 @@ public class ProductsContract {
                 PricesEntry.COLUMN_PRODUCT_PRICE_DATE
         };
     }
+    public static final class VouchersEntry implements BaseColumns {
+        public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_VOUCHERS).build();
 
+        public static final String CONTENT_DIR_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_VOUCHERS;
+        public static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_VOUCHERS;
+
+        // Prices table
+        public static final String TABLE_NAME = "vouchers_table";
+        public static final String COLUMN_VOUCHER_CODE = "voucher_code";
+        public static final String COLUMN_VOUCHER_DISCOUNT = "voucher_discount";
+        public static final String COLUMN_VOUCHER_VALIDITY = "voucher_validity";
+        public static final String COLUMN_VOUCHER_WEBSTORE = "voucher_webstore";
+        public static final String COLUMN_VOUCHER_COUNTRY_CODE = "voucher_country_code";
+        public static final String COLUMN_VOUCHER_IS_ACTIVE = "voucher_is_active";
+
+        public static Uri buildVouchersUri(long id) {
+            return ContentUris.withAppendedId(CONTENT_URI, id);
+        }
+
+        public static final String[] ALL_VOUCHERS_COLUMNS_PROJECTION = new String[]{
+                VouchersEntry._ID,
+                VouchersEntry.COLUMN_VOUCHER_CODE,
+                VouchersEntry.COLUMN_VOUCHER_DISCOUNT,
+                VouchersEntry.COLUMN_VOUCHER_VALIDITY,
+                VouchersEntry.COLUMN_VOUCHER_WEBSTORE,
+                VouchersEntry.COLUMN_VOUCHER_COUNTRY_CODE,
+                VouchersEntry.COLUMN_VOUCHER_IS_ACTIVE
+        };
+
+    }
 }

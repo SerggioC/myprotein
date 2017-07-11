@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -24,7 +25,10 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.CardView;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
+import android.text.style.RelativeSizeSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -47,6 +51,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.cruz.sergio.myproteinpricechecker.helper.FirebaseJobservice;
+import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
 import com.cruz.sergio.myproteinpricechecker.helper.ProductsContract;
 
 import org.json.JSONArray;
@@ -70,6 +75,7 @@ import static android.util.DisplayMetrics.DENSITY_LOW;
 import static android.util.DisplayMetrics.DENSITY_MEDIUM;
 import static android.util.DisplayMetrics.DENSITY_XHIGH;
 import static android.util.DisplayMetrics.DENSITY_XXHIGH;
+import static android.widget.Toast.LENGTH_LONG;
 import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.CACHE_IMAGES;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.UPDATE_ONSTART;
@@ -106,6 +112,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         public final TextView currentPriceView;
         public final TextView highestPriceDate;
         public final TextView lowestPriceDate;
+        public final TextView info_top;
         public final TextView currentInfo;
         public final TextView under_cardview;
         public final ImageSwitcher imageSwitcher;
@@ -121,6 +128,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             currentPriceView = (TextView) view.findViewById(R.id.item_current_price_textview);
             highestPriceDate = (TextView) view.findViewById(R.id.item_highest_price_date);
             lowestPriceDate = (TextView) view.findViewById(R.id.item_lowest_price_date);
+            info_top = (TextView) view.findViewById(R.id.info_top);
             currentInfo = (TextView) view.findViewById(R.id.current_info);
             ll_current_price = (LinearLayout) view.findViewById(R.id.ll_current_price);
             imageSwitcher = (ImageSwitcher) view.findViewById(R.id.image_switcher);
@@ -260,6 +268,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                         timer.cancel();
                         timer.purge();
                         timer = new Timer();
+                        NetworkUtils.showCustomSlimToast(mActivity, "Updating Prices", LENGTH_LONG);
                         updatePricesOnStart(mActivity, false);
                     }
                 }
@@ -525,11 +534,13 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             long previousPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_DATE));
             double previous_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE));
 
+            String currency_symb = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL));
+            boolean symb_after = currency_symb.indexOf(" ") == 0;
+
             if (options_sabor == null) options_sabor = "";
             if (options_caixa == null) options_caixa = "";
             if (options_quant == null) options_quant = "";
             if (current_price_string == null || current_price_string.equals("")) current_price_string = "---";
-
 
             String[] prod_description_array = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION)).split("\n");
 
@@ -567,7 +578,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 Glide.with(mActivity).load(R.drawable.noimage).asBitmap().format(PREFER_ARGB_8888).asIs().dontTransform().into(iv);
             }
 
-            viewHolder.titleView.setText(prod_name + " " + options_sabor + " " + options_caixa + " " + options_quant);
+            String str_title = prod_name + " " + options_sabor + " " + options_caixa + " " + options_quant;
+            viewHolder.titleView.setText(str_title);
             viewHolder.highestPriceView.setText(max_price_string);
             viewHolder.lowestPriceView.setText(min_price_string);
             viewHolder.currentPriceView.setText(current_price_string);
@@ -575,48 +587,95 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             viewHolder.lowestPriceDate.setText(getMillisecondsToDate(minPriceDate));
             ((TextView) mActivity.findViewById(R.id.updated_tv)).setText(getMillisecondsToDate(actualPriceDate));
 
-            // pode dar erro ao atualizar o preço, ou o produto/opção não disponivel
+            // pode dar erro ao atualizar o preço, ou o produto/opção não estar disponível
             // guardo o preço = 0 nesta situação
             if (actual_price_value != 0) {
+
+                // Decida de preço
                 if (actual_price_value < previous_price_value && previous_price_value != 0d) {
-                    double diff = actual_price_value - previous_price_value;
-                    String str_diff = diff < 0 ? round(diff) : "";
+                    double diff = previous_price_value - actual_price_value;
+                    String str_diff = "";
+                    if (diff > 0d && symb_after) {
+                        str_diff = "-" + round(diff) + currency_symb;
+                    } else if (diff > 0d && !symb_after) {
+                        str_diff = "-" + currency_symb + round(diff);
+                    }
+
                     viewHolder.currentInfo.setVisibility(View.VISIBLE);
                     viewHolder.currentInfo.setText(str_diff);
                     viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.dark_green));
                     viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.down_arrow));
                 }
+
+                // Subida de preço
                 if (actual_price_value > previous_price_value && previous_price_value != 0d) {
                     double diff = actual_price_value - previous_price_value;
-                    String str_diff = diff > 0 ? "+" + round(diff) : "";
+                    String str_diff = "";
+                    if (diff > 0d && symb_after) {
+                        str_diff = "+" + round(diff) + currency_symb;
+                    } else if (diff > 0d && !symb_after) {
+                        str_diff = "+" + currency_symb + round(diff);
+                    }
+
                     viewHolder.currentInfo.setVisibility(View.VISIBLE);
                     viewHolder.currentInfo.setText(str_diff);
                     viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.red));
                     viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.up_arrow));
                 }
+
+                // Preço mais alto
                 if (actual_price_value >= max_price_value && min_price_value != max_price_value) {
                     previous_price_value = previous_price_value == 0d ? actual_price_value : previous_price_value;
                     double diff = actual_price_value - previous_price_value;
-                    String str_diff = diff > 0d ? "+" + round(diff) : "";
+                    String str_diff = "";
+                    if (diff > 0d && symb_after) {
+                        str_diff = "+" + round(diff) + currency_symb;
+                    } else if (diff > 0d && !symb_after) {
+                        str_diff = "+" + currency_symb + round(diff);
+                    }
+
+                    viewHolder.info_top.setVisibility(View.VISIBLE);
+                    viewHolder.info_top.setText("Highest price!");
+                    viewHolder.info_top.setTextColor(ContextCompat.getColor(mActivity, R.color.red));
+
                     viewHolder.currentInfo.setVisibility(View.VISIBLE);
-                    viewHolder.currentInfo.setText("Highest price! " + str_diff);
+                    viewHolder.currentInfo.setText(str_diff);
                     viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.red));
                     viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.up_arrow));
+                    viewHolder.ll_current_price.setBackground(ContextCompat.getDrawable(mActivity, R.drawable.ll_red_bg));
                 }
+
+                // Preço mais baixo
                 if (actual_price_value <= min_price_value && min_price_value != max_price_value) {
                     previous_price_value = previous_price_value == 0d ? actual_price_value : previous_price_value;
-                    double diff = min_price_value - previous_price_value;
-                    String str_diff = diff < 0d ? round(diff) : "";
+                    double diff = previous_price_value - min_price_value;
+                    String str_diff = "";
+                    if (diff > 0d && symb_after) {
+                        str_diff = "-" + round(diff) + currency_symb;
+                    } else if (diff > 0d && !symb_after) {
+                        str_diff = "-" + currency_symb + round(diff);
+                    }
+
+                    viewHolder.info_top.setVisibility(View.VISIBLE);
+                    viewHolder.info_top.setText("Best price!");
+                    viewHolder.info_top.setTextColor(ContextCompat.getColor(mActivity, R.color.dark_green));
+
                     viewHolder.currentInfo.setVisibility(View.VISIBLE);
-                    viewHolder.currentInfo.setText("Best price! " + str_diff);
+                    viewHolder.currentInfo.setText(str_diff);
                     viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.dark_green));
                     viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.down_arrow));
                     viewHolder.ll_current_price.setBackground(ContextCompat.getDrawable(mActivity, R.drawable.ll_green_bg));
                 }
             } else {
-                viewHolder.currentInfo.setVisibility(View.VISIBLE);
-                viewHolder.currentInfo.setText("option not available");
-                viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.red));
+
+                SpannableStringBuilder ssb_title = new SpannableStringBuilder(str_title + " (Not available)");
+                ssb_title.setSpan(new ForegroundColorSpan(Color.RED), str_title.length(), ssb_title.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                ssb_title.setSpan(new RelativeSizeSpan(0.9f), str_title.length(), ssb_title.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                viewHolder.titleView.setText(ssb_title);
+
+//                viewHolder.info_top.setVisibility(View.VISIBLE);
+//                viewHolder.info_top.setText("Not available");
+//                viewHolder.info_top.setTextColor(ContextCompat.getColor(mActivity, R.color.red));
             }
         }   // End bindView
 

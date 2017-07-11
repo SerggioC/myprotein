@@ -1,8 +1,10 @@
 package com.cruz.sergio.myproteinpricechecker;
 
+import android.content.Context;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -11,17 +13,22 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import com.cruz.sergio.myproteinpricechecker.helper.DBHelper;
 import com.cruz.sergio.myproteinpricechecker.helper.ProductsContract;
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.IMarker;
 import com.github.mikephil.charting.components.Legend;
+import com.github.mikephil.charting.components.MarkerView;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.github.mikephil.charting.utils.MPPointF;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +40,8 @@ import java.util.concurrent.TimeUnit;
 public class GraphsFragment extends Fragment {
     ArrayList<ArrayList<Double>> priceValues_Array_arrayList = null;
     ArrayList<ArrayList<Long>> dates_Array_arrayList = null;
+    ArrayList<String> product_names_arrayList = null;
+    ArrayList<String> currency_symb_arrayList = null;
 
     @Nullable
     @Override
@@ -58,8 +67,8 @@ public class GraphsFragment extends Fragment {
         if (cursor1Count > 0) {
             List<String> distinct_id_products = new ArrayList<>();
             while (cursor1.moveToNext()) {
-                String _id_poducts = cursor1.getString(cursor1.getColumnIndex(ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS));
-                distinct_id_products.add(_id_poducts);
+                String _id_products = cursor1.getString(cursor1.getColumnIndex(ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS));
+                distinct_id_products.add(_id_products);
             }
             priceValues_Array_arrayList = new ArrayList<>(cursor1Count);
             dates_Array_arrayList = new ArrayList<>(cursor1Count);
@@ -84,10 +93,32 @@ public class GraphsFragment extends Fragment {
                     dates_Array_arrayList.add(dates_arrayList);
 
                 } else {
-                    // TODO Warning Empty database!
+                    // TODO ERROR!
                 }
 
                 cursor2.close();
+
+                Cursor cursor3 = db.rawQuery("SELECT " +
+                        ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME + " , " + ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL +
+                        " FROM " + ProductsContract.ProductsEntry.TABLE_NAME +
+                        " WHERE " + ProductsContract.ProductsEntry._ID + " = '" + distinct_id_products.get(i) + "'" +
+                        " ORDER BY " + ProductsContract.ProductsEntry._ID + " ASC", null);
+
+                int cursor3Count = cursor2.getCount();
+                if (cursor3Count > 0) {
+                    product_names_arrayList = new ArrayList<>(cursor3Count);
+                    currency_symb_arrayList = new ArrayList<>(cursor3Count);
+                    while (cursor3.moveToNext()) {
+                        String name = cursor3.getString(cursor3.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME));
+                        String symbol = cursor3.getString(cursor3.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL));
+                        product_names_arrayList.add(name);
+                        currency_symb_arrayList.add(symbol);
+                    }
+                } else {
+                    // TODO ERROR!
+                }
+
+                cursor3.close();
             }
 
 
@@ -104,6 +135,45 @@ public class GraphsFragment extends Fragment {
         Log.d("Sergio>", this + " onCreate\nelapsed Millis= " + TimeUnit.NANOSECONDS.toMillis(elapsed));
     }
 
+    public class graphMarker extends MarkerView implements IMarker {
+        private TextView marker_txt;
+
+        public graphMarker(Context context, int layoutResource) {
+            super(context, layoutResource);
+            marker_txt = (TextView) findViewById(R.id.marker_tv);
+        }
+
+        private MPPointF mOffset;
+
+        @Override
+        public MPPointF getOffset() {
+            if (mOffset == null) {
+                // center the marker horizontally and vertically
+                mOffset = new MPPointF(-(getWidth() / 2), -getHeight());
+            }
+            return mOffset;
+        }
+
+        @Override
+        public MPPointF getOffsetForDrawingAtPoint(float v, float v1) {
+            return null;
+        }
+
+        @Override
+        public void refreshContent(Entry entry, Highlight highlight) {
+            marker_txt.setText("" + entry.getY() + "\n" +
+                    entry.getX());
+
+            // this will perform necessary layouting
+            super.refreshContent(entry, highlight);
+        }
+
+        @Override
+        public void draw(Canvas canvas, float v, float v1) {
+
+        }
+    }
+
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
 
@@ -115,13 +185,21 @@ public class GraphsFragment extends Fragment {
         lineChart.setDrawBorders(true);
         lineChart.getDescription().setEnabled(true);
         // if disabled, scaling can be done on x- and y-axis separately
-        lineChart.setPinchZoom(false);
+        lineChart.setPinchZoom(true);
         lineChart.getAxisRight().setEnabled(false);
 
         Legend legend = lineChart.getLegend();
         legend.setEnabled(true);
-//        LegendEntry[] legendEntry = new LegendEntry[]{"uno", };
-//        legend.setCustom();
+        legend.setDrawInside(false);
+        legend.setForm(Legend.LegendForm.CIRCLE);
+        legend.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
+//        List<LegendEntry> legendEntries = new ArrayList<>();
+//
+//        legendEntries.add(new Entry());
+//        legend.setEntries(legendEntries);
+
+        graphMarker graphMarker = new graphMarker(getContext(), R.layout.graph_marker);
+        lineChart.setMarker(graphMarker);
 
         XAxis xAxis = lineChart.getXAxis();
         xAxis.setEnabled(true);
@@ -129,11 +207,11 @@ public class GraphsFragment extends Fragment {
         xAxis.setTextSize(10f);
         xAxis.setTextColor(Color.RED);
         xAxis.setDrawAxisLine(true);
-        xAxis.setDrawGridLines(false);
+        xAxis.setDrawGridLines(true);
 
 
         YAxis yAxis = lineChart.getAxisLeft();
-        yAxis.setAxisMaximum(900f);
+        yAxis.setAxisMaximum(200f);
         yAxis.setAxisMinimum(0f);
         yAxis.setDrawAxisLine(true);
         yAxis.setDrawZeroLine(true);
@@ -156,12 +234,18 @@ public class GraphsFragment extends Fragment {
                     }
                 }
 
-                LineDataSet lineDataSet = new LineDataSet(entries, "Product one " + k); // add entries to dataset
+                LineDataSet lineDataSet = new LineDataSet(entries, "Product " + k); // add entries to dataset
                 lineDataSet.setMode(LineDataSet.Mode.LINEAR);
+                lineDataSet.setCircleColor(Color.LTGRAY);
+                lineDataSet.setDrawHighlightIndicators(true);
+                lineDataSet.setColor(Color.DKGRAY);
+                lineDataSet.setLineWidth(2f);
+
                 dataSets.add(lineDataSet);
             }
-
             LineData data = new LineData(dataSets);
+            data.setValueTextSize(10f);
+            data.setHighlightEnabled(true);
             lineChart.setData(data);
         }
 
