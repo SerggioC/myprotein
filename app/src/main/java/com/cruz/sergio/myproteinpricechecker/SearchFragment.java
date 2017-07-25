@@ -401,14 +401,7 @@ public class SearchFragment extends Fragment {
             ((TextView) view.findViewById(R.id.titleTextView)).setText(product.productTitleStr);
             ((TextView) view.findViewById(R.id.product_description)).setText(product.pptList_SSB);
             ((TextView) view.findViewById(R.id.price_textView)).setText(product.productPrice);
-//            view.findViewById(R.id.image_watch).setOnClickListener(new View.OnClickListener() {
-//                @Override
-//                public void onClick(View v) {
-//                    Uri address = Uri.parse(product.productHref);
-//                    Intent browser = new Intent(Intent.ACTION_VIEW, address);
-//                    startActivity(browser);
-//                }
-//            });
+
             return view;
         }
     }

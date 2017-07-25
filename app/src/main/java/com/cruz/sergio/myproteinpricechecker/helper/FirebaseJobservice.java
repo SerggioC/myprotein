@@ -1,16 +1,23 @@
 package com.cruz.sergio.myproteinpricechecker.helper;
 
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v7.app.NotificationCompat;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.cruz.sergio.myproteinpricechecker.MainActivity;
+import com.cruz.sergio.myproteinpricechecker.R;
 import com.firebase.jobdispatcher.JobParameters;
 import com.firebase.jobdispatcher.JobService;
 
@@ -56,6 +63,7 @@ public class FirebaseJobservice extends JobService {
 
     static class CursorObj {
         int row_id;
+        String prod_name;
         String jsonURL;
         String baseURL;
         double min_price;
@@ -64,8 +72,9 @@ public class FirebaseJobservice extends JobService {
         long actual_price_date;
         double previous_price;
 
-        CursorObj(int row_id, String jsonURL, String baseURL, double min_price, double max_price, double actual_price, long actual_price_date, double previous_price) {
+        CursorObj(int row_id, String prod_name, String jsonURL, String baseURL, double min_price, double max_price, double actual_price, long actual_price_date, double previous_price) {
             this.row_id = row_id;
+            this.prod_name = prod_name;
             this.jsonURL = jsonURL;
             this.baseURL = baseURL;
             this.min_price = min_price;
@@ -126,12 +135,15 @@ public class FirebaseJobservice extends JobService {
 
         // Limitar fazer demasiados requests quando o tempo é menor que MINIMUM_DELTA_INTERVAL
         if (calculated_delta_t < delta_time && isJob) {
-            Log.w("Sergio>", "FirebaseJobservice updatePricesOnStart: \n" + "Too soon to save to database wait up Job!");
-            job_status = "too soon";
+            Log.w("Sergio>", "FirebaseJobservice updatePricesOnStart: \n" +
+                    "Too soon to save to database wait up Job!");
+            job_status = "postpone";
         } else if (calculated_delta_t > delta_time && isJob || !isJob) {
-            Log.w("Sergio>", "FirebaseJobservice updatePricesOnStart: \n" + "Starting update!");
+            Log.w("Sergio>", "FirebaseJobservice updatePricesOnStart: \n" +
+                    "Starting update!");
             cursor = db.rawQuery("SELECT " +
                     ProductsContract.ProductsEntry._ID + " , " +
+                    ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME + " , " +
                     ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL + " , " +
                     ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS + " , " +
                     ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE + " , " +
@@ -148,6 +160,7 @@ public class FirebaseJobservice extends JobService {
 
                 while (cursor.moveToNext()) {
                     int row_id = cursor.getInt(cursor.getColumnIndex(ProductsContract.ProductsEntry._ID));
+                    String product_name = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME));
                     String jsonURL = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS));
                     String baseURL = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL));
                     double min_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE));
@@ -156,7 +169,8 @@ public class FirebaseJobservice extends JobService {
                     long actual_price_date = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE));
                     double previous_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE));
 
-                    CursorObj cursorObj = new CursorObj(row_id, jsonURL, baseURL, min_price_value, max_price_value, actual_price_value, actual_price_date, previous_price_value);
+                    CursorObj cursorObj =
+                            new CursorObj(row_id, product_name, jsonURL, baseURL, min_price_value, max_price_value, actual_price_value, actual_price_date, previous_price_value);
 
                     if (!TextUtils.isEmpty(jsonURL)) {
                         Log.d("Sergio>", context + "\nonStartJob:\nJSON_METHOD= " + JSON_METHOD);
@@ -168,7 +182,7 @@ public class FirebaseJobservice extends JobService {
                         checkInternet_forBGMethod.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, cursorObj);
                     }
                 }
-                job_status = "done";
+                job_status = "complete";
             } else {
                 Log.w("Sergio>", "updatePricesOnStart: " + "cursor Size = 0, empty database!");
                 job_status = "empty db";
@@ -417,7 +431,9 @@ public class FirebaseJobservice extends JobService {
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, priceString);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE, price_value);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, currentTimeMillis);
-            // TODO: Send alert to user? There's a new lower price!
+
+            create_Notification(cursorObj.prod_name, priceString, context, cursorObj.row_id);
+
         } else if (price_value > cursorObj.max_price) {
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, priceString);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE, price_value);
@@ -435,6 +451,26 @@ public class FirebaseJobservice extends JobService {
                 listener.onUpdateReady(true);
             }
         }
+
+    }
+
+    private static void create_Notification(String prod_name, String priceString, Context context, int notificationID) {
+        NotificationCompat.Builder notification_Builder = (NotificationCompat.Builder) new NotificationCompat.Builder(context)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setLargeIcon(BitmapFactory.decodeResource(context.getResources(), R.mipmap.ic_launcher))
+                .setContentTitle(context.getString(R.string.app_name))
+                .setContentText(prod_name + " price has dropped to " + priceString);
+
+        Intent resultIntent = new Intent(context, MainActivity.class);
+        PendingIntent resultPendingIntent = PendingIntent.getActivity(context, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        notification_Builder.setContentIntent(resultPendingIntent);
+
+        // Gets an instance of the NotificationManager service
+        NotificationManager mNotifyMgr = (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
+
+        // Sets an ID for the notification
+        // Builds the notification and issues it.
+        mNotifyMgr.notify(notificationID, notification_Builder.build());
 
     }
 

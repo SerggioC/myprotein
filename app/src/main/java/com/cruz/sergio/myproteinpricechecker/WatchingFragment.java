@@ -2,8 +2,11 @@ package com.cruz.sergio.myproteinpricechecker;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
@@ -22,6 +25,7 @@ import android.support.v4.content.Loader;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.widget.CursorAdapter;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.CardView;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -50,6 +54,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
+import com.cruz.sergio.myproteinpricechecker.helper.DBHelper;
 import com.cruz.sergio.myproteinpricechecker.helper.FirebaseJobservice;
 import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
 import com.cruz.sergio.myproteinpricechecker.helper.ProductsContract;
@@ -435,36 +440,17 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             if (convertView != null) {
                 //view = newView(mContext, mCursor, null);
                 view = newView(null, null, null);
+                view.setTag(R.id.view_position, position);
                 bindView(view, mContext, (Cursor) getItem(position));
             } else {
                 view = super.getView(position, convertView, parent);
             }
 
-            final View under_view = view.findViewById(R.id.under_cardview);
+            View under_view = view.findViewById(R.id.under_cardview);
             expandOrCollapse(under_view, mCursor);
 
-//            CardView mainView = (CardView) view.findViewById(R.id.main_cardview);
-//            mainView.setOnClickListener(new View.OnClickListener() {
-//                @Override
-//                public void onClick(View v) {
-//                    if (mCursor != null) {
-//                        Boolean isExpanded = isExpandedArray[position];
-//                        Log.i("Sergio>>>", this + "\n" + "list item position = " + position);
-//                        Log.i("Sergio>", this + " onClick\nisExpanded= " + isExpanded);
-//                        if (isExpanded) {
-//                            collapseIt(under_view);
-//                            isExpandedArray[position] = false;
-//                        } else {
-//                            if (position == mCursor.getCount() - 1) {
-//                                expandIt(under_view, true);
-//                            } else {
-//                                expandIt(under_view, false);
-//                            }
-//                            isExpandedArray[position] = true;
-//                        }
-//                    }
-//                }
-//            });
+            view.setTag(R.id.view_position, position);
+
             return view;
         }
 
@@ -475,6 +461,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             final View item_root = cursorItemInflater.inflate(R.layout.watching_item_layout2, null, false);
             ViewHolder viewHolder = new ViewHolder(item_root);
             item_root.setTag(R.id.viewholder, viewHolder);
+            if (cursor != null) {
+                item_root.setTag(R.id.view_position, cursor.getPosition());
+            }
             return item_root;
         }
 
@@ -484,33 +473,52 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         public void bindView(final View view, Context context, final Cursor cursor) {
             ViewHolder viewHolder = (ViewHolder) view.getTag(R.id.viewholder);
 
+            final int this_position = view.getTag(R.id.view_position) == null ? -1 : (int) view.getTag(R.id.view_position);
+            final int this_product_id = cursor.getInt(cursor.getColumnIndex(ProductsContract.ProductsEntry._ID));
+            final String url = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL));
 
             CardView mainCardView = (CardView) view.findViewById(R.id.main_cardview);
-
             mainCardView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if (mCursor != null) {
                         CardView under_view = (CardView) view.findViewById(R.id.under_cardview);
-                        Boolean isExpanded = isExpandedArray[current_position];
-                        Log.i("Sergio>>>", this + "\n" + "list item position = " + current_position);
-                        Log.i("Sergio>", this + " onClick\ncursor position= " + cursor.getPosition());
+
+                        under_view.findViewById(R.id.open_web).setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                Intent browser = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                                startActivity(browser);
+                            }
+                        });
+
+                        under_view.findViewById(R.id.delete_entry).setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                int delete_result = displayDeleteDialogBox(this_product_id);
+
+                                NetworkUtils.showCustomSlimToast(mActivity, "Delete entry position" + this_position + "\n" +
+                                        "DB product _ID = " + this_product_id + "\n" +
+                                        "delete_result= " + delete_result, Toast.LENGTH_LONG);
+                            }
+                        });
+
+                        Boolean isExpanded = isExpandedArray[this_position];
                         Log.i("Sergio>", this + " onClick\nisExpanded= " + isExpanded);
                         if (isExpanded) {
                             collapseIt(under_view);
-                            isExpandedArray[current_position] = false;
+                            isExpandedArray[this_position] = false;
                         } else {
-                            if (current_position == mCursor.getCount() - 1) {
+                            if (this_position == mCursor.getCount() - 1) {
                                 expandIt(under_view, true);
                             } else {
                                 expandIt(under_view, false);
                             }
-                            isExpandedArray[current_position] = true;
+                            isExpandedArray[this_position] = true;
                         }
                     }
                 }
             });
-
 
 
             String prod_name = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME));
@@ -548,18 +556,20 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
             String drawableStr = drawable.toString();
             SpannableStringBuilder pptList_SSB = new SpannableStringBuilder();
-            for (int i = 0; i < prod_description_array.length; i++) {
+            int pdal = prod_description_array.length - 1;
+            for (int i = 0; i < pdal; i++) {
                 pptList_SSB.append(drawableStr);
                 pptList_SSB.setSpan(new ImageSpan(drawable), pptList_SSB.length() - drawableStr.length(), pptList_SSB.length(),
                         Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                 pptList_SSB.append(" " + prod_description_array[i] + "\n");
             }
-
-            if (pptList_SSB.length() > 0) {
-                pptList_SSB.subSequence(0, pptList_SSB.length() - 1);
-            }
+            pptList_SSB.append(drawableStr);
+            pptList_SSB.setSpan(new ImageSpan(drawable), pptList_SSB.length() - drawableStr.length(), pptList_SSB.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            pptList_SSB.append(" " + prod_description_array[pdal]);
 
             viewHolder.under_cardview.setText(pptList_SSB);
+
 
             Boolean gotPictures = null;
             if (string_array_images != null && CACHE_IMAGES) {
@@ -744,9 +754,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                     }
                     if (gotPictures && arrayListImageURLs.size() > 0) {
                         gotPicturesURL_List = true;
-                        //placeImagesFromURL(viewHolder, arrayListImageURLs);
                         placeimageURLs(viewHolder, arrayListImageURLs);
-
                     }
                 }
             }
@@ -825,24 +833,25 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             viewHolder.imageSwitcher.setOutAnimation(fadeOut);
 
             final int[] currentIndex = {0};
-            viewHolder.imageSwitcher.setImageURI(Uri.fromFile(arrayListImageFiles.get(currentIndex[0])));
 
             final Runnable runnable = new Runnable() {
                 public void run() {
-                    currentIndex[0]++;
                     if (currentIndex[0] >= size) currentIndex[0] = 0;
                     viewHolder.imageSwitcher.setImageURI(Uri.fromFile(arrayListImageFiles.get(currentIndex[0])));
+                    currentIndex[0]++;
                 }
             };
 
-//            TimerTask timerTask = new TimerTask() {
-//                public void run() {
-//                    mActivity.runOnUiThread(runnable);
-//                }
-//            };
-//            Timer timer = new Timer();
-//            timer.scheduleAtFixedRate(timerTask, 0, IMAGE_PERIOD);
+            TimerTask timerTask = new TimerTask() {
+                public void run() {
+                    mActivity.runOnUiThread(runnable);
+                }
+            };
+            Timer timer = new Timer();
+            timer.scheduleAtFixedRate(timerTask, 0, IMAGE_PERIOD);
 
+//            // Iniciar primeira apresentação da imagem
+//            mActivity.runOnUiThread(runnable);
             viewHolder.imageSwitcher.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -873,102 +882,39 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             final int[] currentIndex = {0};
             final Runnable runnable = new Runnable() {
                 public void run() {
-                    currentIndex[0]++;
                     if (currentIndex[0] >= size) currentIndex[0] = 0;
-                    Glide.with(mActivity)
-                            .load(arrayListImageURLs.get(currentIndex[0]))
-                            .asBitmap()
-                            .asIs()
-                            .format(PREFER_ARGB_8888)
-                            .dontTransform()
-                            .into(new SimpleTarget<Bitmap>() {
-                                @Override
-                                public void onResourceReady(Bitmap bitmap, GlideAnimation<? super Bitmap> glideAnimation) {
-                                    viewHolder.imageSwitcher.setImageDrawable(new BitmapDrawable(mActivity.getResources(), bitmap));
-                                }
+                    if (WatchingFragment.this.isVisible()) {
+                        Glide.with(mActivity)
+                                .load(arrayListImageURLs.get(currentIndex[0]))
+                                .asBitmap()
+                                .asIs()
+                                .format(PREFER_ARGB_8888)
+                                .dontTransform()
+                                .into(new SimpleTarget<Bitmap>() {
+                                    @Override
+                                    public void onResourceReady(Bitmap bitmap, GlideAnimation<? super Bitmap> glideAnimation) {
+                                        viewHolder.imageSwitcher.setImageDrawable(new BitmapDrawable(mActivity.getResources(), bitmap));
+                                    }
 
-                                @Override
-                                public void onLoadFailed(Exception e, Drawable errorDrawable) {
-                                    viewHolder.imageSwitcher.setImageResource(R.drawable.noimage);
-                                }
-                            });
+                                    @Override
+                                    public void onLoadFailed(Exception e, Drawable errorDrawable) {
+                                        viewHolder.imageSwitcher.setImageResource(R.drawable.noimage);
+                                    }
+                                });
+                    }
+                    currentIndex[0]++;
                 }
             };
-//            TimerTask timerTask = new TimerTask() {
-//                public void run() {
-//                    mActivity.runOnUiThread(runnable);
-//                }
-//            };
-//            //Called every 5400 milliseconds
-//            timer.scheduleAtFixedRate(timerTask, 0, IMAGE_PERIOD);
+//            mActivity.runOnUiThread(runnable);
 
-            viewHolder.imageSwitcher.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    mActivity.runOnUiThread(runnable);
-                }
-            });
-
-        }
-
-        private void placeImagesFromURL(final ViewHolder viewHolder, final ArrayList<String> arrayListImageURLs) {
-            final int size = arrayListImageURLs.size();
-            final ArrayList<Bitmap> arrayListImageBitmap = new ArrayList<>(size);
-
-            for (int i = 0; i < size; i++) {
-                final int final_i = i;
-                Glide.with(mActivity)
-                        .load(arrayListImageURLs.get(i))
-                        .asBitmap()
-                        .asIs()
-                        .diskCacheStrategy(DiskCacheStrategy.RESULT)
-                        .skipMemoryCache(true)
-                        .into(new SimpleTarget<Bitmap>() {
-                            @Override
-                            public void onResourceReady(Bitmap bitmap, GlideAnimation glideAnimation) {
-                                arrayListImageBitmap.add(bitmap);
-                                if (final_i == size - 1) {
-                                    bitmapsReady(viewHolder, arrayListImageBitmap);
-                                }
-                            }
-                        });
-            }
-        }
-
-        private void bitmapsReady(final ViewHolder viewHolder, final ArrayList<Bitmap> arrayListImageBitmap) {
-            viewHolder.imageSwitcher.removeAllViews();
-            viewHolder.imageSwitcher.setFactory(new ViewSwitcher.ViewFactory() {
-                public View makeView() {
-                    return getNewImageView(70);
-                }
-            });
-            // Declare in and out animations and load them using AnimationUtils class
-            Animation fadeIn = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_in);
-            fadeIn.setDuration(1200);
-            Animation fadeOut = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_out);
-            fadeOut.setDuration(1200);
-            // set the animation type to ImageSwitcher
-            viewHolder.imageSwitcher.setInAnimation(fadeIn);
-            viewHolder.imageSwitcher.setOutAnimation(fadeOut);
-
-            final int size = arrayListImageBitmap.size();
-            //Set the schedule function and rate
-            final int[] currentIndex = {0};
-            final Runnable runnable = new Runnable() {
-                public void run() {
-                    currentIndex[0]++;
-                    if (currentIndex[0] >= size) currentIndex[0] = 0;
-                    viewHolder.imageSwitcher.setImageDrawable(
-                            new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
-                }
-            };
             TimerTask timerTask = new TimerTask() {
                 public void run() {
                     mActivity.runOnUiThread(runnable);
                 }
             };
+
             //Called every 5400 milliseconds
-            timer.scheduleAtFixedRate(timerTask, 0, 5400);
+            timer.scheduleAtFixedRate(timerTask, 0, IMAGE_PERIOD);
 
             viewHolder.imageSwitcher.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -976,6 +922,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                     mActivity.runOnUiThread(runnable);
                 }
             });
+
         }
 
         @NonNull
@@ -989,6 +936,41 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             return imageView;
         }
 
+    }
+
+    public int displayDeleteDialogBox(final int product_id) {
+        final int[] return_result = {-1};
+
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(mActivity);
+
+        // set title
+        alertDialogBuilder.setTitle("Delete Product?");
+
+        // set dialog message
+        alertDialogBuilder
+                .setMessage("Are you sure you want to delete this entry?\nAll logged prices for this product will be lost!")
+                .setCancelable(true)
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        return_result[0] = delete_entry_from_db(product_id);
+                    }
+                })
+                .setNegativeButton("No!!!!!!", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                        return_result[0] = -1;
+                    }
+                });
+        AlertDialog alertDialog = alertDialogBuilder.create();
+        alertDialog.show();
+
+        return return_result[0];
+    }
+
+    private int delete_entry_from_db(int this_position) {
+        DBHelper dbHelper = new DBHelper(mActivity);
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        return db.delete(ProductsContract.ProductsEntry.TABLE_NAME, "_ID=" + "'" + this_position + "'", null);
     }
 
     public String getMillisecondsToDate(long milliseconds) {

@@ -135,8 +135,8 @@ public class MainActivity extends AppCompatActivity {
         mActivity = this;
 
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
-        CACHE_IMAGES = sharedPrefs.getBoolean("cache_images", true);
-        UPDATE_ONSTART = sharedPrefs.getBoolean("update_on_start", true);
+        CACHE_IMAGES = sharedPrefs.getBoolean("cache_images", false);
+        UPDATE_ONSTART = sharedPrefs.getBoolean("update_on_start", false);
 
         StartFirebase.createJobDispatcher(this);
 

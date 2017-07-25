@@ -14,5 +14,43 @@
     <color name="light_green">#a7e160</color>
     <color name="red">#d32f2f</color>
     <color name="red_light">#ff6060</color>
+    <color name="darker_red">#ab2f2f</color>
 
+    <color name="f_color1">#2196F3</color>
+    <color name="f_color2">#4CAF50</color>
+    <color name="f_color3">#ff1744</color>
+    <color name="f_color4">#ffc400</color>
+    <color name="f_color5">#e040fb</color>
+    <color name="f_color6">#ff80ab</color>
+    <color name="f_color7">#4358c7</color>
+    <color name="f_color8">#ff6f00</color>
+    <color name="f_color9">#00d9ad</color>
+    <color name="f_color10">#7e00be</color>
+    <color name="f_color11">#ffccbc</color>
+    <color name="f_color12">#aaff00</color>
+    <color name="f_color13">#5241c4</color>
+    <color name="f_color14">#99738c</color>
+    <color name="f_color15">#734d00</color>
+    <color name="f_color16">#263238</color>
+    <color name="f_color17">#a7e160</color>
+
+    <array name="f_colors_xml">
+        <item>@color/f_color1</item>
+        <item>@color/f_color2</item>
+        <item>@color/f_color3</item>
+        <item>@color/f_color4</item>
+        <item>@color/f_color5</item>
+        <item>@color/f_color6</item>
+        <item>@color/f_color7</item>
+        <item>@color/f_color8</item>
+        <item>@color/f_color9</item>
+        <item>@color/f_color10</item>
+        <item>@color/f_color11</item>
+        <item>@color/f_color12</item>
+        <item>@color/f_color13</item>
+        <item>@color/f_color14</item>
+        <item>@color/f_color15</item>
+        <item>@color/f_color16</item>
+        <item>@color/f_color17</item>
+    </array>
 </resources>

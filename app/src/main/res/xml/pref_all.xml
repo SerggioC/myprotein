@@ -73,18 +73,19 @@
             android:positiveButtonText="@null"
             android:title="@string/pref_title_sync_frequency"/>
     </PreferenceCategory>
-
+    <PreferenceCategory android:title="@string/pref_header_advanced">
     <SwitchPreference
-        android:defaultValue="true"
+        android:defaultValue="false"
         android:icon="@mipmap/ic_file_add"
         android:key="cache_images"
         android:title="@string/pref_title_cache"/>
 
     <SwitchPreference
 
-        android:defaultValue="true"
+        android:defaultValue="false"
         android:icon="@mipmap/ic_poweron"
         android:key="update_on_start"
         android:title="@string/pref_update_on_start"/>
+    </PreferenceCategory>
 
 </PreferenceScreen>

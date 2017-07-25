@@ -81,6 +81,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.CACHE_IMAGES;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
 import static com.cruz.sergio.myproteinpricechecker.WatchingFragment.imageSizesToUse;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
@@ -162,14 +163,23 @@ public class DetailsFragment extends Fragment {
             "/960/960/",      // 960/960
             "/1600/1600/"};   // 1600/1600
 
-    public static AddedNewProductListener listener;
+    public static AddedNewProductListener listener1;
+    public static UpdateGraphForNewProduct listener2;
 
     interface AddedNewProductListener {
         void onProductAdded(Boolean addedNew);
     }
 
+    interface UpdateGraphForNewProduct {
+        void onProductAdded(Boolean addedNew);
+    }
+
     public void setNewProductListener(AddedNewProductListener listener) {
-        this.listener = listener;
+        this.listener1 = listener;
+    }
+
+    public void setUpdateGraphListener(UpdateGraphForNewProduct listener) {
+        this.listener2 = listener;
     }
 
 
@@ -189,8 +199,9 @@ public class DetailsFragment extends Fragment {
         ft.hide(getParentFragment());
         ft.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
         ft.show(SearchFragment.thisSearchFragment);
-        if (addedNewProduct && listener != null) {
-            listener.onProductAdded(true);
+        if (addedNewProduct && listener1 != null) {
+            listener1.onProductAdded(true);
+            listener2.onProductAdded(true);
         }
     }
 
@@ -353,15 +364,13 @@ public class DetailsFragment extends Fragment {
                             try {
                                 String size = (String) ((JSONObject) json_array_i.get(j)).get("size");
                                 String url = (String) ((JSONObject) json_array_i.get(j)).get("url");
-                                if (url != null) {
+                                if (url != null && CACHE_IMAGES) {
                                     for (int k = 0; k < imageSizesToUse.length; k++) {
                                         if (size.equals(imageSizesToUse[k])) {
                                             String filename = customProductID + "_" + imageSizesToUse[k] + "_index_" + i + ".jpg"; // ex.: tamanho 200x200 imageSizesToUse
-                                            saveImageWithGlide(url, filename); //guarda as imagens todas. index_i=variação imageSizesTounUse[k]=tamanho
+                                            saveImageWithGlide(url, filename); //guarda as imagens todas. index_i=variação imageSizesToUse[k]=tamanho
                                             arrayListImageURIs.add(filename);
-
                                             ((JSONObject) JSON_ArrayArray_Images.optJSONArray(i).get(j)).put("file", filename);
-
                                         }
                                     }
                                 }
@@ -381,74 +390,10 @@ public class DetailsFragment extends Fragment {
                 Cursor exists_CustomPID = db.rawQuery("SELECT 1 FROM " +
                         ProductsContract.ProductsEntry.TABLE_NAME + " WHERE " +
                         ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID + " = '" + customProductID + "' LIMIT 1", null); //Atenção à single quote (')
-//                Cursor exists_CustomPID = db.query(ProductsContract.ProductsEntry.TABLE_NAME,
-//                        new String[] {ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID},
-//                        ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID + " = '" + customProductID + "' LIMIT 1", //Atenção à single quote (')
-//                        null, null, null, null
-//                        );
+
                 int numEntries = exists_CustomPID.getCount();
                 exists_CustomPID.close();
-//                String[] colunas = new String[]{
-//                        ProductsContract.ProductsEntry._ID,
-//                        ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID,
-//                        ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS1,
-//                        ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS2,
-//                        ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS3,
-//                        ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID
-//                };
-//
-//                Cursor cursor_exist_product_id = db.query(
-//                        ProductsContract.ProductsEntry.TABLE_NAME,
-//                        colunas,    // SELECT (Colunas a selecionar)
-//                        //ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID + " = " + customProductID + "1",
-//                        WHERE COLUMN_CUSTOM_PRODUCT_ID = customProductID (linhas a apresentar)
-//                        ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID + " = " + productID, // WHERE COLUMN_CUSTOM_PRODUCT_ID = customProductID (linhas a apresentar)
-//                        null, null, null, null
-//                );
-//
-//                Cursor cursor_exist_product_id = db.rawQuery("SELECT " +
-//                        ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID + " , " +
-//                        ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS1 + " , " +
-//                        ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS2 + " , " +
-//                        ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS3 +
-//                        " FROM " + ProductsContract.ProductsEntry.TABLE_NAME +
-//                        " WHERE " + ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID + " = " + productID
-//                        , null);
 
-//
-//                Log.i("Sergio>>>", "cursor_exist_product_id.getCount()= " + cursor_exist_product_id.getCount());
-//                Log.i("Sergio>>>", this + " dumpCursorToString cursor_exist_product_id= \n" + dumpCursorToString(cursor_exist_product_id));
-//
-//                int data0;
-//                String data1;
-//                String data2;
-//                String data3;
-//                String data4;
-//                String data5;
-//                if (cursor_exist_product_id.moveToFirst()) {
-//                    while (!cursor_exist_product_id.isAfterLast()) {
-//                        data0 = cursor_exist_product_id.getInt(cursor_exist_product_id.getColumnIndex(ProductsContract.ProductsEntry._ID));
-//                        data1 = cursor_exist_product_id.getString(cursor_exist_product_id.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID));
-//                        data2 = cursor_exist_product_id.getString(cursor_exist_product_id.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS1));
-//                        data3 = cursor_exist_product_id.getString(cursor_exist_product_id.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS2));
-//                        data4 = cursor_exist_product_id.getString(cursor_exist_product_id.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS3));
-//                        data5 = cursor_exist_product_id.getString(cursor_exist_product_id.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID));
-//
-//                        Log.i("Sergio>>>", "onClick: cursor_exist_product_id " +
-//                                "\n _ID= " + data0 +
-//                                "\n COLUMN_PRODUCT_ID= " + data1 +
-//                                "\n COLUMN_MP_OPTIONS1= " + data2 +
-//                                "\n COLUMN_MP_OPTIONS2= " + data3 +
-//                                "\n COLUMN_MP_OPTIONS3= " + data4 +
-//                                "\n COLUMN_CUSTOM_PRODUCT_ID= " + data5);
-//                        cursor_exist_product_id.moveToNext();
-//                        Log.w("Sergio>>>", "onClick: " + "data5= " + data5 + " COLUMN_CUSTOM_PRODUCT_ID= " + productContentValues.get(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID));
-//                        if (data5.equals(productContentValues.get(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID)))
-//                            isInDataBase = true;
-//                    }
-//                }
-//                cursor_exist_product_id.close();
-                //}
                 if (numEntries >= 1) { // Só poderá haver uma entrada
                     showCustomToast(mActivity, "Product already in DataBase!",
                             R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_LONG);
@@ -621,16 +566,26 @@ public class DetailsFragment extends Fragment {
                     String script = node.getWholeData();
                     if (script.contains("arProductImages")) {
                         JSON_ArrayArray_Images = new JSONArray();
+                        String[] imageFileTypes = new String[]{".jpg", ".png", ".bmp"};
+                        String IMG_FILETYPE = "";
+
+                        for (int i = 0; i < imageFileTypes.length; i++) {
+                            if (script.contains(imageFileTypes[i])) {
+                                IMG_FILETYPE = imageFileTypes[i];
+                            }
+                        }
 
                         int indexOfarray = script.indexOf("arProductImages[");
 
-                        while (indexOfarray >= 0) {
+                        while (indexOfarray >= 0 && !IMG_FILETYPE.isEmpty()) {
                             String sub_script = script.substring(indexOfarray, script.indexOf(");", indexOfarray));
                             JSONArray inner_array = new JSONArray();
 
                             int indexOfHttps = sub_script.indexOf("https");
+
                             while (indexOfHttps >= 0) {
-                                String imgURL = sub_script.substring(indexOfHttps, sub_script.indexOf(".jpg", indexOfHttps) + 4);
+
+                                String imgURL = sub_script.substring(indexOfHttps, sub_script.indexOf(IMG_FILETYPE, indexOfHttps) + 4);
 
                                 String size = "";
                                 for (int k = 0; k < MP_BB_IMAGE_TYPES.length; k++) {

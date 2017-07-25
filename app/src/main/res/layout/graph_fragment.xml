@@ -1,26 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/g_relative"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/white"
     android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/textView"
+    <Switch
+        android:id="@+id/g_switch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="4dp"
+        android:checked="true"
+        android:text="Labels"/>
+
+
+    <Button
+        android:id="@+id/g_options_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/line_chart"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:layout_margin="2dp"
+        android:background="@drawable/button_statelist"
+        android:text="Items"
+        android:textAllCaps="false"/>
+
+    <Button
+        android:id="@+id/g_range_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/line_chart"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="4dp"
-        android:gravity="center"
-        android:text="Graph Price Change"
-        android:textColor="@android:color/holo_red_light"
-        android:textSize="20sp"/>
+        android:layout_alignParentTop="true"
+        android:layout_margin="2dp"
+        android:background="@drawable/button_statelist"
+        android:text="Range"
+        android:textAllCaps="false"/>
 
     <com.github.mikephil.charting.charts.LineChart
         android:id="@+id/line_chart"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
+        android:layout_height="match_parent"
+        android:layout_below="@id/g_switch"
+        android:layout_marginBottom="4dp"/>
 
 </RelativeLayout>

@@ -59,7 +59,7 @@ public class TabFragment extends Fragment {
 
         /*** Set an Adapter for the View Pager */
         viewPager.setAdapter(new MyAdapter(getChildFragmentManager()));
-        //Manter o conteudo das tabs ao passar de uma para a outra
+        //Manter o conteúdo das tabs ao passar de uma para a outra
         viewPager.setOffscreenPageLimit(numberOfTabs);
 
         /**

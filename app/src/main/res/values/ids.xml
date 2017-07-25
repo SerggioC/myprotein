@@ -3,4 +3,5 @@
     <item type="id" name="viewholder" />
     <item type="id" name="viewholderid" />
     <item type="id" name="expanded" />
+    <item type="id" name="view_position" />
 </resources>
