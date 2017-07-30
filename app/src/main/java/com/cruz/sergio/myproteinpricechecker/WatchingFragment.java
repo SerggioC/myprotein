@@ -1,5 +1,8 @@
 package com.cruz.sergio.myproteinpricechecker;
 
+import android.animation.Animator;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -27,12 +30,11 @@ import android.support.v4.widget.CursorAdapter;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.CardView;
-import android.text.Spannable;
 import android.text.SpannableStringBuilder;
-import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
 import android.text.style.RelativeSizeSpan;
+import android.text.style.StyleSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -75,6 +77,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
+import static android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE;
 import static android.util.DisplayMetrics.DENSITY_HIGH;
 import static android.util.DisplayMetrics.DENSITY_LOW;
 import static android.util.DisplayMetrics.DENSITY_MEDIUM;
@@ -82,6 +85,7 @@ import static android.util.DisplayMetrics.DENSITY_XHIGH;
 import static android.util.DisplayMetrics.DENSITY_XXHIGH;
 import static android.widget.Toast.LENGTH_LONG;
 import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
+import static com.cruz.sergio.myproteinpricechecker.DetailsFragment.showCustomToast;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.CACHE_IMAGES;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.UPDATE_ONSTART;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.density;
@@ -119,7 +123,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         public final TextView lowestPriceDate;
         public final TextView info_top;
         public final TextView currentInfo;
-        public final TextView under_cardview;
+        public final TextView undercard_tv_desc;
         public final ImageSwitcher imageSwitcher;
         public final LinearLayout ll_current_price;
         public final ImageView up_down_icon;
@@ -140,12 +144,22 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             up_down_icon = (ImageView) view.findViewById(R.id.up_down_arrow);
             under_view = (CardView) view.findViewById(R.id.under_cardview);
             main_cardView = (CardView) view.findViewById(main_cardview);
-            under_cardview = (TextView) view.findViewById(R.id.description_undercard);
+            undercard_tv_desc = (TextView) view.findViewById(R.id.description_undercard);
         }
     }
 
     public WatchingFragment() {
         //required empty constructor?
+    }
+
+    public static DeletedProductListener delete_listener;
+
+    interface DeletedProductListener {
+        void onProductDeleted(Boolean deleted);
+    }
+
+    public void setDeleteProductlistener(DeletedProductListener listener) {
+        this.delete_listener = listener;
     }
 
     @Override
@@ -247,7 +261,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 //                            "list item position = " + position);
 //
 //                    Boolean isExpanded = isExpandedArray[cursorPosition];
-//                    View under_view = view.findViewById(R.id.under_cardview);
+//                    View under_view = view.findViewById(R.id.undercard_tv_desc);
 //
 //                    if (isExpanded) {
 //                        collapseIt(under_view);
@@ -385,7 +399,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 //        dump_BIGdata_toLog(dumpCursorToString(data));
 
         if (data.getCount() == 0) {
-            DetailsFragment.showCustomToast(mActivity, "Empty DataBase! Add products to track their prices.",
+            showCustomToast(mActivity, "Empty DataBase! Add products to track their prices.",
                     R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_SHORT);
             if (watchingSwipeRefreshLayout != null) {
                 watchingSwipeRefreshLayout.setRefreshing(false);
@@ -394,6 +408,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         cursorDBAdapter.swapCursor(data);
         if (addedNewProduct) {
             listViewItems.smoothScrollToPosition(listViewItems.getMaxScrollAmount());
+            addedNewProduct = false;
         }
     }
 
@@ -458,7 +473,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         // you don't bind any data to the view at this point.
         @Override
         public View newView(Context context, final Cursor cursor, ViewGroup parent) {
-            final View item_root = cursorItemInflater.inflate(R.layout.watching_item_layout2, null, false);
+            final View item_root = cursorItemInflater.inflate(R.layout.watching_item_layout, null, false);
             ViewHolder viewHolder = new ViewHolder(item_root);
             item_root.setTag(R.id.viewholder, viewHolder);
             if (cursor != null) {
@@ -475,14 +490,16 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
             final int this_position = view.getTag(R.id.view_position) == null ? -1 : (int) view.getTag(R.id.view_position);
             final int this_product_id = cursor.getInt(cursor.getColumnIndex(ProductsContract.ProductsEntry._ID));
+            final String prod_name = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME));
             final String url = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL));
+            final String string_array_images = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGES));
 
-            CardView mainCardView = (CardView) view.findViewById(R.id.main_cardview);
+            final CardView mainCardView = (CardView) view.findViewById(R.id.main_cardview);
             mainCardView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if (mCursor != null) {
-                        CardView under_view = (CardView) view.findViewById(R.id.under_cardview);
+                        final CardView under_view = (CardView) view.findViewById(R.id.under_cardview);
 
                         under_view.findViewById(R.id.open_web).setOnClickListener(new View.OnClickListener() {
                             @Override
@@ -495,11 +512,71 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                         under_view.findViewById(R.id.delete_entry).setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
-                                int delete_result = displayDeleteDialogBox(this_product_id);
 
-                                NetworkUtils.showCustomSlimToast(mActivity, "Delete entry position" + this_position + "\n" +
-                                        "DB product _ID = " + this_product_id + "\n" +
-                                        "delete_result= " + delete_result, Toast.LENGTH_LONG);
+                                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(mActivity);
+                                alertDialogBuilder.setTitle("Delete Product?");
+                                alertDialogBuilder.setIcon(R.mipmap.ic_error);
+                                alertDialogBuilder
+                                        .setMessage("Are you sure you want to delete this entry?\nAll logged prices for this product will be lost!")
+                                        .setCancelable(true)
+                                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                                            public void onClick(DialogInterface dialog, int id) {
+                                                DBHelper dbHelper = new DBHelper(mActivity);
+                                                SQLiteDatabase db = dbHelper.getWritableDatabase();
+                                                int delete_db_entries_result = db.delete(ProductsContract.ProductsEntry.TABLE_NAME, "_ID=" + "'" + this_product_id + "'", null);
+                                                boolean has_deleted = deleteImageFiles(string_array_images);
+
+                                                if (delete_db_entries_result == 1) {
+                                                    animateRemoving(mainCardView, under_view, prod_name, has_deleted);
+                                                } else {
+                                                    showCustomToast(mActivity, "Error deleting " + prod_name + " from DataBase!",
+                                                            R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
+                                                }
+
+
+                                            }
+                                        })
+                                        .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                                            public void onClick(DialogInterface dialog, int id) {
+                                                dialog.cancel();
+                                            }
+                                        });
+
+                                AlertDialog alertDialog = alertDialogBuilder.create();
+                                alertDialog.show();
+
+
+//                                final Dialog dialogBuilder = new Dialog(mActivity);
+//
+//                                dialogBuilder.setContentView(R.layout.alert_dialog_layout);
+//                                ((ImageView) dialogBuilder.findViewById(R.id.dialog_icon))
+//                                        .setImageResource(R.mipmap.ic_error);
+//                                ((TextView) dialogBuilder.findViewById(R.id.dialog_title))
+//                                        .setText("Delete Product?");
+//                                ((TextView) dialogBuilder.findViewById(R.id.dialog_message))
+//                                        .setText("Are you sure you want to delete this entry?\n" +
+//                                                "All logged prices for this product will be lost!");
+//                                (dialogBuilder.findViewById(R.id.dialog_cancel)).setOnClickListener(new View.OnClickListener() {
+//                                    @Override
+//                                    public void onClick(View v) {
+//                                        dialogBuilder.dismiss();
+//                                    }
+//                                });
+//                                (dialogBuilder.findViewById(R.id.dialog_ok)).setOnClickListener(new View.OnClickListener() {
+//                                    @Override
+//                                    public void onClick(View v) {
+//                                        DBHelper dbHelper = new DBHelper(mActivity);
+//                                        SQLiteDatabase db = dbHelper.getWritableDatabase();
+//                                        int delete_result = db.delete(ProductsContract.ProductsEntry.TABLE_NAME, "_ID=" + "'" + this_product_id + "'", null);
+//
+//                                        NetworkUtils.showCustomSlimToast(mActivity, "Delete entry position" + this_position + "\n" +
+//                                                "DB product _ID = " + this_product_id + "\n" +
+//                                                "delete_result= " + delete_result, Toast.LENGTH_LONG);
+//                                    }
+//                                });
+//
+//                                dialogBuilder.show();
+
                             }
                         });
 
@@ -521,11 +598,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             });
 
 
-            String prod_name = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME));
             String options_sabor = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME1));
             String options_caixa = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME2));
             String options_quant = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME3));
-            String string_array_images = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGES));
 
             String current_price_string = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE));
             double actual_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE));
@@ -551,24 +626,41 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             if (current_price_string == null || current_price_string.equals("")) current_price_string = "---";
 
             String[] prod_description_array = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION)).split("\n");
+            String sub_title = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_SUBTITLE));
+            String webstore_name = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_WEBSTORE_NAME));
+            String webstore_str = "Webstore";
+
+            SpannableStringBuilder pptList_SSB = new SpannableStringBuilder(webstore_str);
+            pptList_SSB.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), pptList_SSB.length() - webstore_str.length(), pptList_SSB.length(),
+                    SPAN_EXCLUSIVE_EXCLUSIVE);
+            pptList_SSB.append(": " + webstore_name + "\n");
+
+            pptList_SSB.append(sub_title);
+            pptList_SSB.setSpan(new RelativeSizeSpan(1.1f), pptList_SSB.length() - sub_title.length(), pptList_SSB.length(), SPAN_EXCLUSIVE_EXCLUSIVE);
+
+            String prod_benefits = "\nProduct benefits\n";
+            pptList_SSB.append(prod_benefits);
+            pptList_SSB.setSpan(new RelativeSizeSpan(1.1f), pptList_SSB.length() - prod_benefits.length(), pptList_SSB.length(),
+                    SPAN_EXCLUSIVE_EXCLUSIVE);
+            pptList_SSB.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), pptList_SSB.length() - prod_benefits.length(), pptList_SSB.length(),
+                    SPAN_EXCLUSIVE_EXCLUSIVE);
 
             Drawable drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.tick, null);
             drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
             String drawableStr = drawable.toString();
-            SpannableStringBuilder pptList_SSB = new SpannableStringBuilder();
             int pdal = prod_description_array.length - 1;
             for (int i = 0; i < pdal; i++) {
                 pptList_SSB.append(drawableStr);
                 pptList_SSB.setSpan(new ImageSpan(drawable), pptList_SSB.length() - drawableStr.length(), pptList_SSB.length(),
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        SPAN_EXCLUSIVE_EXCLUSIVE);
                 pptList_SSB.append(" " + prod_description_array[i] + "\n");
             }
             pptList_SSB.append(drawableStr);
             pptList_SSB.setSpan(new ImageSpan(drawable), pptList_SSB.length() - drawableStr.length(), pptList_SSB.length(),
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    SPAN_EXCLUSIVE_EXCLUSIVE);
             pptList_SSB.append(" " + prod_description_array[pdal]);
 
-            viewHolder.under_cardview.setText(pptList_SSB);
+            viewHolder.undercard_tv_desc.setText(pptList_SSB);
 
 
             Boolean gotPictures = null;
@@ -679,8 +771,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             } else {
 
                 SpannableStringBuilder ssb_title = new SpannableStringBuilder(str_title + " (Not available)");
-                ssb_title.setSpan(new ForegroundColorSpan(Color.RED), str_title.length(), ssb_title.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                ssb_title.setSpan(new RelativeSizeSpan(0.9f), str_title.length(), ssb_title.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                ssb_title.setSpan(new ForegroundColorSpan(Color.RED), str_title.length(), ssb_title.length(), SPAN_EXCLUSIVE_EXCLUSIVE);
+                ssb_title.setSpan(new RelativeSizeSpan(0.9f), str_title.length(), ssb_title.length(), SPAN_EXCLUSIVE_EXCLUSIVE);
                 viewHolder.titleView.setText(ssb_title);
 
 //                viewHolder.info_top.setVisibility(View.VISIBLE);
@@ -938,39 +1030,111 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
     }
 
-    public int displayDeleteDialogBox(final int product_id) {
-        final int[] return_result = {-1};
+    private void animateRemoving(CardView mainCardView, CardView under_view, final String prod_name, final boolean has_deleted) {
 
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(mActivity);
+        AnimatorSet animSet = new AnimatorSet();
+        ObjectAnimator alphaAnim = ObjectAnimator.ofFloat(mainCardView, "alpha", 1f, 0f);
+        ObjectAnimator transAnim = ObjectAnimator.ofFloat(mainCardView, "translationX", mainCardView.getWidth());
+        ObjectAnimator alphaAnim2 = ObjectAnimator.ofFloat(under_view, "alpha", 1f, 0f);
+        ObjectAnimator transAnim2 = ObjectAnimator.ofFloat(under_view, "translationX", under_view.getWidth());
+        animSet.playTogether(transAnim, alphaAnim, alphaAnim2, transAnim2);
+        animSet.setDuration(300);
+        animSet.start();
+        animSet.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animation) {
 
-        // set title
-        alertDialogBuilder.setTitle("Delete Product?");
+            }
 
-        // set dialog message
-        alertDialogBuilder
-                .setMessage("Are you sure you want to delete this entry?\nAll logged prices for this product will be lost!")
-                .setCancelable(true)
-                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        return_result[0] = delete_entry_from_db(product_id);
-                    }
-                })
-                .setNegativeButton("No!!!!!!", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.cancel();
-                        return_result[0] = -1;
-                    }
-                });
-        AlertDialog alertDialog = alertDialogBuilder.create();
-        alertDialog.show();
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (has_deleted) {
+                    showCustomToast(mActivity, prod_name + " deleted from database.",
+                            R.mipmap.ic_ok2, R.color.green, Toast.LENGTH_LONG);
+                } else {
+                    showCustomToast(mActivity, "Database updated.\nSome image files could not deleted.",
+                            R.mipmap.ic_warning, R.color.f_color4, Toast.LENGTH_LONG);
+                }
 
-        return return_result[0];
+                // Redraw listView
+                timer.cancel();
+                timer.purge();
+                timer = new Timer();
+                getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
+
+                // Reload/Redraw the graph
+                delete_listener.onProductDeleted(true);
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+
+            }
+        });
+
+//        mainCardView.animate().translationX(mainCardView.getWidth()).alpha(0).setDuration(200).setListener(new Animator.AnimatorListener() {
+//            @Override
+//            public void onAnimationStart(Animator animation) {
+//            }
+//
+//            @Override
+//            public void onAnimationEnd(Animator animation) {
+//                // Redraw listView
+//                timer.cancel();
+//                timer.purge();
+//                timer = new Timer();
+//                getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
+//            }
+//
+//            @Override
+//            public void onAnimationCancel(Animator animation) {
+//            }
+//
+//            @Override
+//            public void onAnimationRepeat(Animator animation) {
+//            }
+//        });
     }
 
-    private int delete_entry_from_db(int this_position) {
-        DBHelper dbHelper = new DBHelper(mActivity);
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        return db.delete(ProductsContract.ProductsEntry.TABLE_NAME, "_ID=" + "'" + this_position + "'", null);
+    private boolean deleteImageFiles(String string_array_images) {
+        boolean hasDeleted = false;
+        JSONArray jsonArray_imgs = null;
+        if (string_array_images != null) {
+            try {
+                jsonArray_imgs = new JSONArray(string_array_images);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+        if (jsonArray_imgs != null) {
+            if (jsonArray_imgs.length() > 0) {
+                for (int i = 0; i < jsonArray_imgs.length(); i++) {
+                    JSONArray json_array_i = jsonArray_imgs.optJSONArray(i);
+                    for (int j = 0; j < json_array_i.length(); j++) {
+                        try {
+                            JSONObject obj_ij = (JSONObject) json_array_i.get(j);
+                            if (obj_ij.has("file")) {
+                                String file_uri = ((String) obj_ij.get("file"));
+                                if (file_uri != null) {
+                                    File fdelete = new File(mActivity.getFilesDir(), file_uri);
+                                    if (fdelete.exists()) {
+                                        hasDeleted = fdelete.delete();
+                                    }
+                                }
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }
+        return hasDeleted;
     }
 
     public String getMillisecondsToDate(long milliseconds) {

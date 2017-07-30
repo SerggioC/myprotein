@@ -15,6 +15,7 @@
     <color name="red">#d32f2f</color>
     <color name="red_light">#ff6060</color>
     <color name="darker_red">#ab2f2f</color>
+    <color name="text_gray">#616161</color>
 
     <color name="f_color1">#2196F3</color>
     <color name="f_color2">#4CAF50</color>

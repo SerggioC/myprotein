@@ -49,7 +49,7 @@ public class GraphsFragment extends Fragment {
     ArrayList<ArrayList<Long>> dates_Array_arrayList = null;
     ArrayList<String> product_names_arrayList = null;
     ArrayList<String> currency_symb_arrayList = null;
-    boolean[] wich_checked = null;
+    boolean[] which_checked = null;
     LineChart lineChart;
 
     @Nullable
@@ -69,6 +69,20 @@ public class GraphsFragment extends Fragment {
             @Override
             public void onProductAdded(Boolean addedNew) {
                 Log.w("Sergio>", this + "\n" + "addedNewProduct= " + addedNew);
+                lineChart.clear();
+                lineChart.notifyDataSetChanged();
+                getChartDataFromDB(getContext());
+                placeDataToChart(lineChart);
+            }
+        });
+
+        WatchingFragment wf = new WatchingFragment();
+        wf.setDeleteProductlistener(new WatchingFragment.DeletedProductListener() {
+            @Override
+            public void onProductDeleted(Boolean deleted) {
+                Log.w("Sergio>", this + "\n" + "onProductDeleted= " + deleted);
+                lineChart.clear();
+                lineChart.notifyDataSetChanged();
                 getChartDataFromDB(getContext());
                 placeDataToChart(lineChart);
             }
@@ -76,6 +90,7 @@ public class GraphsFragment extends Fragment {
 
     }
 
+    // Função chamada quando altera a visibilidade do fragmento
 //    @Override
 //    public void setUserVisibleHint(boolean isVisibleToUser) {
 //        super.setUserVisibleHint(isVisibleToUser);
@@ -93,7 +108,7 @@ public class GraphsFragment extends Fragment {
         long startTime = System.nanoTime();
 
         DBHelper dbHelper = new DBHelper(context);
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         String query1 = "SELECT DISTINCT " + ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS +
                 " FROM " + ProductsContract.PricesEntry.TABLE_NAME +
@@ -103,12 +118,12 @@ public class GraphsFragment extends Fragment {
         int cursor1Count = cursor1.getCount();
         if (cursor1Count > 0) {
             List<String> distinct_id_products = new ArrayList<>();
-            wich_checked = new boolean[cursor1Count];
+            which_checked = new boolean[cursor1Count];
             int w = 0;
             while (cursor1.moveToNext()) {
                 String _id_products = cursor1.getString(cursor1.getColumnIndex(ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS));
                 distinct_id_products.add(_id_products);
-                wich_checked[w++] = true;
+                which_checked[w++] = true;
             }
             priceValues_Array_arrayList = new ArrayList<>(cursor1Count);
             dates_Array_arrayList = new ArrayList<>(cursor1Count);
@@ -264,7 +279,6 @@ public class GraphsFragment extends Fragment {
         yAxis.setDrawGridLines(true);
         //yAxis.setSpaceTop(20);
 
-
         placeDataToChart(lineChart);
 
     }
@@ -294,7 +308,7 @@ public class GraphsFragment extends Fragment {
             ArrayList<ILineDataSet> dataSets = new ArrayList<>(numgraphs);
             for (int k = 0; k < numgraphs; k++) {
 
-                if (wich_checked[k]) {
+                if (which_checked[k]) {
                     ArrayList<Long> datesArray = dates_Array_arrayList.get(k);
                     ArrayList<Double> pricesArray = priceValues_Array_arrayList.get(k);
 
@@ -358,14 +372,14 @@ public class GraphsFragment extends Fragment {
         openOptions.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final boolean[] in_wich = wich_checked.clone();
+                final boolean[] in_wich = which_checked.clone();
                 CharSequence[] dialogList = product_names_arrayList.toArray(new CharSequence[product_names_arrayList.size()]);
 
                 AlertDialog.Builder builderDialog = new AlertDialog.Builder(getActivity());
                 builderDialog.setTitle("Select Items to display");
 
                 // Creating multiple selection by using setMultiChoiceItem method
-                builderDialog.setMultiChoiceItems(dialogList, wich_checked, new DialogInterface.OnMultiChoiceClickListener() {
+                builderDialog.setMultiChoiceItems(dialogList, which_checked, new DialogInterface.OnMultiChoiceClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton, boolean isChecked) {
 
                     }
@@ -376,8 +390,8 @@ public class GraphsFragment extends Fragment {
                     public void onClick(DialogInterface dialog, int which) {
                         dataSets.clear();
 
-                        for (int i = 0; i < wich_checked.length; i++) {
-                            if (wich_checked[i]) {
+                        for (int i = 0; i < which_checked.length; i++) {
+                            if (which_checked[i]) {
                                 dataSets.add(allLineDataSets.get(i));
                             }
                         }
@@ -398,19 +412,7 @@ public class GraphsFragment extends Fragment {
 
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-
-                                wich_checked = in_wich.clone();
-
-//                                ListView list = ((AlertDialog) dialog).getListView();
-//
-//                                for (int i = 0; i < list.getCount(); i++) {
-//                                    if (list.isItemChecked(i)) {
-//                                        wich_checked[i] = true;
-//                                    } else {
-//                                        wich_checked[i] = false;
-//                                    }
-//                                }
-
+                                which_checked = in_wich.clone();
                             }
 
                         });

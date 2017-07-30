@@ -190,6 +190,8 @@ public class DetailsFragment extends Fragment {
         thisFragment = this;
         productContentValues = new ContentValues(); //content values para a DB
         all_image_sizes = new ArrayList<>(Arrays.asList(MP_ALL_IMAGE_TYPES));
+        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
+        CACHE_IMAGES = sharedPrefs.getBoolean("cache_images", false);
     }
 
     @Override
@@ -199,7 +201,7 @@ public class DetailsFragment extends Fragment {
         ft.hide(getParentFragment());
         ft.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
         ft.show(SearchFragment.thisSearchFragment);
-        if (addedNewProduct && listener1 != null) {
+        if (addedNewProduct && listener1 != null && listener1 != null) {
             listener1.onProductAdded(true);
             listener2.onProductAdded(true);
         }
@@ -426,8 +428,7 @@ public class DetailsFragment extends Fragment {
 
     }
 
-    public boolean saveImageWithGlide(String imageURL, final String filename) {
-        final Boolean[] has_saved_image = {false};
+    public void saveImageWithGlide(String imageURL, final String filename) {
         Glide.with(mActivity)
                 .load(imageURL)
                 .asBitmap()
@@ -449,17 +450,14 @@ public class DetailsFragment extends Fragment {
                                     outputStream.write(resource);
                                     outputStream.flush();
                                     outputStream.close();
-                                    has_saved_image[0] = true;
                                 } catch (IOException e) {
                                     e.printStackTrace();
-                                    has_saved_image[0] = false;
                                 }
                                 return null;
                             }
                         }.execute();
                     }
                 });
-        return has_saved_image[0];
     }
 
     public StringBuffer readFile(String fileName) {
