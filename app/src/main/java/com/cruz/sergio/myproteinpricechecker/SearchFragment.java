@@ -2,6 +2,7 @@ package com.cruz.sergio.myproteinpricechecker;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.drawable.Drawable;
@@ -10,8 +11,8 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.res.ResourcesCompat;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -45,14 +46,16 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 
-import static com.cruz.sergio.myproteinpricechecker.MainActivity.DETAILS_FRAGMENT_TAG;
+import static android.app.Activity.RESULT_OK;
+import static com.cruz.sergio.myproteinpricechecker.DetailsActivity.ADDED_NEW_PROD_REF;
+import static com.cruz.sergio.myproteinpricechecker.DetailsActivity.HAD_INTERNET_OFF_REF;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
 
 public class SearchFragment extends Fragment {
-    static SearchFragment thisSearchFragment;
+    public static SearchFragment thisSearchFragment;
     Activity mActivity;
     ArrayAdapter adapter;
     ArrayList<ProductCards> arrayListProductCards = new ArrayList<>();
@@ -62,12 +65,13 @@ public class SearchFragment extends Fragment {
     ProgressBar horizontalProgressBar;
     String queryStr = "";
     Boolean hasAsyncTaskRuning = false;
+    public int SEARCH_REQUEST_CODE = 1;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mActivity = getActivity();
         thisSearchFragment = this;
+        mActivity = getActivity();
     }
 
     @Nullable
@@ -130,7 +134,7 @@ public class SearchFragment extends Fragment {
     public void performSearch(String searchString) {
         hideKeyBoard();
         if (hasAsyncTaskRuning) {
-            DetailsFragment.showCustomToast(mActivity, "Ongoing search...", R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_SHORT);
+            NetworkUtils.showCustomToast(mActivity, "Ongoing search...", R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_SHORT);
         } else {
             if (!searchString.equals("")) {
                 horizontalProgressBar.setVisibility(View.VISIBLE);
@@ -139,7 +143,7 @@ public class SearchFragment extends Fragment {
                 internetAsyncTask.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, searchString);
 
             } else if (searchString.equals("")) {
-                DetailsFragment.showCustomToast(mActivity, "Nothing to search...", R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_SHORT);
+                NetworkUtils.showCustomToast(mActivity, "Nothing to search...", R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_SHORT);
             }
         }
     }
@@ -208,6 +212,54 @@ public class SearchFragment extends Fragment {
             }
         }
     }
+
+
+
+
+    public static UpdateGraphForNewProduct updateGraphListener;
+
+    interface UpdateGraphForNewProduct {
+        void onProductAdded(Boolean addedNew);
+    }
+
+    public void setUpdateGraphListener(UpdateGraphForNewProduct listener) {
+        this.updateGraphListener = listener;
+    }
+
+
+    public static AddedNewProductListener addedNewProductListener;
+
+    interface AddedNewProductListener {
+        void onProductAdded(Boolean addedNew);
+    }
+
+    public void setNewProductListener(AddedNewProductListener listener) {
+        this.addedNewProductListener = listener;
+    }
+
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == SEARCH_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
+            Boolean addedProduct = data.getExtras().getBoolean(ADDED_NEW_PROD_REF);
+            if (addedProduct) {
+                updateGraphListener.onProductAdded(addedProduct);
+                addedNewProductListener.onProductAdded(addedProduct);
+            }
+            if (data.getExtras().getBoolean(HAD_INTERNET_OFF_REF)) {
+                if (noNetworkSnackBar != null) {
+                    noNetworkSnackBar = null;
+                    makeNoNetworkSnackBar(mActivity);
+                    noNetworkSnackBar.show();
+                } else {
+                    makeNoNetworkSnackBar(mActivity);
+                    noNetworkSnackBar.show();
+                }
+            }
+        }
+    }
+
 
     private class performSearch extends AsyncTask<String, Void, Document> {
 
@@ -387,15 +439,35 @@ public class SearchFragment extends Fragment {
                     productBundle.putStringArrayList("description", product.pptList_stringarray);
                     productBundle.putString("productID", product.productID);
                     productBundle.putString("image_url", product.imgURL);
-                    DetailsFragment detailsFragment = new DetailsFragment();
-                    detailsFragment.setArguments(productBundle);
 
-                    FragmentTransaction ft = MainActivity.mFragmentManager.beginTransaction();
-                    ft.hide(getParentFragment());
-                    ft.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out);
-                    ft.add(android.R.id.content, detailsFragment, DETAILS_FRAGMENT_TAG);
-                    ft.addToBackStack(null);
-                    ft.commit();
+
+                    Intent intent = new Intent(mActivity, DetailsActivity.class);
+                    intent.putExtra("url", product.productHref);
+                    intent.putStringArrayListExtra("description", product.pptList_stringarray);
+                    intent.putExtra("productID", product.productID);
+                    intent.putExtra("image_url", product.imgURL);
+                    //startActivity(intent);
+                    Bundle bundle = ActivityOptionsCompat.makeCustomAnimation(
+                            mActivity,
+                            android.R.anim.fade_in,
+                            android.R.anim.fade_out).toBundle();
+                    startActivityForResult(intent, SEARCH_REQUEST_CODE, bundle);
+
+                    //startActivity(intent, bundle);
+
+//
+//
+//                    DetailsFragment detailsFragment = new DetailsFragment();
+//                    detailsFragment.setArguments(productBundle);
+//
+//                    FragmentTransaction ft = MainActivity.mFragmentManager.beginTransaction();
+//                    ft.hide(getParentFragment());
+//                    ft.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out);
+//                    ft.add(android.R.id.content, detailsFragment, DETAILS_FRAGMENT_TAG);
+//                    ft.addToBackStack(null);
+//                    ft.commit();
+//
+
                 }
             });
             ((TextView) view.findViewById(R.id.titleTextView)).setText(product.productTitleStr);

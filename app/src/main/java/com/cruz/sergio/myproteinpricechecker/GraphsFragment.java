@@ -16,7 +16,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.Switch;
+import android.widget.CheckBox;
 import android.widget.TextView;
 
 import com.cruz.sergio.myproteinpricechecker.helper.DBHelper;
@@ -64,8 +64,8 @@ public class GraphsFragment extends Fragment {
 
         getChartDataFromDB(getContext());
 
-        DetailsFragment df = new DetailsFragment();
-        df.setUpdateGraphListener(new DetailsFragment.UpdateGraphForNewProduct() {
+        SearchFragment sf = new SearchFragment();
+        sf.setUpdateGraphListener(new SearchFragment.UpdateGraphForNewProduct() {
             @Override
             public void onProductAdded(Boolean addedNew) {
                 Log.w("Sergio>", this + "\n" + "addedNewProduct= " + addedNew);
@@ -356,11 +356,11 @@ public class GraphsFragment extends Fragment {
 
             graphs_options(lineChart, dataSets, allLineDataSets);
 
-            final Switch gSwitch = (Switch) getActivity().findViewById(R.id.g_switch);
-            gSwitch.setOnClickListener(new View.OnClickListener() {
+            final CheckBox gCheckBox = (CheckBox) getActivity().findViewById(R.id.g_checkBox);
+            gCheckBox.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    lineChart.getLegend().setEnabled(gSwitch.isChecked());
+                    lineChart.getLegend().setEnabled(gCheckBox.isChecked());
                     lineChart.invalidate();
                 }
             });

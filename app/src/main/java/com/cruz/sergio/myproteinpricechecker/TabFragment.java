@@ -1,5 +1,6 @@
 package com.cruz.sergio.myproteinpricechecker;
 
+import android.content.Context;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -33,13 +34,13 @@ public class TabFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         extras = getArguments();
-        tab_text = new String[] {
+        tab_text = new String[]{
                 getString(R.string.tab_text_watching),
                 getString(R.string.tab_text_search),
                 getString(R.string.tab_text_graph),
                 getString(R.string.tab_text_voucher)
         };
-        tab_icons = new int[] {
+        tab_icons = new int[]{
                 R.drawable.ic_view_statelist,
                 R.drawable.ic_search_statelist,
                 R.drawable.ic_graph_statelist,
@@ -77,8 +78,8 @@ public class TabFragment extends Fragment {
 //                    LayoutInflater inf = getActivity().getLayoutInflater();
 //                    View one_tab = inf.inflate(R.layout.one_tab_layout, null);
 
-
-                    View one_tab = LayoutInflater.from(getContext()).inflate(R.layout.one_tab_layout, null);
+                    Context context = getActivity().getApplicationContext();
+                    View one_tab = LayoutInflater.from(context).inflate(R.layout.one_tab_layout, null);
 
                     TabFragment.tabLayout.getTabAt(i).setCustomView(one_tab);
                     TextView textView = (TextView) one_tab.findViewById(R.id.tabText);

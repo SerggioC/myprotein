@@ -18,10 +18,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.Toolbar;
@@ -30,10 +26,7 @@ import android.text.SpannableStringBuilder;
 import android.text.style.ImageSpan;
 import android.util.Log;
 import android.util.TypedValue;
-import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
@@ -67,12 +60,8 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Timer;
@@ -81,20 +70,25 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.BC_Registered;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.CACHE_IMAGES;
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.detailsActivityIsActive;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
 import static com.cruz.sergio.myproteinpricechecker.WatchingFragment.imageSizesToUse;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.UnregisterBroadcastReceiver;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetworkSnackBar;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomToast;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
 
-public class DetailsFragment extends Fragment {
+public class DetailsActivity extends Activity {
+    public static final String ADDED_NEW_PROD_REF = "addedNewProduct";
+    public static final String HAD_INTERNET_OFF_REF = "had_internet_off";
     Activity mActivity;
     Boolean gotPrice = true;
     ArrayList<String> description;
     ContentValues productContentValues;
-    Fragment thisFragment;
-    Snackbar noNetworkSnackBar;
     String customProductID;
     String MP_Domain;
     String pref_MP_Locale;
@@ -110,6 +104,7 @@ public class DetailsFragment extends Fragment {
     JSONArray JSON_ArrayArray_Images;
     ImageSwitcher image_switcher_details;
     Timer timer;
+    public boolean hadInternet_off;
 
     ArrayList<String> all_image_sizes;
     final static String[] MP_ALL_IMAGE_TYPES = new String[]{
@@ -163,82 +158,62 @@ public class DetailsFragment extends Fragment {
             "/960/960/",      // 960/960
             "/1600/1600/"};   // 1600/1600
 
-    public static AddedNewProductListener listener1;
-    public static UpdateGraphForNewProduct listener2;
-
-    interface AddedNewProductListener {
-        void onProductAdded(Boolean addedNew);
-    }
-
-    interface UpdateGraphForNewProduct {
-        void onProductAdded(Boolean addedNew);
-    }
-
-    public void setNewProductListener(AddedNewProductListener listener) {
-        this.listener1 = listener;
-    }
-
-    public void setUpdateGraphListener(UpdateGraphForNewProduct listener) {
-        this.listener2 = listener;
-    }
-
 
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        mActivity = getActivity();
-        thisFragment = this;
-        productContentValues = new ContentValues(); //content values para a DB
-        all_image_sizes = new ArrayList<>(Arrays.asList(MP_ALL_IMAGE_TYPES));
-        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
-        CACHE_IMAGES = sharedPrefs.getBoolean("cache_images", false);
+    protected void onStart() {
+        super.onStart();
+        BC_Registered = NetworkUtils.createBroadcast(mActivity);
+        Log.w("Sergio>", this + " onStart\nBC_Registered= " + BC_Registered);
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        FragmentTransaction ft = MainActivity.mFragmentManager.beginTransaction();
-        ft.hide(getParentFragment());
-        ft.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
-        ft.show(SearchFragment.thisSearchFragment);
-        if (addedNewProduct && listener1 != null && listener1 != null) {
-            listener1.onProductAdded(true);
-            listener2.onProductAdded(true);
-        }
+//        FragmentTransaction ft = MainActivity.mFragmentManager.beginTransaction();
+//        ft.hide(getParentFragment());
+//        ft.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
+//        ft.show(SearchFragment.thisSearchFragment);
+//        if (addedNewProduct && listener1 != null && listener1 != null) {
+//            listener1.onProductAdded(true);
+//            listener2.onProductAdded(true);
+//        }
+
+        detailsActivityIsActive = false;
+        UnregisterBroadcastReceiver(mActivity);
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.details_fragment_layout, container, false);
-    }
-
-    public int getStatusBarHeight() {
-        int height = 0;
-        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (resourceId > 0) height = getResources().getDimensionPixelSize(resourceId);
-        return height;
+    public void onBackPressed() {
+        Intent intent = new Intent();
+        if (addedNewProduct) { intent.putExtra(ADDED_NEW_PROD_REF, addedNewProduct); }
+        intent.putExtra(HAD_INTERNET_OFF_REF, hadInternet_off);
+        setResult(RESULT_OK, intent);
+        finish();
+        super.onBackPressed();
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.details_activity_layout);
+        detailsActivityIsActive = true;
 
-        Toolbar toolbar = (Toolbar) mActivity.findViewById(R.id.details_toolbar);
-        toolbar.setPadding(0, getStatusBarHeight(), 0, 0);
-        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                MainActivity.mFragmentManager.popBackStack();
-            }
-        });
-        Resources resources = getResources();
-        int dpvalue = 6;
-        float pixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dpvalue, resources.getDisplayMetrics());
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            toolbar.setElevation(pixels);
-        } else {
-            ViewCompat.setElevation(toolbar, pixels);
-        }
+        mActivity = this;
+        productContentValues = new ContentValues(); //content values para a DB
+        all_image_sizes = new ArrayList<>(Arrays.asList(MP_ALL_IMAGE_TYPES));
+        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
+        CACHE_IMAGES = sharedPrefs.getBoolean("cache_images", false);
+
+        // To fit bellow the statusbar
+//        View decorView = getWindow().getDecorView();
+//        decorView.setFitsSystemWindows(false);
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+//            decorView.requestFitSystemWindows();
+//        }
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+//            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+//        }
+//        //fixToolbar();
 
         SharedPreferences prefManager = PreferenceManager.getDefaultSharedPreferences(mActivity);
         pref_MP_Locale = prefManager.getString("mp_website_location", "en-gb"); // pt-pt
@@ -263,7 +238,8 @@ public class DetailsFragment extends Fragment {
             }
         });
         image_switcher_details = (ImageSwitcher) mActivity.findViewById(R.id.image_switcher_details);
-        Bundle extras = getArguments();
+        Bundle extras = getIntent().getExtras();
+
         if (extras != null) {
             mActivity.findViewById(R.id.progressBarRound).setVisibility(View.VISIBLE);
 
@@ -386,7 +362,7 @@ public class DetailsFragment extends Fragment {
 
                 }
 
-                DBHelper dbHelper = new DBHelper(getContext());
+                DBHelper dbHelper = new DBHelper(mActivity);
                 SQLiteDatabase db = dbHelper.getWritableDatabase();
 
                 Cursor exists_CustomPID = db.rawQuery("SELECT 1 FROM " +
@@ -426,6 +402,41 @@ public class DetailsFragment extends Fragment {
             }
         });
 
+
+
+
+    }
+
+    public void fixToolbar() {
+        Toolbar toolbar = (Toolbar) mActivity.findViewById(R.id.details_toolbar);
+
+        // Corrigir posição da toolbar que fica debaixo da statusbar
+        //toolbar.setPadding(0, getStatusBarHeight(), 0, 0);
+        toolbar.setPadding(0, 0, 0, 0);
+
+
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                MainActivity.mFragmentManager.popBackStack();
+            }
+        });
+        Resources resources = getResources();
+        int dpvalue = 6;
+        float pixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dpvalue, resources.getDisplayMetrics());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            toolbar.setElevation(pixels);
+        } else {
+            ViewCompat.setElevation(toolbar, pixels);
+        }
+    }
+
+
+    public int getStatusBarHeight() {
+        int height = 0;
+        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) height = getResources().getDimensionPixelSize(resourceId);
+        return height;
     }
 
     public void saveImageWithGlide(String imageURL, final String filename) {
@@ -460,23 +471,6 @@ public class DetailsFragment extends Fragment {
                 });
     }
 
-    public StringBuffer readFile(String fileName) {
-        try {
-            File file = new File(mActivity.getFilesDir(), fileName);
-            BufferedReader input = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
-            String line;
-            StringBuffer buffer = new StringBuffer();
-            while ((line = input.readLine()) != null) {
-                buffer.append(line);
-            }
-            return buffer;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-
     private class getProductPage extends AsyncTask<String, Void, Document> {
 
         @Override
@@ -499,7 +493,7 @@ public class DetailsFragment extends Fragment {
         protected void onPostExecute(Document resultDocument) {
             super.onPostExecute(resultDocument);
 
-            if (thisFragment.isVisible()) {
+            if (detailsActivityIsActive) {
                 if (resultDocument != null) {
                     Element titleElem = resultDocument.getElementsByClass("product-title").first();  // Titulo ou nome do produto
                     String title = titleElem != null ? titleElem.text() : "N/A";
@@ -640,6 +634,7 @@ public class DetailsFragment extends Fragment {
             super.onPostExecute(hasInternet);
 
             if (hasInternet) {
+                hadInternet_off = false;
                 switch (method) {
                     case "get_Available_Options": {
                         AsyncTask<String, Void, JSONObject> getDetailsFromJSON = new GetDetailsFromJSON();
@@ -663,9 +658,14 @@ public class DetailsFragment extends Fragment {
                 }
 
             } else {
-                if (noNetworkSnackBar != null && !noNetworkSnackBar.isShown()) {
+                hadInternet_off = true;
+                if (noNetworkSnackBar != null) {
+                    if (noNetworkSnackBar.isShown()){
+                        noNetworkSnackBar.dismiss();
+                    }
+                    noNetworkSnackBar = null;
+                    makeNoNetworkSnackBar(mActivity);
                     noNetworkSnackBar.show();
-                    Log.w("Sergio>", this + " onPostExecute: \n" + "noNetworkSnackBar is null or not shown=\n" + noNetworkSnackBar);
                 } else {
                     makeNoNetworkSnackBar(mActivity);
                 }
@@ -700,8 +700,7 @@ public class DetailsFragment extends Fragment {
         @Override
         protected void onPostExecute(JSONObject json) {
             super.onPostExecute(json);
-            if (thisFragment.isVisible()) {
-
+            if (detailsActivityIsActive) {
                 if (json != null) {
                     try {
                         JSONArray variations_Array = json.getJSONArray("variations"); //3
@@ -847,7 +846,7 @@ public class DetailsFragment extends Fragment {
         @Override
         protected void onPostExecute(JSONObject json) {
             super.onPostExecute(json);
-            if (thisFragment.isVisible()) {
+            if (detailsActivityIsActive) {
                 String priceJson = null;
                 if (json != null) {
                     try {
@@ -1054,21 +1053,6 @@ public class DetailsFragment extends Fragment {
         int widthHeight = (int) (pixels_widthHeight * scale + 0.5f);
         imageView.setLayoutParams(new FrameLayout.LayoutParams(widthHeight, widthHeight));
         return imageView;
-    }
-
-    public static void showCustomToast(Activity cActivity, String toastText, int icon_RID, int text_color_RID, int duration) {
-        LayoutInflater inflater = cActivity.getLayoutInflater();
-        View layout = inflater.inflate(R.layout.custom_toast, (ViewGroup) cActivity.findViewById(R.id.toast_layout_root));
-        TextView text = (TextView) layout.findViewById(R.id.toast_layout_text);
-        text.setText(toastText);
-        text.setTextColor(ContextCompat.getColor(cActivity, text_color_RID));
-        ImageView imageV = (ImageView) layout.findViewById(R.id.toast_img);
-        imageV.setImageResource(icon_RID);
-        Toast theCustomToast = new Toast(cActivity);
-        theCustomToast.setGravity(Gravity.CENTER_VERTICAL, 0, 0);
-        theCustomToast.setDuration(duration);
-        theCustomToast.setView(layout);
-        theCustomToast.show();
     }
 
     @Override

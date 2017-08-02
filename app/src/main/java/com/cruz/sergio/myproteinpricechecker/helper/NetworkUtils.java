@@ -11,11 +11,13 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.design.internal.SnackbarContentLayout;
 import android.support.design.widget.Snackbar;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -42,7 +44,7 @@ public class NetworkUtils {
     public static BroadcastReceiver BCReceiver = null;
     public static Snackbar noNetworkSnackBar = null;
     static Snackbar.SnackbarLayout snack_layout;
-    public static int NET_TIMEOUT = 11111; // milliseconds
+    public static int NET_TIMEOUT = 30000; // milliseconds (30 seconds)
 
     public static final void UnregisterBroadcastReceiver(Activity mActivity) {
         if (BCReceiver != null) {
@@ -90,6 +92,21 @@ public class NetworkUtils {
         text.setText(toastText);
         Toast theCustomToast = new Toast(cActivity);
         theCustomToast.setGravity(Gravity.CENTER, 0, 0);
+        theCustomToast.setDuration(duration);
+        theCustomToast.setView(layout);
+        theCustomToast.show();
+    }
+
+    public static void showCustomToast(Activity cActivity, String toastText, int icon_RID, int text_color_RID, int duration) {
+        LayoutInflater inflater = cActivity.getLayoutInflater();
+        View layout = inflater.inflate(R.layout.custom_toast, (ViewGroup) cActivity.findViewById(R.id.toast_layout_root));
+        TextView text = (TextView) layout.findViewById(R.id.toast_layout_text);
+        text.setText(toastText);
+        text.setTextColor(ContextCompat.getColor(cActivity, text_color_RID));
+        ImageView imageV = (ImageView) layout.findViewById(R.id.toast_img);
+        imageV.setImageResource(icon_RID);
+        Toast theCustomToast = new Toast(cActivity);
+        theCustomToast.setGravity(Gravity.CENTER_VERTICAL, 0, 0);
         theCustomToast.setDuration(duration);
         theCustomToast.setView(layout);
         theCustomToast.show();

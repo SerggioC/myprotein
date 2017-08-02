@@ -232,7 +232,11 @@
                 android:id="@+id/description_undercard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="4dp"/>
+                android:layout_alignParentLeft="true"
+                android:layout_marginLeft="4dp"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="4dp"/>
+
 
             <Button
                 android:id="@+id/delete_entry"
@@ -256,6 +260,34 @@
                 android:background="@drawable/button_statelist"
                 android:text="Open web"
                 android:textAllCaps="false"/>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_below="@id/open_web"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/delete"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@android:drawable/ic_menu_delete"/>
+
+                <ImageView
+                    android:id="@+id/gotoweb"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@android:drawable/ic_dialog_map"/>
+
+                <ImageView
+                    android:id="@+id/notif"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@android:drawable/ic_popup_reminder"/>
+
+            </LinearLayout>
+
 
         </RelativeLayout>
     </android.support.v7.widget.CardView>

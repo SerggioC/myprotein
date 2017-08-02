@@ -23,6 +23,7 @@ import android.view.MenuItem;
 import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
 import com.cruz.sergio.myproteinpricechecker.helper.StartFirebase;
 
+import static android.util.Log.i;
 import static com.cruz.sergio.myproteinpricechecker.TabFragment.viewPager;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.UnregisterBroadcastReceiver;
 
@@ -42,30 +43,31 @@ public class MainActivity extends AppCompatActivity {
     public static Boolean BC_Registered = false;
     public static float scale;
     public static int density;
+    public static boolean detailsActivityIsActive;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState, @Nullable PersistableBundle persistentState) {
         super.onCreate(savedInstanceState, persistentState);
-        Log.e("Sergio>", this + " onCreate\nBC_Registered= " + BC_Registered);
+        Log.w("Sergio>", this + " onCreate\nBC_Registered= " + BC_Registered);
     }
 
     @Override
     protected void onRestart() {
         super.onRestart();
-        Log.e("Sergio>", this + " onRestart\nBC_Registered= " + BC_Registered);
+        Log.w("Sergio>", this + " onRestart\nBC_Registered= " + BC_Registered);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
         BC_Registered = NetworkUtils.createBroadcast(mActivity);
-        Log.e("Sergio>", this + " onStart\nBC_Registered= " + BC_Registered);
+        Log.w("Sergio>", this + " onStart\nBC_Registered= " + BC_Registered);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        Log.e("Sergio>", this + " onResume\nBC_Registered= " + BC_Registered);
+        Log.w("Sergio>", this + " onResume\nBC_Registered= " + BC_Registered);
     }
 
     String getCurrencyCode(String symbol) {
@@ -141,6 +143,7 @@ public class MainActivity extends AppCompatActivity {
         StartFirebase.createJobDispatcher(this);
 
         setContentView(R.layout.activity_main);
+
         scale = getResources().getDisplayMetrics().density;
         density = getResources().getDisplayMetrics().densityDpi;
         mHandler = new Handler();
@@ -195,8 +198,8 @@ public class MainActivity extends AppCompatActivity {
                         startActivity(intent);
                         break;
                     case R.id.nav_item_fav:
-                        FragmentTransaction fragmentTransaction = mFragmentManager.beginTransaction();
-                        fragmentTransaction.replace(R.id.containerView, new DetailsFragment()).commit();
+//                        FragmentTransaction fragmentTransaction = mFragmentManager.beginTransaction();
+//                        fragmentTransaction.replace(R.id.containerView, new DetailsFragment()).commit();
                         break;
                 }
 
@@ -248,8 +251,10 @@ public class MainActivity extends AppCompatActivity {
         } else if (!drawerOpen || count == 0) {
             super.onBackPressed();
         } else {
-            Log.i("Sergio>", this + "onBackPressed:\naddedNewProduct= " + addedNewProduct);
-            Log.i("Sergio>", this + "onBackPressed:\ngetFragmentManager().findFragmentByTag(DETAILS_FRAGMENT_TAG) != null && addedNewProduct=\n" + getFragmentManager().findFragmentByTag(DETAILS_FRAGMENT_TAG) + " added= " + addedNewProduct);
+            i("Sergio>", this + "onBackPressed:\naddedNewProduct= " + addedNewProduct);
+            i("Sergio>", this + "onBackPressed:\ngetFragmentManager().findFragmentByTag(DETAILS_FRAGMENT_TAG) != null && addedNewProduct=\n" +
+                    getFragmentManager().findFragmentByTag(DETAILS_FRAGMENT_TAG) + " added= " + addedNewProduct);
+
             getFragmentManager().popBackStack();
             if (getFragmentManager().findFragmentByTag(DETAILS_FRAGMENT_TAG) != null && addedNewProduct) {
                 WatchingFragment.loaderManager.forceLoad();

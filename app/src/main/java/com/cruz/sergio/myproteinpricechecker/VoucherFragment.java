@@ -47,6 +47,7 @@ public class VoucherFragment extends Fragment {
     SwipeRefreshLayout mySwipeRefreshLayout;
     ListView voucherListView;
     LinearLayout ll_scroll;
+    String MP_Domain;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -86,7 +87,7 @@ public class VoucherFragment extends Fragment {
             ll_scroll.removeViews(1, childCount - 1);
         }
         AsyncTask<Void, Void, Boolean> internetAsyncTask = new checkInternetAsyncTask();
-        internetAsyncTask.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR);
+        internetAsyncTask.execute();
     }
 
     public class checkInternetAsyncTask extends AsyncTask<Void, Void, Boolean> {
@@ -104,7 +105,7 @@ public class VoucherFragment extends Fragment {
             if (hasInternet) {
                 SharedPreferences prefManager = PreferenceManager.getDefaultSharedPreferences(mActivity);
                 String pref_MP_Domain = prefManager.getString("mp_website_location", "en-gb");
-                String MP_Domain = MyProteinDomain.getHref(pref_MP_Domain);
+                MP_Domain = MyProteinDomain.getHref(pref_MP_Domain);
 
                 String voucher_url_sufix;
                 if (pref_MP_Domain.equals("az-az")) {
@@ -113,6 +114,8 @@ public class VoucherFragment extends Fragment {
                     voucher_url_sufix = "vaucer-kodovi.list";
                 } else if (pref_MP_Domain.equals("fr-ca")) {
                     voucher_url_sufix = "codes-de-reduction.list";
+                } else if(pref_MP_Domain.equals("pt-pt")) {
+                    voucher_url_sufix = "cupoes-desconto-myprotein.list";
                 } else {
                     voucher_url_sufix = "voucher-codes.list";
                 }
@@ -122,7 +125,7 @@ public class VoucherFragment extends Fragment {
                 //Log.i("Sergio>>>", "voucher_url=" + voucher_url);
 
                 AsyncTask<String, Void, Document> getVouchersAsync = new GetVouchersAsync();
-                getVouchersAsync.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, voucher_url);
+                getVouchersAsync.execute(voucher_url);
 
             } else {
                 mySwipeRefreshLayout.setRefreshing(false);
@@ -156,40 +159,31 @@ public class VoucherFragment extends Fragment {
         @Override
         protected void onPostExecute(Document document) {
             super.onPostExecute(document);
-            Elements voucherElements = new Elements(0);
 
             if (document != null) {
-                voucherElements = document.getElementsByClass("voucher-info-wrapper");
-            }
-            //Todos os html elements dos vouchers
-            //Log.i("Sergio>>>", "onPostExecute: voucherElements= " + voucherElements);
+                Elements voucherElements = document.getElementsByClass("voucher-info-wrapper");
 
-            if (voucherElements.size() == 0) {
+                if (voucherElements == null || voucherElements.size() == 0) {
 
-                //ArrayList item = new ArrayList();
-                //item.add("No Vouchers Found");
-                //ArrayAdapter noAdapter = new ArrayAdapter(mActivity, android.R.layout.simple_list_item_1, item);
-                //voucherListView.setAdapter(noAdapter);
-                set_webView("No Vouchers Found");
+                    set_webView("No Vouchers Found");
 
+                } else {
+                    for (Element singlevoucherElement : voucherElements) {
+                        String voucherText = singlevoucherElement.html();
 
-            } else {
-                //ArrayList items = new ArrayList();
-                for (Element singlevoucherElement : voucherElements) {
-                    //String voucherText = singlevoucherElement.text();
-                    String voucherText = singlevoucherElement.html();
-                    //items.add(voucherText);
-                    set_webView(voucherText);
-                    //Log.d("Sergio>>>", "voucherText= " + voucherText);
+                        // <a href="/clothing/all-clothing.list" class="voucher-button btn-primary btn">Compra já</a>
+
+                        String replace = "<a href=\"/";
+                        int indexOfHref = voucherText.indexOf(replace);
+                        if (indexOfHref > 0) {
+                            voucherText = voucherText.replaceAll(replace, "<a href=" + MP_Domain);
+                        }
+
+                        set_webView(voucherText);
+                    }
                 }
-
-//                ArrayAdapter webviewAdapter = new postToWebviewAdapter(mActivity, R.layout.voucher_webview, items);
-//                voucherListView.setAdapter(webviewAdapter);
-
-//                ArrayAdapter voucherdapter = new ArrayAdapter(mActivity, android.R.layout.simple_list_item_1, items);
-//                voucherListView.setAdapter(voucherdapter);
-
             }
+
             mySwipeRefreshLayout.setRefreshing(false);
 
         }

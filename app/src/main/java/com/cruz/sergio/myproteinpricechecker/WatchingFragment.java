@@ -85,7 +85,6 @@ import static android.util.DisplayMetrics.DENSITY_XHIGH;
 import static android.util.DisplayMetrics.DENSITY_XXHIGH;
 import static android.widget.Toast.LENGTH_LONG;
 import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
-import static com.cruz.sergio.myproteinpricechecker.DetailsFragment.showCustomToast;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.CACHE_IMAGES;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.UPDATE_ONSTART;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.density;
@@ -93,6 +92,7 @@ import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
 import static com.cruz.sergio.myproteinpricechecker.R.id.main_cardview;
 import static com.cruz.sergio.myproteinpricechecker.TabFragment.tabLayout;
 import static com.cruz.sergio.myproteinpricechecker.helper.FirebaseJobservice.updatePricesOnStart;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomToast;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.ALL_PRODUCT_COLUMNS_PROJECTION;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.CONTENT_DIR_TYPE;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.CONTENT_ITEM_TYPE;
@@ -201,8 +201,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             }
         });
 
-        DetailsFragment detailsFragment = new DetailsFragment();
-        detailsFragment.setNewProductListener(new DetailsFragment.AddedNewProductListener() {
+        SearchFragment sf = new SearchFragment();
+        sf.setNewProductListener(new SearchFragment.AddedNewProductListener() {
             @Override
             public void onProductAdded(Boolean addedNew) {
                 Log.w("Sergio>", this + "\n" + "addedNewProduct= " + addedNew);
@@ -399,7 +399,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 //        dump_BIGdata_toLog(dumpCursorToString(data));
 
         if (data.getCount() == 0) {
-            showCustomToast(mActivity, "Empty DataBase! Add products to track their prices.",
+            showCustomToast(mActivity, "Empty DataBase.\n" +
+                            "Add products to track their prices.",
                     R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_SHORT);
             if (watchingSwipeRefreshLayout != null) {
                 watchingSwipeRefreshLayout.setRefreshing(false);
@@ -524,10 +525,10 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                                                 DBHelper dbHelper = new DBHelper(mActivity);
                                                 SQLiteDatabase db = dbHelper.getWritableDatabase();
                                                 int delete_db_entries_result = db.delete(ProductsContract.ProductsEntry.TABLE_NAME, "_ID=" + "'" + this_product_id + "'", null);
-                                                boolean has_deleted = deleteImageFiles(string_array_images);
+                                                deleteImageFiles(string_array_images);
 
                                                 if (delete_db_entries_result == 1) {
-                                                    animateRemoving(mainCardView, under_view, prod_name, has_deleted);
+                                                    animateRemoving(mainCardView, under_view, prod_name);
                                                 } else {
                                                     showCustomToast(mActivity, "Error deleting " + prod_name + " from DataBase!",
                                                             R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
@@ -1030,7 +1031,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
     }
 
-    private void animateRemoving(CardView mainCardView, CardView under_view, final String prod_name, final boolean has_deleted) {
+    private void animateRemoving(CardView mainCardView, CardView under_view, final String prod_name) {
 
         AnimatorSet animSet = new AnimatorSet();
         ObjectAnimator alphaAnim = ObjectAnimator.ofFloat(mainCardView, "alpha", 1f, 0f);
@@ -1048,13 +1049,16 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
             @Override
             public void onAnimationEnd(Animator animation) {
-                if (has_deleted) {
-                    showCustomToast(mActivity, prod_name + " deleted from database.",
-                            R.mipmap.ic_ok2, R.color.green, Toast.LENGTH_LONG);
-                } else {
-                    showCustomToast(mActivity, "Database updated.\nSome image files could not deleted.",
-                            R.mipmap.ic_warning, R.color.f_color4, Toast.LENGTH_LONG);
-                }
+//                if (has_deleted) {
+//                    showCustomToast(mActivity, prod_name + " " + "deleted from database.",
+//                            R.mipmap.ic_ok2, R.color.green, Toast.LENGTH_LONG);
+//                } else {
+//                    showCustomToast(mActivity, "Database updated.\nSome image files could not deleted.",
+//                            R.mipmap.ic_warning, R.color.f_color4, Toast.LENGTH_LONG);
+//                }
+
+                showCustomToast(mActivity, prod_name + " " + "deleted from database.",
+                        R.mipmap.ic_ok2, R.color.green, Toast.LENGTH_LONG);
 
                 // Redraw listView
                 timer.cancel();
@@ -1141,20 +1145,20 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         long timeDif = System.currentTimeMillis() - milliseconds;
 
         if (timeDif < 60_000) { // há menos de 60 segundos atrás
-            return "Agora";
+            return "Now";
         } else if (timeDif >= 60_000 && timeDif <= 3_600_000) { // uma hora atrás
-            return TimeUnit.MILLISECONDS.toMinutes(timeDif) + " Minutos atrás";
+            return TimeUnit.MILLISECONDS.toMinutes(timeDif) + " " + "Minutes ago";
 
         } else if (timeDif > 3_600_000 && timeDif < 7_200_000) { // Dentro de 1h - 2hr
-            return TimeUnit.MILLISECONDS.toHours(timeDif) + " Hora atrás";
+            return TimeUnit.MILLISECONDS.toHours(timeDif) + " " + "Hour ago";
 
         } else if (timeDif >= 7_200_000 && timeDif <= 86_400_000) { // Dentro do dia de hoje até 24h atrás
-            return TimeUnit.MILLISECONDS.toHours(timeDif) + " Horas atrás";
+            return TimeUnit.MILLISECONDS.toHours(timeDif) + " " + "Hours ago";
 
         } else if (timeDif > 86_400_000 && timeDif <= 172_800_000) { // Ontem 24 a 48h
             DateFormat df = getTimeInstance(SHORT);
             Date resultDate = new Date(milliseconds);
-            return "Ontem " + df.format(resultDate);
+            return "Yesterday" + " " + df.format(resultDate);
 
         } else {
             String pattern;

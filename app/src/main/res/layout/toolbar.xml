@@ -9,6 +9,7 @@
     android:background="@color/colorPrimary"
     android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
     app:navigationIcon="?homeAsUpIndicator"
+    android:fitsSystemWindows="true"
     tools:showIn="@layout/activity_main">
 
     <RelativeLayout
@@ -26,13 +27,13 @@
 
         <TextView
             android:id="@+id/txtTitle"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_toRightOf="@id/appIcon"
             android:text="@string/app_name"
             android:textColor="@color/white"
-            android:textSize="18sp"
+            android:textSize="16sp"
             android:textStyle="bold"/>
 
     </RelativeLayout>
