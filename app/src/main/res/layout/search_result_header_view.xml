@@ -24,7 +24,6 @@
             android:imeOptions="actionSearch"
             android:inputType="text"
             android:maxLines="1"
-            android:text="Impact Whey Protein 5kg"
             android:textAlignment="center"/>
 
         <Button
@@ -42,7 +41,7 @@
             android:layout_gravity="center_vertical|right"
             android:layout_marginRight="12dp"
             android:background="@drawable/clear_icon_statelist"
-            android:visibility="visible"/>
+            android:visibility="gone"/>
 
         <Button
             android:id="@+id/btn_voice"
@@ -51,7 +50,7 @@
             android:layout_gravity="center_vertical|right"
             android:layout_marginRight="12dp"
             android:background="@android:drawable/ic_btn_speak_now"
-            android:visibility="gone"/>
+            android:visibility="visible"/>
 
     </FrameLayout>
 

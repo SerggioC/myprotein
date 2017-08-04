@@ -76,6 +76,7 @@ import static com.cruz.sergio.myproteinpricechecker.MainActivity.CACHE_IMAGES;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.detailsActivityIsActive;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
 import static com.cruz.sergio.myproteinpricechecker.WatchingFragment.imageSizesToUse;
+import static com.cruz.sergio.myproteinpricechecker.helper.MyProteinDomain.MP_MOBILE_SITES;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.UnregisterBroadcastReceiver;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
@@ -178,7 +179,9 @@ public class DetailsActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         Intent intent = new Intent();
-        if (addedNewProduct) { intent.putExtra(ADDED_NEW_PROD_REF, addedNewProduct); }
+        if (addedNewProduct) {
+            intent.putExtra(ADDED_NEW_PROD_REF, addedNewProduct);
+        }
         intent.putExtra(HAD_INTERNET_OFF_REF, hadInternet_off);
         setResult(RESULT_OK, intent);
         finish();
@@ -253,44 +256,53 @@ public class DetailsActivity extends AppCompatActivity {
             mActivity.findViewById(R.id.progressBarRound).setVisibility(View.VISIBLE);
 
             url = extras.getString("url");
-            Log.i("Sergio>", this + " onViewCreated: url=\n" + url);
-            productID = extras.getString("productID");
-            description = extras.getStringArrayList("description");
-            String imgURL = extras.getString("image_url");
-            customProductID = "loc" + pref_MP_Locale + "pid" + productID;
             url += "?" + URL_suffix;
-
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID, customProductID);
+            Log.i("Sergio>", this + " onViewCreated: url=\n" + url);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL, url);
 
-            Drawable drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.tick, null);
-            SpannableStringBuilder pptList_SSB = new SpannableStringBuilder();
-            drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
-            String drawableStr = drawable.toString();
-            String description_DB = "";
-            for (int i = 0; i < description.size(); i++) {
-                pptList_SSB.append(drawableStr);
-                pptList_SSB.setSpan(new ImageSpan(drawable), pptList_SSB.length() - drawableStr.length(), pptList_SSB.length(),
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                pptList_SSB.append(" " + description.get(i) + "\n");
-                description_DB += description.get(i) + "\n";
-            }
-            if (description_DB.length() > 0) {
-                description_DB = description_DB.substring(0, description_DB.length() - 1); //Remover ultimo caractere \n
-            }
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION, description_DB);
+            if (!extras.getBoolean("is_web_address")) {
+                productID = extras.getString("productID");
+                description = extras.getStringArrayList("description");
+                String imgURL = extras.getString("image_url");
+                customProductID = "loc" + pref_MP_Locale + "pid" + productID;
 
-            //Lista da descrição enviado da activity anterior (SearchFragment.java) com imagens à esquerda
-            ((TextView) mActivity.findViewById(R.id.p_description)).setText(pptList_SSB);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID, customProductID);
 
-            if (imgURL != null) {
-                Glide.with(mActivity).load(imgURL).into(productImageView);
+                Drawable drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.tick, null);
+                SpannableStringBuilder pptList_SSB = new SpannableStringBuilder();
+                drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+                String drawableStr = drawable.toString();
+                String description_DB = "";
+                for (int i = 0; i < description.size(); i++) {
+                    pptList_SSB.append(drawableStr);
+                    pptList_SSB.setSpan(new ImageSpan(drawable), pptList_SSB.length() - drawableStr.length(), pptList_SSB.length(),
+                            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    pptList_SSB.append(" " + description.get(i) + "\n");
+                    description_DB += description.get(i) + "\n";
+                }
+                if (description_DB.length() > 0) {
+                    description_DB = description_DB.substring(0, description_DB.length() - 1); //Remover ultimo caractere \n
+                }
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION, description_DB);
+
+                //Lista da descrição enviado da activity anterior (SearchFragment.java) com imagens à esquerda
+                ((TextView) mActivity.findViewById(R.id.p_description)).setText(pptList_SSB);
+                if (imgURL != null) {
+                    Glide.with(mActivity).load(imgURL).into(productImageView);
+                } else {
+                    Glide.with(mActivity).load(R.drawable.noimage).into(productImageView);
+                }
+
+                AsyncTask<String, Void, Boolean> get_product_page = new checkInternetAsyncMethods("getProductPage");
+                get_product_page.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url);
             } else {
-                Glide.with(mActivity).load(R.drawable.noimage).into(productImageView);
+
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION, "no description available");
+
+                AsyncTask<String, Void, Boolean> get_product_page = new checkInternetAsyncMethods("getProductPageFromWebAddress");
+                get_product_page.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url);
             }
 
-            AsyncTask<String, Void, Boolean> get_product_page = new checkInternetAsyncMethods("getProductPage");
-            get_product_page.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url);
 
         } else {
             showCustomToast(mActivity, "Error getting product details. Try again.", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
@@ -310,7 +322,6 @@ public class DetailsActivity extends AppCompatActivity {
 
         /*
          *   Guardar produto na DB ao clicar no botão
-         *
         */
         mActivity.findViewById(R.id.button_add_to_db).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -412,8 +423,6 @@ public class DetailsActivity extends AppCompatActivity {
         });
 
 
-
-
     }
 
     public void fixToolbar() {
@@ -478,6 +487,70 @@ public class DetailsActivity extends AppCompatActivity {
                         }.execute();
                     }
                 });
+    }
+
+
+    public class checkInternetAsyncMethods extends AsyncTask<String, Void, Boolean> {
+        String method;
+        String backGround_param; //url
+
+        checkInternetAsyncMethods(String method) {
+            this.method = method;
+        }
+
+        @Override
+        protected Boolean doInBackground(String... params) {
+            backGround_param = params[0];
+            return NetworkUtils.hasActiveNetworkConnection(mActivity);
+        }
+
+        @Override
+        protected void onPostExecute(Boolean hasInternet) {
+            super.onPostExecute(hasInternet);
+
+            if (hasInternet) {
+                hadInternet_off = false;
+                switch (method) {
+                    case "get_Available_Options": {
+                        AsyncTask<String, Void, JSONObject> getDetailsFromJSON = new GetDetailsFromJSON();
+                        getDetailsFromJSON.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, backGround_param);
+                        break;
+                    }
+                    case "GetPriceFromJSON": {
+                        AsyncTask<String, Void, JSONObject> GetPriceFromJSON = new GetPriceFromJSON();
+                        GetPriceFromJSON.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, backGround_param);
+                        break;
+                    }
+                    case "getProductPage": {
+                        AsyncTask<String, Void, Document> getProductPage = new getProductPage();
+                        getProductPage.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, backGround_param);
+                        break;
+                    }
+                    case "getProductPageFromWebAddress": {
+                        AsyncTask<String, Void, Document> getProductPage = new getProductPageWebAddress();
+                        getProductPage.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, backGround_param);
+                        break;
+                    }
+                    default: {
+                        Log.e("Sergio>", this + " onPostExecute: invalid method given in switch");
+                        break;
+                    }
+                }
+
+            } else {
+                hadInternet_off = true;
+                if (noNetworkSnackBar != null) {
+                    if (noNetworkSnackBar.isShown()) {
+                        noNetworkSnackBar.dismiss();
+                    }
+                    noNetworkSnackBar = null;
+                    makeNoNetworkSnackBar(mActivity);
+                    noNetworkSnackBar.show();
+                } else {
+                    makeNoNetworkSnackBar(mActivity);
+                }
+            }
+        }
     }
 
     private class getProductPage extends AsyncTask<String, Void, Document> {
@@ -560,61 +633,201 @@ public class DetailsActivity extends AppCompatActivity {
 
         }
 
-        private void getImagesFromScriptTag(Document resultDocument) {
-            Elements scriptTags = resultDocument.getElementsByTag("script");
-            for (Element tag : scriptTags) {
-                for (DataNode node : tag.dataNodes()) {
-                    String script = node.getWholeData();
-                    if (script.contains("arProductImages")) {
-                        JSON_ArrayArray_Images = new JSONArray();
-                        String[] imageFileTypes = new String[]{".jpg", ".png", ".bmp"};
-                        String IMG_FILETYPE = "";
+    }
 
-                        for (int i = 0; i < imageFileTypes.length; i++) {
-                            if (script.contains(imageFileTypes[i])) {
-                                IMG_FILETYPE = imageFileTypes[i];
-                            }
+    private void getImagesFromScriptTag(Document resultDocument) {
+        Elements scriptTags = resultDocument.getElementsByTag("script");
+        for (Element tag : scriptTags) {
+            for (DataNode node : tag.dataNodes()) {
+                String script = node.getWholeData();
+                if (script.contains("arProductImages")) {
+                    JSON_ArrayArray_Images = new JSONArray();
+                    String[] imageFileTypes = new String[]{".jpg", ".png", ".bmp"};
+                    String IMG_FILETYPE = "";
+
+                    for (int i = 0; i < imageFileTypes.length; i++) {
+                        if (script.contains(imageFileTypes[i])) {
+                            IMG_FILETYPE = imageFileTypes[i];
                         }
+                    }
 
-                        int indexOfarray = script.indexOf("arProductImages[");
+                    int indexOfarray = script.indexOf("arProductImages[");
 
-                        while (indexOfarray >= 0 && !IMG_FILETYPE.isEmpty()) {
-                            String sub_script = script.substring(indexOfarray, script.indexOf(");", indexOfarray));
-                            JSONArray inner_array = new JSONArray();
+                    while (indexOfarray >= 0 && !IMG_FILETYPE.isEmpty()) {
+                        String sub_script = script.substring(indexOfarray, script.indexOf(");", indexOfarray));
+                        JSONArray inner_array = new JSONArray();
 
-                            int indexOfHttps = sub_script.indexOf("https");
+                        int indexOfHttps = sub_script.indexOf("https");
 
-                            while (indexOfHttps >= 0) {
+                        while (indexOfHttps >= 0) {
 
-                                String imgURL = sub_script.substring(indexOfHttps, sub_script.indexOf(IMG_FILETYPE, indexOfHttps) + 4);
+                            String imgURL = sub_script.substring(indexOfHttps, sub_script.indexOf(IMG_FILETYPE, indexOfHttps) + 4);
 
-                                String size = "";
-                                for (int k = 0; k < MP_BB_IMAGE_TYPES.length; k++) {
-                                    if (imgURL.contains(MP_BB_IMAGE_TYPES[k])) {
-                                        size = MP_XX_IMAGE_TYPES[k];
-                                    }
+                            String size = "";
+                            for (int k = 0; k < MP_BB_IMAGE_TYPES.length; k++) {
+                                if (imgURL.contains(MP_BB_IMAGE_TYPES[k])) {
+                                    size = MP_XX_IMAGE_TYPES[k];
                                 }
-
-                                JSONObject innerObject = new JSONObject();
-                                try {
-                                    innerObject.put("url", imgURL);
-                                    innerObject.put("size", size);
-                                } catch (JSONException e) {
-                                    e.printStackTrace();
-                                }
-                                inner_array.put(innerObject);
-
-                                indexOfHttps = sub_script.indexOf("https", indexOfHttps + 1);
                             }
 
-                            JSON_ArrayArray_Images.put(inner_array);
+                            JSONObject innerObject = new JSONObject();
+                            try {
+                                innerObject.put("url", imgURL);
+                                innerObject.put("size", size);
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                            inner_array.put(innerObject);
 
-                            indexOfarray = script.indexOf("arProductImages[", indexOfarray + 1);
+                            indexOfHttps = sub_script.indexOf("https", indexOfHttps + 1);
                         }
+
+                        JSON_ArrayArray_Images.put(inner_array);
+
+                        indexOfarray = script.indexOf("arProductImages[", indexOfarray + 1);
                     }
                 }
             }
         }
+    }
+
+    private class getProductPageWebAddress extends AsyncTask<String, Void, Document> {
+        String url;
+
+        @Override
+        protected Document doInBackground(String... params) {
+            this.url = params[0];
+            Document resultDocument = null;
+            try {
+                resultDocument = Jsoup.connect(url)
+                        .userAgent(userAgent)
+                        .method(Connection.Method.GET)
+                        .timeout(NET_TIMEOUT) //sem limite de tempo
+                        .maxBodySize(0) //sem limite de tamanho do doc recebido
+                        .get();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return resultDocument;
+        }
+
+        @Override
+        protected void onPostExecute(Document resultDocument) {
+            super.onPostExecute(resultDocument);
+
+            if (detailsActivityIsActive) {
+                if (resultDocument != null) {
+
+                    // check if it's mobile site
+                    boolean isMobileSite = false;
+                    for (int i = 0; i < MP_MOBILE_SITES.length; i++) {
+                        if (url.contains(MP_MOBILE_SITES[i])) {
+                            isMobileSite = true;
+                        }
+                    }
+
+
+                    Element titleElem = resultDocument.getElementsByClass("product-title").first();  // Titulo ou nome do produto
+                    String title = titleElem != null ? titleElem.text() : "N/A";
+                    ((TextView) mActivity.findViewById(R.id.title_tv)).append(title);
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME, title);
+
+                    Elements subtitle_element;
+                    if (isMobileSite) {
+                        subtitle_element = resultDocument.getElementsByClass("product-subtitle");
+                    } else {
+                        subtitle_element = resultDocument.getElementsByClass("product-sub-name");
+                    }
+                    String subtitle = subtitle_element != null ? subtitle_element.text() : "no info";
+                    ((TextView) mActivity.findViewById(R.id.p_subtitle)).append(subtitle);
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_SUBTITLE, subtitle);
+
+                    // Labels: Sabor, Quantidade, Embalagem
+
+
+                    Elements productVariationsLabels;
+                    if (isMobileSite) {
+
+//                        productID = resultDocument.getElementsByClass("productoptions").first().getElementsByTag("script").html();
+//                        productID = productID.substring(productID.indexOf("productId") + 12, productID.indexOf(";"));
+
+                        String product_id_from_url = url.substring(url.lastIndexOf("/", url.indexOf(".html")) + 1, url.indexOf(".html"));
+                        Log.d("Sergio>", this + " onPostExecute\nproductID= " + productID + "\nproduct_id_from_url " + product_id_from_url);
+                        productID = product_id_from_url;
+
+                        customProductID = "loc" + pref_MP_Locale + "pid" + productID;
+                        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID, customProductID);
+
+                        productVariationsLabels = resultDocument.getElementsByClass("product-variations").get(0).getElementsByTag("legend");
+                        Log.w("Sergio>", this + "onPostExecute: \n" + "productVariationsLabels= " + productVariationsLabels + "\n productID= " + productID);
+                        int pvl_size = productVariationsLabels.size();
+                        if (pvl_size > 0) {
+                            for (int i = 0; i < pvl_size; i++) {
+                                String variationText = productVariationsLabels.get(i).text();
+                                if (variationText.isEmpty()) continue;
+                                TextView textView_Variations = (TextView) ll_variations.getChildAt(i);
+                                textView_Variations.setText(variationText);
+                                textView_Variations.setVisibility(View.VISIBLE);
+                                RelativeLayout rL_Spiners = (RelativeLayout) linearLayoutSpiners.getChildAt(i);
+                                rL_Spiners.setVisibility(View.VISIBLE);
+                                int vIndex = i + 1;
+                                productContentValues.put("mp_variation_name" + vIndex, variationText);
+                            }
+                            get_Available_Options();
+                        } else {
+
+                        }
+
+                    } else {
+                        productVariationsLabels = resultDocument.getElementsByClass("productVariations__label");
+
+                        int pvl_size = productVariationsLabels.size();
+
+                        if (pvl_size > 0) {
+                            for (int i = 0; i < pvl_size; i++) {
+                                String variationText = productVariationsLabels.get(i).text();
+                                TextView textView_Variations = (TextView) ll_variations.getChildAt(i);
+                                textView_Variations.setText(variationText);
+                                textView_Variations.setVisibility(View.VISIBLE);
+                                RelativeLayout rL_Spiners = (RelativeLayout) linearLayoutSpiners.getChildAt(i);
+                                rL_Spiners.setVisibility(View.VISIBLE);
+                                int vIndex = i + 1;
+                                productContentValues.put("mp_variation_name" + vIndex, variationText);
+                            }
+                            get_Available_Options();
+
+                        } else {
+                            // Sem opções de sabor, embalagem, tamanho para selecionar
+                            String price = resultDocument.getElementsByClass("priceBlock_current_price").text();
+                            Pattern regex = Pattern.compile("[.,\\d]+"); // matches . , e números de 0 a 9
+                            Matcher match = regex.matcher(price);
+                            String currency_symbol = match.replaceAll("");
+                            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL, currency_symbol);
+
+                            getImagesFromScriptTag(resultDocument);
+
+                            priceTV.setText(price);
+                            gotPrice = true;
+                            mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
+                            mActivity.findViewById(R.id.button_add_to_db).setEnabled(true);
+                            mActivity.findViewById(R.id.ll_description).setVisibility(View.VISIBLE);
+
+                        }
+                    }
+
+
+                } else {
+                    showCustomToast(mActivity, "Error getting webpage. \nRetry.", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
+                }
+
+            } else {
+                NetworkUtils.showCustomSlimToast(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT);
+
+                //Toast.makeText(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT).show();
+            }
+
+        }
+
     }
 
     private void get_Available_Options() {
@@ -624,63 +837,6 @@ public class DetailsActivity extends AppCompatActivity {
         Log.i("Sergio>", this + " get_Available_Options: \nfull_JSON_URL=\n" + full_JSON_URL);
     }
 
-    public class checkInternetAsyncMethods extends AsyncTask<String, Void, Boolean> {
-        String method;
-        String backGround_param;
-
-        checkInternetAsyncMethods(String method) {
-            this.method = method;
-        }
-
-        @Override
-        protected Boolean doInBackground(String... params) {
-            backGround_param = params[0];
-            return NetworkUtils.hasActiveNetworkConnection(mActivity);
-        }
-
-        @Override
-        protected void onPostExecute(Boolean hasInternet) {
-            super.onPostExecute(hasInternet);
-
-            if (hasInternet) {
-                hadInternet_off = false;
-                switch (method) {
-                    case "get_Available_Options": {
-                        AsyncTask<String, Void, JSONObject> getDetailsFromJSON = new GetDetailsFromJSON();
-                        getDetailsFromJSON.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, backGround_param);
-                        break;
-                    }
-                    case "GetPriceFromJSON": {
-                        AsyncTask<String, Void, JSONObject> GetPriceFromJSON = new GetPriceFromJSON();
-                        GetPriceFromJSON.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, backGround_param);
-                        break;
-                    }
-                    case "getProductPage": {
-                        AsyncTask<String, Void, Document> getProductPage = new getProductPage();
-                        getProductPage.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, backGround_param);
-                        break;
-                    }
-                    default: {
-                        Log.e("Sergio>", this + " onPostExecute: invalid method given in switch");
-                        break;
-                    }
-                }
-
-            } else {
-                hadInternet_off = true;
-                if (noNetworkSnackBar != null) {
-                    if (noNetworkSnackBar.isShown()){
-                        noNetworkSnackBar.dismiss();
-                    }
-                    noNetworkSnackBar = null;
-                    makeNoNetworkSnackBar(mActivity);
-                    noNetworkSnackBar.show();
-                } else {
-                    makeNoNetworkSnackBar(mActivity);
-                }
-            }
-        }
-    }
 
     private class GetDetailsFromJSON extends AsyncTask<String, Void, JSONObject> {
         @Override

@@ -22,6 +22,7 @@ import android.text.SpannableStringBuilder;
 import android.text.TextWatcher;
 import android.text.style.ImageSpan;
 import android.util.Log;
+import android.util.Patterns;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -56,10 +57,10 @@ import static com.cruz.sergio.myproteinpricechecker.DetailsActivity.HAD_INTERNET
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetworkSnackBar;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomSlimToast;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
 
 public class SearchFragment extends Fragment {
-    public static SearchFragment thisSearchFragment;
     Activity mActivity;
     ArrayAdapter adapter;
     ArrayList<ProductCards> arrayListProductCards = new ArrayList<>();
@@ -73,11 +74,18 @@ public class SearchFragment extends Fragment {
     public int VOICE_REQUEST_CODE = 2;
     boolean btn_clear_visible = false;
     EditText searchTV;
+    String[] WEBSTORES = new String[]{
+            "myprotein",
+            "prozis",
+            "bulkpowders",
+            "myvitamins"
+    };
+
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        thisSearchFragment = this;
         mActivity = getActivity();
     }
 
@@ -100,7 +108,23 @@ public class SearchFragment extends Fragment {
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_SEARCH) { //search no keyboard
                     String querystr = searchTV.getText().toString();
-                    performSearch(querystr);
+
+                    if (Patterns.WEB_URL.matcher(querystr).matches()) {
+                        boolean isSupportedWebstore = false;
+                        for (int i = 0; i < WEBSTORES.length; i++) {
+                            if (querystr.contains(WEBSTORES[i])) {
+                                isSupportedWebstore = true;
+                            }
+                        }
+                        if (isSupportedWebstore) {
+                            go_to_webAdress_details(querystr);
+                        } else {
+                            showCustomSlimToast(mActivity, "Unsupported Webshop\nRequest to add this webshop in future versions", Toast.LENGTH_LONG);
+                        }
+                    } else {
+                        performSearch(querystr);
+                    }
+
                     return true;
                 }
                 return false;
@@ -172,6 +196,17 @@ public class SearchFragment extends Fragment {
 
         horizontalProgressBar = (ProgressBar) resultsListView.findViewById(R.id.progressBarHorizontal);
 
+    }
+
+    private void go_to_webAdress_details(String url_from_querystr) {
+        Intent intent = new Intent(mActivity, DetailsActivity.class);
+        intent.putExtra("url", url_from_querystr);
+        intent.putExtra("is_web_address", true);
+        Bundle bundle = ActivityOptionsCompat.makeCustomAnimation(
+                mActivity,
+                android.R.anim.fade_in,
+                android.R.anim.fade_out).toBundle();
+        startActivityForResult(intent, SEARCH_REQUEST_CODE, bundle);
     }
 
     private void hideKeyBoard() {
@@ -492,11 +527,11 @@ public class SearchFragment extends Fragment {
                 @Override
                 public void onClick(View v) {
 
-                    Bundle productBundle = new Bundle();
-                    productBundle.putString("url", product.productHref);
-                    productBundle.putStringArrayList("description", product.pptList_stringarray);
-                    productBundle.putString("productID", product.productID);
-                    productBundle.putString("image_url", product.imgURL);
+//                    Bundle productBundle = new Bundle();
+//                    productBundle.putString("url", product.productHref);
+//                    productBundle.putStringArrayList("description", product.pptList_stringarray);
+//                    productBundle.putString("productID", product.productID);
+//                    productBundle.putString("image_url", product.imgURL);
 
 
                     Intent intent = new Intent(mActivity, DetailsActivity.class);
@@ -504,6 +539,8 @@ public class SearchFragment extends Fragment {
                     intent.putStringArrayListExtra("description", product.pptList_stringarray);
                     intent.putExtra("productID", product.productID);
                     intent.putExtra("image_url", product.imgURL);
+                    intent.putExtra("is_web_address", false);
+
                     //startActivity(intent);
                     Bundle bundle = ActivityOptionsCompat.makeCustomAnimation(
                             mActivity,
