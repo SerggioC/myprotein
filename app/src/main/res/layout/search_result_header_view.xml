@@ -41,7 +41,18 @@
             android:layout_height="32dp"
             android:layout_gravity="center_vertical|right"
             android:layout_marginRight="12dp"
-            android:background="@drawable/clear_icon_statelist"/>
+            android:background="@drawable/clear_icon_statelist"
+            android:visibility="visible"/>
+
+        <Button
+            android:id="@+id/btn_voice"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center_vertical|right"
+            android:layout_marginRight="12dp"
+            android:background="@android:drawable/ic_btn_speak_now"
+            android:visibility="gone"/>
+
     </FrameLayout>
 
     <ProgressBar

@@ -401,7 +401,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         if (data.getCount() == 0) {
             showCustomToast(mActivity, "Empty DataBase.\n" +
                             "Add products to track their prices.",
-                    R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_SHORT);
+                    R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_SHORT);
             if (watchingSwipeRefreshLayout != null) {
                 watchingSwipeRefreshLayout.setRefreshing(false);
             }
@@ -582,7 +582,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                         });
 
                         Boolean isExpanded = isExpandedArray[this_position];
-                        Log.i("Sergio>", this + " onClick\nisExpanded= " + isExpanded);
                         if (isExpanded) {
                             collapseIt(under_view);
                             isExpandedArray[this_position] = false;
@@ -1039,7 +1038,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         ObjectAnimator alphaAnim2 = ObjectAnimator.ofFloat(under_view, "alpha", 1f, 0f);
         ObjectAnimator transAnim2 = ObjectAnimator.ofFloat(under_view, "translationX", under_view.getWidth());
         animSet.playTogether(transAnim, alphaAnim, alphaAnim2, transAnim2);
-        animSet.setDuration(300);
+        animSet.setDuration(250);
         animSet.start();
         animSet.addListener(new Animator.AnimatorListener() {
             @Override

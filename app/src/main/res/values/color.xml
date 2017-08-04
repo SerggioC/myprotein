@@ -4,8 +4,9 @@
     <color name="orange">#FA0</color>
     <color name="white">#FFF</color>
     <color name="colorPrimary">#1e88e5</color>
+    <color name="colorPrimaryLight">#90caf9</color>
     <color name="colorPrimaryDark">#1565c0</color>
-    <color name="colorPrimaryAlpha">#c81565c0</color>
+    <color name="colorPrimaryDarker">#1565c0</color>
     <color name="transparent">#00ffffff</color>
     <color name="cardsColor">#ffffff</color>
     <color name="appBackground">#f2f1f1</color>

@@ -183,7 +183,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="€000.00"
-                            android:textColor="@color/colorPrimaryAlpha"
+                            android:textColor="@color/colorPrimaryDarker"
                             android:textSize="24sp"
                             android:textStyle="bold"/>
 

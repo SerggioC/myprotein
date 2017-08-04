@@ -20,6 +20,7 @@ import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.view.ViewCompat;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -82,7 +83,7 @@ import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetwor
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomToast;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
 
-public class DetailsActivity extends Activity {
+public class DetailsActivity extends AppCompatActivity {
     public static final String ADDED_NEW_PROD_REF = "addedNewProduct";
     public static final String HAD_INTERNET_OFF_REF = "had_internet_off";
     Activity mActivity;
@@ -162,22 +163,14 @@ public class DetailsActivity extends Activity {
     @Override
     protected void onStart() {
         super.onStart();
+        Log.w("Sergio>", this + " onStart\nBC_Registered before details= " + BC_Registered);
         BC_Registered = NetworkUtils.createBroadcast(mActivity);
-        Log.w("Sergio>", this + " onStart\nBC_Registered= " + BC_Registered);
+        Log.w("Sergio>", this + " onStart\nBC_Registered after details= " + BC_Registered);
     }
 
     @Override
     public void onPause() {
         super.onPause();
-//        FragmentTransaction ft = MainActivity.mFragmentManager.beginTransaction();
-//        ft.hide(getParentFragment());
-//        ft.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
-//        ft.show(SearchFragment.thisSearchFragment);
-//        if (addedNewProduct && listener1 != null && listener1 != null) {
-//            listener1.onProductAdded(true);
-//            listener2.onProductAdded(true);
-//        }
-
         detailsActivityIsActive = false;
         UnregisterBroadcastReceiver(mActivity);
     }
@@ -192,13 +185,29 @@ public class DetailsActivity extends Activity {
         super.onBackPressed();
     }
 
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.details_activity_layout);
+        mActivity = this;
         detailsActivityIsActive = true;
 
-        mActivity = this;
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onBackPressed();
+            }
+        });
+        int dpvalue = 6;
+        float pixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dpvalue, getResources().getDisplayMetrics());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            toolbar.setElevation(pixels);
+        } else {
+            ViewCompat.setElevation(toolbar, pixels);
+        }
+
         productContentValues = new ContentValues(); //content values para a DB
         all_image_sizes = new ArrayList<>(Arrays.asList(MP_ALL_IMAGE_TYPES));
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
@@ -374,7 +383,7 @@ public class DetailsActivity extends Activity {
 
                 if (numEntries >= 1) { // Só poderá haver uma entrada
                     showCustomToast(mActivity, "Product already in DataBase!",
-                            R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_LONG);
+                            R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_LONG);
                 } else {
                     long productRowID = db.insert(ProductsContract.ProductsEntry.TABLE_NAME, null, productContentValues);
                     if (productRowID < 0L) {
@@ -652,7 +661,7 @@ public class DetailsActivity extends Activity {
                         break;
                     }
                     default: {
-                        Log.w("Sergio>", this + " onPostExecute: invalid method given in switch");
+                        Log.e("Sergio>", this + " onPostExecute: invalid method given in switch");
                         break;
                     }
                 }

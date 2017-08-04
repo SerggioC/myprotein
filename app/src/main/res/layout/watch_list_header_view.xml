@@ -18,7 +18,7 @@
         android:text="Swipe down to update"
         android:textAlignment="center"
         android:gravity="center_horizontal"
-        android:textColor="@color/colorPrimaryAlpha"
+        android:textColor="@color/colorPrimaryDarker"
         android:textSize="16sp"/>
 
 

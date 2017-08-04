@@ -79,7 +79,7 @@ public class TabFragment extends Fragment {
 //                    View one_tab = inf.inflate(R.layout.one_tab_layout, null);
 
                     Context context = getActivity().getApplicationContext();
-                    View one_tab = LayoutInflater.from(context).inflate(R.layout.one_tab_layout, null);
+                    View one_tab = LayoutInflater.from(getActivity()).inflate(R.layout.one_tab_layout, null);
 
                     TabFragment.tabLayout.getTabAt(i).setCustomView(one_tab);
                     TextView textView = (TextView) one_tab.findViewById(R.id.tabText);

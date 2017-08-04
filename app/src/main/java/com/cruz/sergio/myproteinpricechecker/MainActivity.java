@@ -23,7 +23,6 @@ import android.view.MenuItem;
 import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
 import com.cruz.sergio.myproteinpricechecker.helper.StartFirebase;
 
-import static android.util.Log.i;
 import static com.cruz.sergio.myproteinpricechecker.TabFragment.viewPager;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.UnregisterBroadcastReceiver;
 
@@ -36,8 +35,6 @@ public class MainActivity extends AppCompatActivity {
     Handler mHandler;
     Bundle indexBundle;
     int index = 0;
-    public static String DETAILS_FRAGMENT_TAG = "DETAILS_FRAGMENT";
-    Boolean addedNewProduct = false;
     public static Boolean CACHE_IMAGES;
     public static Boolean UPDATE_ONSTART;
     public static Boolean BC_Registered = false;
@@ -250,17 +247,6 @@ public class MainActivity extends AppCompatActivity {
             mDrawerLayout.closeDrawers();
         } else if (!drawerOpen || count == 0) {
             super.onBackPressed();
-        } else {
-            i("Sergio>", this + "onBackPressed:\naddedNewProduct= " + addedNewProduct);
-            i("Sergio>", this + "onBackPressed:\ngetFragmentManager().findFragmentByTag(DETAILS_FRAGMENT_TAG) != null && addedNewProduct=\n" +
-                    getFragmentManager().findFragmentByTag(DETAILS_FRAGMENT_TAG) + " added= " + addedNewProduct);
-
-            getFragmentManager().popBackStack();
-            if (getFragmentManager().findFragmentByTag(DETAILS_FRAGMENT_TAG) != null && addedNewProduct) {
-                WatchingFragment.loaderManager.forceLoad();
-                Log.i("Sergio>", this + "onBackPressed:\naddedNewProduct= " + addedNewProduct);
-            }
-
         }
     }
 
@@ -268,6 +254,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
+
         return true;
     }
 

@@ -18,14 +18,15 @@ import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.preference.RingtonePreference;
 import android.support.annotation.LayoutRes;
+import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 
 import java.util.List;
 import java.util.Locale;
@@ -162,15 +163,15 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     public void setContentView(@LayoutRes int layoutResID) {
         super.setContentView(layoutResID);
 
-        // To fit bellow the statusbar
-        View decorView = getWindow().getDecorView();
-        decorView.setFitsSystemWindows(false);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-            decorView.requestFitSystemWindows();
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-        }
+//        // To fit bellow the statusbar
+//        View decorView = getWindow().getDecorView();
+//        decorView.setFitsSystemWindows(false);
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+//            decorView.requestFitSystemWindows();
+//        }
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+//            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+//        }
     }
 
     @Override
@@ -251,13 +252,21 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         @Override
         public void onViewCreated(View view, Bundle savedInstanceState) {
             super.onViewCreated(view, savedInstanceState);
-            Toolbar toolbar = (Toolbar) settingsActivity.findViewById(R.id.settings_toolbar);
+            Toolbar toolbar = (Toolbar) settingsActivity.findViewById(R.id.toolbar);
             toolbar.setNavigationOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     settingsActivity.finish();
                 }
             });
+
+            int dpvalue = 6;
+            float pixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dpvalue, getResources().getDisplayMetrics());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                toolbar.setElevation(pixels);
+            } else {
+                ViewCompat.setElevation(toolbar, pixels);
+            }
         }
     }
 

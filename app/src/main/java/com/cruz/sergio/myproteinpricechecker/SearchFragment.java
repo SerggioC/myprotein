@@ -1,6 +1,7 @@
 package com.cruz.sergio.myproteinpricechecker;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -9,13 +10,16 @@ import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.speech.RecognizerIntent;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.res.ResourcesCompat;
+import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import android.text.TextWatcher;
 import android.text.style.ImageSpan;
 import android.util.Log;
 import android.view.Gravity;
@@ -66,6 +70,9 @@ public class SearchFragment extends Fragment {
     String queryStr = "";
     Boolean hasAsyncTaskRuning = false;
     public int SEARCH_REQUEST_CODE = 1;
+    public int VOICE_REQUEST_CODE = 2;
+    boolean btn_clear_visible = false;
+    EditText searchTV;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -87,32 +94,77 @@ public class SearchFragment extends Fragment {
         resultsListView = (ListView) mActivity.findViewById(R.id.results);
         resultsListView.addHeaderView(View.inflate(mActivity, R.layout.search_result_header_view, null));
 
-        final EditText searchTextView = (EditText) resultsListView.findViewById(R.id.searchTextView);
-        searchTextView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+        searchTV = (EditText) resultsListView.findViewById(R.id.searchTextView);
+        searchTV.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_SEARCH) { //search no keyboard
-                    String querystr = searchTextView.getText().toString();
+                    String querystr = searchTV.getText().toString();
                     performSearch(querystr);
                     return true;
                 }
                 return false;
             }
         });
+        final View btn_clear = resultsListView.findViewById(R.id.btn_clear);
+        final View btn_voice = resultsListView.findViewById(R.id.btn_voice);
+
+        searchTV.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (s.length() > 0 && !btn_clear_visible) {
+                    btn_clear.setVisibility(View.VISIBLE);
+                    btn_voice.setVisibility(View.GONE);
+                    btn_clear_visible = true;
+                }
+                if (s.length() == 0) {
+                    btn_clear.setVisibility(View.GONE);
+                    btn_voice.setVisibility(View.VISIBLE);
+                    btn_clear_visible = false;
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+        });
+
 
         resultsListView.findViewById(R.id.btn_search).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String querystr = searchTextView.getText().toString();
+                String querystr = searchTV.getText().toString();
                 performSearch(querystr);
             }
         });
-        resultsListView.findViewById(R.id.btn_clear).setOnClickListener(new View.OnClickListener() {
+
+        btn_voice.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                searchTextView.setText("");
+                Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                //intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, "en-US");
+                try {
+                    startActivityForResult(intent, VOICE_REQUEST_CODE);
+                } catch (ActivityNotFoundException a) {
+                    NetworkUtils.showCustomToast(mActivity, "Oops! Your device doesn't support Speech to Text", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
+                }
+
             }
         });
+
+        btn_clear.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                searchTV.setText("");
+            }
+        });
+
         ArrayList item = new ArrayList(1);
         item.add("");
         ArrayAdapter noAdapter = new ArrayAdapter(mActivity, android.R.layout.simple_list_item_1, item);
@@ -134,16 +186,14 @@ public class SearchFragment extends Fragment {
     public void performSearch(String searchString) {
         hideKeyBoard();
         if (hasAsyncTaskRuning) {
-            NetworkUtils.showCustomToast(mActivity, "Ongoing search...", R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_SHORT);
+            NetworkUtils.showCustomToast(mActivity, "Ongoing search...", R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_SHORT);
         } else {
-            if (!searchString.equals("")) {
+            if (searchString.isEmpty()) {
+                NetworkUtils.showCustomToast(mActivity, "Search product name or enter product URL", R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_SHORT);
+            } else {
                 horizontalProgressBar.setVisibility(View.VISIBLE);
-
                 AsyncTask<String, Void, Boolean> internetAsyncTask = new checkInternetAsyncTask();
                 internetAsyncTask.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, searchString);
-
-            } else if (searchString.equals("")) {
-                NetworkUtils.showCustomToast(mActivity, "Nothing to search...", R.mipmap.ic_info, R.color.colorPrimaryAlpha, Toast.LENGTH_SHORT);
             }
         }
     }
@@ -214,8 +264,6 @@ public class SearchFragment extends Fragment {
     }
 
 
-
-
     public static UpdateGraphForNewProduct updateGraphListener;
 
     interface UpdateGraphForNewProduct {
@@ -258,6 +306,16 @@ public class SearchFragment extends Fragment {
                 }
             }
         }
+        if (requestCode == VOICE_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
+            String voiceText = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).get(0);
+            if (voiceText.isEmpty()) {
+                NetworkUtils.showCustomToast(mActivity, "Search product name or enter product URL", R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_SHORT);
+            } else {
+                searchTV.setText(voiceText);
+                performSearch(voiceText);
+            }
+        }
+
     }
 
 

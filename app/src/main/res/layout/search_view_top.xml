@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"
+    android:layout_marginLeft="@dimen/activity_horizontal_margin"
+    android:layout_marginRight="@dimen/activity_horizontal_margin"
+    android:background="@drawable/edittextstyle"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <ImageView
+        android:id="@+id/iv_search_mic"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_centerVertical="true"
+        android:src="@android:drawable/ic_btn_speak_now"
+        android:contentDescription="Voice Search"/>
+
+    <EditText
+        android:id="@+id/ed_home_searchbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_toLeftOf="@+id/iv_search_icon"
+        android:layout_toRightOf="@+id/iv_search_mic"
+        android:background="@android:color/transparent"
+        android:hint="@string/lets_find_a_deal"
+        android:imeOptions="actionSearch"
+        android:padding="10dp"
+        android:maxLines="1"
+        android:textColor="@color/black"
+        android:textCursorDrawable="@drawable/arrow"
+        android:textSize="14sp" />
+
+    <ImageView
+        android:id="@+id/iv_search_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:src="@android:drawable/ic_menu_search" />
+
+</RelativeLayout>
