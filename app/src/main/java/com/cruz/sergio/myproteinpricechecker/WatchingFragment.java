@@ -64,6 +64,7 @@ import com.cruz.sergio.myproteinpricechecker.helper.ProductsContract;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.jsoup.helper.StringUtil;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -496,19 +497,51 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             final String string_array_images = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGES));
 
             final CardView mainCardView = (CardView) view.findViewById(R.id.main_cardview);
-            mainCardView.setOnClickListener(new View.OnClickListener() {
+
+            mainCardView.findViewById(R.id.open_web).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    Intent browser = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                    startActivity(browser);
+                }
+            });
+
+            mainCardView.findViewById(R.id.add_to_cart).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    NetworkUtils.showCustomSlimToast(mActivity, "Add product to virtual cart", Toast.LENGTH_SHORT);
+                }
+            });
+
+            mainCardView.findViewById(R.id.notify).setTag(false);
+            mainCardView.findViewById(R.id.notify).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if ((Boolean) v.getTag()) {
+                        ((ImageView) v).setImageResource(R.drawable.ic_notifications_none);
+                        v.setTag(false);
+                    } else {
+                        ((ImageView) v).setImageResource(R.drawable.ic_notifications);
+                        v.setTag(true);
+                    }
+                }
+            });
+
+            mainCardView.findViewById(R.id.expand_underview).setTag(false);
+            mainCardView.findViewById(R.id.expand_underview).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if ((Boolean) v.getTag()) {
+                        ((TextView) v).setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_expand_more), null, null, null);
+                        ((TextView) v).setText("Details");
+                        v.setTag(false);
+                    } else {
+                        ((TextView) v).setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_expand_less_black_24dp), null, null, null);
+                        ((TextView) v).setText("Close");
+                        v.setTag(true);
+                    }
                     if (mCursor != null) {
                         final CardView under_view = (CardView) view.findViewById(R.id.under_cardview);
-
-                        under_view.findViewById(R.id.open_web).setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                Intent browser = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                                startActivity(browser);
-                            }
-                        });
 
                         under_view.findViewById(R.id.delete_entry).setOnClickListener(new View.OnClickListener() {
                             @Override
@@ -625,40 +658,41 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             if (options_quant == null) options_quant = "";
             if (current_price_string == null || current_price_string.equals("")) current_price_string = "---";
 
-            String[] prod_description_array = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION)).split("\n");
             String sub_title = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_SUBTITLE));
             String webstore_name = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_WEBSTORE_NAME));
             String webstore_str = "Webstore";
 
             SpannableStringBuilder pptList_SSB = new SpannableStringBuilder(webstore_str);
-            pptList_SSB.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), pptList_SSB.length() - webstore_str.length(), pptList_SSB.length(),
-                    SPAN_EXCLUSIVE_EXCLUSIVE);
+            pptList_SSB.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), pptList_SSB.length() - webstore_str.length(), pptList_SSB.length(), SPAN_EXCLUSIVE_EXCLUSIVE);
             pptList_SSB.append(": " + webstore_name + "\n");
 
             pptList_SSB.append(sub_title);
             pptList_SSB.setSpan(new RelativeSizeSpan(1.1f), pptList_SSB.length() - sub_title.length(), pptList_SSB.length(), SPAN_EXCLUSIVE_EXCLUSIVE);
 
-            String prod_benefits = "\nProduct benefits\n";
-            pptList_SSB.append(prod_benefits);
-            pptList_SSB.setSpan(new RelativeSizeSpan(1.1f), pptList_SSB.length() - prod_benefits.length(), pptList_SSB.length(),
-                    SPAN_EXCLUSIVE_EXCLUSIVE);
-            pptList_SSB.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), pptList_SSB.length() - prod_benefits.length(), pptList_SSB.length(),
-                    SPAN_EXCLUSIVE_EXCLUSIVE);
+            String prod_description = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION));
 
-            Drawable drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.tick, null);
-            drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
-            String drawableStr = drawable.toString();
-            int pdal = prod_description_array.length - 1;
-            for (int i = 0; i < pdal; i++) {
+            if (!StringUtil.isBlank(prod_description)) {
+
+                String prod_benefits = "\n"+"Product benefits" + "\n";
+                pptList_SSB.append(prod_benefits);
+                pptList_SSB.setSpan(new RelativeSizeSpan(1.1f), pptList_SSB.length() - prod_benefits.length(), pptList_SSB.length(), SPAN_EXCLUSIVE_EXCLUSIVE);
+                pptList_SSB.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), pptList_SSB.length() - prod_benefits.length(), pptList_SSB.length(), SPAN_EXCLUSIVE_EXCLUSIVE);
+
+                String[] prod_description_array = prod_description.split("\n");
+                Drawable drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.tick, null);
+                drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+                String drawableStr = drawable.toString();
+                int pdal = prod_description_array.length - 1;
+                for (int i = 0; i < pdal; i++) {
+                    pptList_SSB.append(drawableStr);
+                    pptList_SSB.setSpan(new ImageSpan(drawable), pptList_SSB.length() - drawableStr.length(), pptList_SSB.length(), SPAN_EXCLUSIVE_EXCLUSIVE);
+                    pptList_SSB.append(" " + prod_description_array[i] + "\n");
+                }
                 pptList_SSB.append(drawableStr);
-                pptList_SSB.setSpan(new ImageSpan(drawable), pptList_SSB.length() - drawableStr.length(), pptList_SSB.length(),
-                        SPAN_EXCLUSIVE_EXCLUSIVE);
-                pptList_SSB.append(" " + prod_description_array[i] + "\n");
+                pptList_SSB.setSpan(new ImageSpan(drawable), pptList_SSB.length() - drawableStr.length(), pptList_SSB.length(), SPAN_EXCLUSIVE_EXCLUSIVE);
+                pptList_SSB.append(" " + prod_description_array[pdal]);
+
             }
-            pptList_SSB.append(drawableStr);
-            pptList_SSB.setSpan(new ImageSpan(drawable), pptList_SSB.length() - drawableStr.length(), pptList_SSB.length(),
-                    SPAN_EXCLUSIVE_EXCLUSIVE);
-            pptList_SSB.append(" " + prod_description_array[pdal]);
 
             viewHolder.undercard_tv_desc.setText(pptList_SSB);
 

@@ -27,14 +27,14 @@ public class DBHelper extends SQLiteOpenHelper {
                 ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID + " TEXT NOT NULL, " +
                 ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME + " TEXT NOT NULL, " +
                 ProductsContract.ProductsEntry.COLUMN_PRODUCT_SUBTITLE + " TEXT NOT NULL, " +
-                ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION + " TEXT NOT NULL, " +
+                ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_WEBSTORE_NAME + " TEXT NOT NULL, " +
                 ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL + " TEXT NOT NULL, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_WEBSTORE_DOMAIN_URL + " TEXT NOT NULL, " +
-                ProductsContract.ProductsEntry.COLUMN_MP_SHIPPING_LOCATION + " TEXT NOT NULL, " +
-                ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY + " TEXT NOT NULL, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_SHIPPING_LOCATION + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL + " TEXT NOT NULL, " +
-                ProductsContract.ProductsEntry.COLUMN_MP_LOCALE + " TEXT NOT NULL, " +
+                ProductsContract.ProductsEntry.COLUMN_MP_LOCALE + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_VARIATION1 + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_VARIATION2 + " TEXT, " +
@@ -60,7 +60,10 @@ public class DBHelper extends SQLiteOpenHelper {
                 ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME2 + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME3 + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID + " TEXT NOT NULL, " +
-                ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGES + " TEXT " +
+                ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGES + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_IS_IN_CART + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_CART_ID + " TEXT " +
                 " );";
 
         final String SQL_CREATE_PRICES_TABLE = "CREATE TABLE " + ProductsContract.PricesEntry.TABLE_NAME + " (" +
@@ -83,11 +86,21 @@ public class DBHelper extends SQLiteOpenHelper {
                 ProductsContract.VouchersEntry.COLUMN_VOUCHER_IS_ACTIVE + " INTEGER NOT NULL" +
                 ");";
 
+        final String SQL_CREATE_CARTS_TABLE = "CREATE TABLE " + ProductsContract.CartsEntry.TABLE_NAME + " (" +
+                ProductsContract.CartsEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                ProductsContract.CartsEntry.COLUMN_ID_PRODUCTS + " INTEGER NOT NULL, " +
+                ProductsContract.CartsEntry.COLUMN_CART_ID + " INTEGER NOT NULL, " + // cart ID A criar no código
+                " FOREIGN KEY (" + ProductsContract.CartsEntry.COLUMN_ID_PRODUCTS + ") REFERENCES " +
+                ProductsContract.ProductsEntry.TABLE_NAME + " (" + ProductsContract.ProductsEntry._ID + ")" +
+                " ON DELETE CASCADE);";
+
+
         String SQL_CREATE_JOBS_TABLE = "CREATE TABLE jobs (_id INTEGER PRIMARY KEY AUTOINCREMENT, time TEXT NOT NULL, diff TEXT NOT NULL, status TEXT NOT NULL);";
 
         db.execSQL(SQL_CREATE_PRODUCT_TABLE);
         db.execSQL(SQL_CREATE_PRICES_TABLE);
         db.execSQL(SQL_CREATE_VOUCHERS_TABLE);
+        db.execSQL(SQL_CREATE_CARTS_TABLE);
         db.execSQL(SQL_CREATE_JOBS_TABLE);
 
     }

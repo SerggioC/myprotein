@@ -3,6 +3,7 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:ndroid="http://schemas.android.com/tools"
     android:id="@+id/watch_ll_item"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -28,7 +29,7 @@
             android:layout_gravity="top"
             android:gravity="center_vertical"
             android:orientation="vertical"
-            android:paddingBottom="4dp">
+            android:paddingBottom="2dp">
 
             <TextView
                 android:id="@+id/item_title_textview"
@@ -183,7 +184,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="€000.00"
-                            android:textColor="@color/colorPrimaryDarker"
+                            android:textColor="@color/colorPrimaryDark"
                             android:textSize="24sp"
                             android:textStyle="bold"/>
 
@@ -207,6 +208,72 @@
 
             </RelativeLayout>
 
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginLeft="6dp"
+                android:layout_marginRight="6dp"
+                android:background="@color/light_gray"/>
+
+            <RelativeLayout
+                android:id="@+id/icons"
+                android:layout_width="match_parent"
+                android:layout_height="24dp">
+
+                <TextView
+                    android:id="@+id/expand_underview"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginLeft="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="Expand view for more details"
+                    android:drawableLeft="@drawable/ic_expand_more"
+                    android:gravity="center"
+                    android:text="Details"/>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true"
+                    android:layout_centerVertical="true"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/open_web"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginRight="12dp"
+                        android:clickable="true"
+                        android:contentDescription="Open webpage"
+                        android:background="@drawable/ic_open_in_browser"
+                        ndroid:src="?attr/selectableItemBackgroundBorderless"/>
+
+                    <ImageView
+                        android:id="@+id/add_to_cart"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginRight="12dp"
+                        android:clickable="true"
+                        android:contentDescription="Add to virtual cart"
+                        android:background="@drawable/ic_add_shopping_cart"
+                        ndroid:src="?attr/selectableItemBackgroundBorderless"/>
+
+                    <ImageView
+                        android:id="@+id/notify"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginRight="4dp"
+                        android:clickable="true"
+                        android:contentDescription="Set notification"
+                        android:background="@drawable/ic_notifications_none"
+                        ndroid:src="?attr/selectableItemBackgroundBorderless"/>
+                </LinearLayout>
+
+
+            </RelativeLayout>
         </LinearLayout>
 
     </android.support.v7.widget.CardView>
@@ -233,61 +300,20 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_alignParentLeft="true"
+                android:layout_marginBottom="4dp"
                 android:layout_marginLeft="4dp"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="4dp"/>
+                android:layout_marginTop="4dp"/>
 
-
-            <Button
+            <ImageView
                 android:id="@+id/delete_entry"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:layout_alignParentLeft="true"
-                android:layout_below="@id/description_undercard"
-                android:layout_margin="4dp"
-                android:background="@drawable/delete_button_statelist"
-                android:text="Delete\nEntry"
-                android:textAllCaps="false"
-                android:textStyle="italic"/>
-
-            <Button
-                android:id="@+id/open_web"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:layout_alignParentRight="true"
-                android:layout_below="@id/description_undercard"
-                android:layout_margin="4dp"
-                android:background="@drawable/button_statelist"
-                android:text="Open web"
-                android:textAllCaps="false"/>
-
-            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentRight="true"
-                android:layout_below="@id/open_web"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:id="@+id/delete"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:src="@android:drawable/ic_menu_delete"/>
-
-                <ImageView
-                    android:id="@+id/gotoweb"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:src="@android:drawable/ic_dialog_map"/>
-
-                <ImageView
-                    android:id="@+id/notif"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:src="@android:drawable/ic_popup_reminder"/>
-
-            </LinearLayout>
-
+                android:layout_below="@id/description_undercard"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:contentDescription="Delete entry"
+                android:src="@drawable/ic_delete"/>
 
         </RelativeLayout>
     </android.support.v7.widget.CardView>

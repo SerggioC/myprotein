@@ -65,6 +65,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.regex.Matcher;
@@ -76,6 +77,7 @@ import static com.cruz.sergio.myproteinpricechecker.MainActivity.CACHE_IMAGES;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.detailsActivityIsActive;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
 import static com.cruz.sergio.myproteinpricechecker.WatchingFragment.imageSizesToUse;
+import static com.cruz.sergio.myproteinpricechecker.helper.MyProteinDomain.MP_DESKTOP_SITES;
 import static com.cruz.sergio.myproteinpricechecker.helper.MyProteinDomain.MP_MOBILE_SITES;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.UnregisterBroadcastReceiver;
@@ -107,6 +109,7 @@ public class DetailsActivity extends AppCompatActivity {
     ImageSwitcher image_switcher_details;
     Timer timer;
     public boolean hadInternet_off;
+    boolean is_web_address;
 
     ArrayList<String> all_image_sizes;
     final static String[] MP_ALL_IMAGE_TYPES = new String[]{
@@ -164,9 +167,7 @@ public class DetailsActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        Log.w("Sergio>", this + " onStart\nBC_Registered before details= " + BC_Registered);
         BC_Registered = NetworkUtils.createBroadcast(mActivity);
-        Log.w("Sergio>", this + " onStart\nBC_Registered after details= " + BC_Registered);
     }
 
     @Override
@@ -213,32 +214,10 @@ public class DetailsActivity extends AppCompatActivity {
 
         productContentValues = new ContentValues(); //content values para a DB
         all_image_sizes = new ArrayList<>(Arrays.asList(MP_ALL_IMAGE_TYPES));
+
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
         CACHE_IMAGES = sharedPrefs.getBoolean("cache_images", false);
 
-        // To fit bellow the statusbar
-//        View decorView = getWindow().getDecorView();
-//        decorView.setFitsSystemWindows(false);
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-//            decorView.requestFitSystemWindows();
-//        }
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-//            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-//        }
-//        //fixToolbar();
-
-        SharedPreferences prefManager = PreferenceManager.getDefaultSharedPreferences(mActivity);
-        pref_MP_Locale = prefManager.getString("mp_website_location", "en-gb"); // pt-pt
-        String shippingCountry = prefManager.getString("mp_shipping_location", "GB"); //"PT";
-        String currency = prefManager.getString("mp_currencies", "GBP"); //"EUR";
-        MP_Domain = MyProteinDomain.getHref(pref_MP_Locale);
-        URL_suffix = "settingsSaved=Y&shippingcountry=" + shippingCountry + "&switchcurrency=" + currency + "&countrySelected=Y";
-
-        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_WEBSTORE_DOMAIN_URL, MP_Domain);
-        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_LOCALE, pref_MP_Locale);
-        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_SHIPPING_LOCATION, shippingCountry);
-        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY, currency);
-        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_WEBSTORE_NAME, "MyProtein");
 
         ll_variations = (LinearLayout) mActivity.findViewById(R.id.ll_variations);
         linearLayoutSpiners = (LinearLayout) mActivity.findViewById(R.id.spiners);
@@ -254,13 +233,32 @@ public class DetailsActivity extends AppCompatActivity {
 
         if (extras != null) {
             mActivity.findViewById(R.id.progressBarRound).setVisibility(View.VISIBLE);
-
             url = extras.getString("url");
-            url += "?" + URL_suffix;
-            Log.i("Sergio>", this + " onViewCreated: url=\n" + url);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL, url);
 
-            if (!extras.getBoolean("is_web_address")) {
+            Log.i("Sergio>", this + " onViewCreated: passed url=\n" + url);
+
+            is_web_address = extras.getBoolean("is_web_address");
+
+            if (!is_web_address) {
+                pref_MP_Locale = sharedPrefs.getString("mp_website_location", "en-gb"); // pt-pt
+                String shippingCountry = sharedPrefs.getString("mp_shipping_location", "GB"); //"PT";
+                String currency = sharedPrefs.getString("mp_currencies", "GBP"); //"EUR";
+
+                MP_Domain = MyProteinDomain.getHref(pref_MP_Locale);
+                URL_suffix = "settingsSaved=Y&shippingcountry=" + shippingCountry + "&switchcurrency=" + currency + "&countrySelected=Y";
+                url += "?" + URL_suffix;
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL, url);
+
+                List<String> texts = java.util.Arrays.asList(getResources().getStringArray(R.array.pref_mp_website_titles));
+                List<String> values = java.util.Arrays.asList(getResources().getStringArray(R.array.pref_mp_website_values));
+                String country_name = texts.get(values.indexOf(pref_MP_Locale));
+
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_WEBSTORE_DOMAIN_URL, MP_Domain);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_LOCALE, pref_MP_Locale);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_SHIPPING_LOCATION, shippingCountry);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY, currency);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_WEBSTORE_NAME, "MyProtein" + " " + country_name);
+
                 productID = extras.getString("productID");
                 description = extras.getStringArrayList("description");
                 String imgURL = extras.getString("image_url");
@@ -275,8 +273,7 @@ public class DetailsActivity extends AppCompatActivity {
                 String description_DB = "";
                 for (int i = 0; i < description.size(); i++) {
                     pptList_SSB.append(drawableStr);
-                    pptList_SSB.setSpan(new ImageSpan(drawable), pptList_SSB.length() - drawableStr.length(), pptList_SSB.length(),
-                            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    pptList_SSB.setSpan(new ImageSpan(drawable), pptList_SSB.length() - drawableStr.length(), pptList_SSB.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     pptList_SSB.append(" " + description.get(i) + "\n");
                     description_DB += description.get(i) + "\n";
                 }
@@ -297,8 +294,7 @@ public class DetailsActivity extends AppCompatActivity {
                 get_product_page.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url);
             } else {
 
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION, "no description available");
-
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL, url);
                 AsyncTask<String, Void, Boolean> get_product_page = new checkInternetAsyncMethods("getProductPageFromWebAddress");
                 get_product_page.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url);
             }
@@ -447,6 +443,20 @@ public class DetailsActivity extends AppCompatActivity {
         } else {
             ViewCompat.setElevation(toolbar, pixels);
         }
+
+
+        // To fit bellow the statusbar
+//        View decorView = getWindow().getDecorView();
+//        decorView.setFitsSystemWindows(false);
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+//            decorView.requestFitSystemWindows();
+//        }
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+//            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+//        }
+//        //fixToolbar();
+
+
     }
 
 
@@ -635,7 +645,7 @@ public class DetailsActivity extends AppCompatActivity {
 
     }
 
-    private void getImagesFromScriptTag(Document resultDocument) {
+    private boolean getImagesFromScriptTag(Document resultDocument) {
         Elements scriptTags = resultDocument.getElementsByTag("script");
         for (Element tag : scriptTags) {
             for (DataNode node : tag.dataNodes()) {
@@ -689,6 +699,12 @@ public class DetailsActivity extends AppCompatActivity {
                 }
             }
         }
+
+        if (JSON_ArrayArray_Images.length() > 0) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     private class getProductPageWebAddress extends AsyncTask<String, Void, Document> {
@@ -720,12 +736,26 @@ public class DetailsActivity extends AppCompatActivity {
 
                     // check if it's mobile site
                     boolean isMobileSite = false;
+                    boolean isDesktopSite = false;
+                    String theSite = "";
                     for (int i = 0; i < MP_MOBILE_SITES.length; i++) {
                         if (url.contains(MP_MOBILE_SITES[i])) {
                             isMobileSite = true;
+                            theSite = MP_MOBILE_SITES[i];
+                        }
+                    }
+                    for (int i = 0; i < MP_DESKTOP_SITES.length; i++) {
+                        if (url.contains(MP_DESKTOP_SITES[i])) {
+                            isDesktopSite = true;
+                            theSite = MP_DESKTOP_SITES[i];
                         }
                     }
 
+                    String country_name = MyProteinDomain.getCountryFromUrl(theSite);
+                    MP_Domain = "https://" + theSite + "/";
+
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_WEBSTORE_DOMAIN_URL, MP_Domain);
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_WEBSTORE_NAME, "MyProtein" + " " + country_name);
 
                     Element titleElem = resultDocument.getElementsByClass("product-title").first();  // Titulo ou nome do produto
                     String title = titleElem != null ? titleElem.text() : "N/A";
@@ -744,77 +774,69 @@ public class DetailsActivity extends AppCompatActivity {
 
                     // Labels: Sabor, Quantidade, Embalagem
 
+//                  alternativa para sacar o productID dentro da página => mais lento!
+//                  productID = resultDocument.getElementsByClass("productoptions").first().getElementsByTag("script").html();
+//                  productID = productID.substring(productID.indexOf("productId") + 12, productID.indexOf(";"));
+
+                    String product_id_from_url = url.substring(url.lastIndexOf("/", url.indexOf(".html")) + 1, url.indexOf(".html"));
+                    productID = product_id_from_url;
+                    customProductID = theSite + "pid" + productID;
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID, customProductID);
 
                     Elements productVariationsLabels;
+
                     if (isMobileSite) {
-
-//                        productID = resultDocument.getElementsByClass("productoptions").first().getElementsByTag("script").html();
-//                        productID = productID.substring(productID.indexOf("productId") + 12, productID.indexOf(";"));
-
-                        String product_id_from_url = url.substring(url.lastIndexOf("/", url.indexOf(".html")) + 1, url.indexOf(".html"));
-                        Log.d("Sergio>", this + " onPostExecute\nproductID= " + productID + "\nproduct_id_from_url " + product_id_from_url);
-                        productID = product_id_from_url;
-
-                        customProductID = "loc" + pref_MP_Locale + "pid" + productID;
-                        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID, customProductID);
-
-                        productVariationsLabels = resultDocument.getElementsByClass("product-variations").get(0).getElementsByTag("legend");
-                        Log.w("Sergio>", this + "onPostExecute: \n" + "productVariationsLabels= " + productVariationsLabels + "\n productID= " + productID);
-                        int pvl_size = productVariationsLabels.size();
-                        if (pvl_size > 0) {
-                            for (int i = 0; i < pvl_size; i++) {
-                                String variationText = productVariationsLabels.get(i).text();
-                                if (variationText.isEmpty()) continue;
-                                TextView textView_Variations = (TextView) ll_variations.getChildAt(i);
-                                textView_Variations.setText(variationText);
-                                textView_Variations.setVisibility(View.VISIBLE);
-                                RelativeLayout rL_Spiners = (RelativeLayout) linearLayoutSpiners.getChildAt(i);
-                                rL_Spiners.setVisibility(View.VISIBLE);
-                                int vIndex = i + 1;
-                                productContentValues.put("mp_variation_name" + vIndex, variationText);
-                            }
-                            get_Available_Options();
-                        } else {
-
-                        }
-
+                        productVariationsLabels = resultDocument.getElementsByClass("product-variations");
                     } else {
                         productVariationsLabels = resultDocument.getElementsByClass("productVariations__label");
-
-                        int pvl_size = productVariationsLabels.size();
-
-                        if (pvl_size > 0) {
-                            for (int i = 0; i < pvl_size; i++) {
-                                String variationText = productVariationsLabels.get(i).text();
-                                TextView textView_Variations = (TextView) ll_variations.getChildAt(i);
-                                textView_Variations.setText(variationText);
-                                textView_Variations.setVisibility(View.VISIBLE);
-                                RelativeLayout rL_Spiners = (RelativeLayout) linearLayoutSpiners.getChildAt(i);
-                                rL_Spiners.setVisibility(View.VISIBLE);
-                                int vIndex = i + 1;
-                                productContentValues.put("mp_variation_name" + vIndex, variationText);
-                            }
-                            get_Available_Options();
-
-                        } else {
-                            // Sem opções de sabor, embalagem, tamanho para selecionar
-                            String price = resultDocument.getElementsByClass("priceBlock_current_price").text();
-                            Pattern regex = Pattern.compile("[.,\\d]+"); // matches . , e números de 0 a 9
-                            Matcher match = regex.matcher(price);
-                            String currency_symbol = match.replaceAll("");
-                            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL, currency_symbol);
-
-                            getImagesFromScriptTag(resultDocument);
-
-                            priceTV.setText(price);
-                            gotPrice = true;
-                            mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
-                            mActivity.findViewById(R.id.button_add_to_db).setEnabled(true);
-                            mActivity.findViewById(R.id.ll_description).setVisibility(View.VISIBLE);
-
-                        }
                     }
 
+                    Log.w("Sergio>", this + "onPostExecute: \n" +
+                            "productVariationsLabels= " + productVariationsLabels + "\n" +
+                            "productID= " + productID + "\n" +
+                            "customProductID= " + customProductID);
+
+                    int pvl_size = productVariationsLabels.size();
+                    if (pvl_size > 0) {
+                        if (isMobileSite) {
+                            productVariationsLabels = productVariationsLabels.get(0).getElementsByTag("legend");
+                        }
+
+                        for (int i = 0; i < pvl_size; i++) {
+                            String variationText = productVariationsLabels.get(i).text();
+                            if (variationText.isEmpty()) continue;
+                            TextView textView_Variations = (TextView) ll_variations.getChildAt(i);
+                            textView_Variations.setText(variationText);
+                            textView_Variations.setVisibility(View.VISIBLE);
+                            RelativeLayout rL_Spiners = (RelativeLayout) linearLayoutSpiners.getChildAt(i);
+                            rL_Spiners.setVisibility(View.VISIBLE);
+                            int vIndex = i + 1;
+                            productContentValues.put("mp_variation_name" + vIndex, variationText);
+                        }
+                        get_Available_Options();
+                    } else {
+                        // Sem opções de sabor, embalagem, tamanho para selecionar
+
+                        String price;
+                        if (isMobileSite) {
+                            price = resultDocument.getElementsByClass("product-price price").text();
+                        } else {
+                            price = resultDocument.getElementsByClass("priceBlock_current_price").text();
+                        }
+
+                        Pattern regex = Pattern.compile("[.,\\d]+"); // matches . , e números de 0 a 9
+                        Matcher match = regex.matcher(price);
+                        String currency_symbol = match.replaceAll("");
+                        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL, currency_symbol);
+
+                        getImagesFromScriptTag(resultDocument);
+
+                        priceTV.setText(price);
+                        gotPrice = true;
+                        mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
+                        mActivity.findViewById(R.id.button_add_to_db).setEnabled(true);
+                        mActivity.findViewById(R.id.ll_description).setVisibility(View.VISIBLE);
+                    }
 
                 } else {
                     showCustomToast(mActivity, "Error getting webpage. \nRetry.", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
@@ -822,8 +844,6 @@ public class DetailsActivity extends AppCompatActivity {
 
             } else {
                 NetworkUtils.showCustomSlimToast(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT);
-
-                //Toast.makeText(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT).show();
             }
 
         }

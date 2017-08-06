@@ -290,6 +290,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             bindPreferenceSummaryToValue(findPreference("mp_website_location"));
             bindPreferenceSummaryToValue(findPreference("mp_shipping_location"));
             bindPreferenceSummaryToValue(findPreference("mp_currencies"));
+            bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
+            bindPreferenceSummaryToValue(findPreference("sync_frequency"));
         }
 
         @Override

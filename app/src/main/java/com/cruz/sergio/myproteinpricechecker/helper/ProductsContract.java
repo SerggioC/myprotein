@@ -30,6 +30,7 @@ public class ProductsContract {
     public static final String PATH_PRODUCTS = "products";
     public static final String PATH_PRICES = "prices";
     public static final String PATH_VOUCHERS = "vouchers";
+    public static final String PATH_CARTS = "carts";
 
     // To make it easy to query for the exact date, we normalize all dates that go into
     // the database to the start of the the Julian day at UTC.
@@ -99,6 +100,10 @@ public class ProductsContract {
         public static final String COLUMN_MP_OPTIONS_NAME3 = "mp_options_name3";
         public static final String COLUMN_CUSTOM_PRODUCT_ID = "mp_custom_product_id";
         public static final String COLUMN_ARRAYLIST_IMAGES = "mp_array_images";
+        public static final String COLUMN_NOTIFICATIONS = "notifications";
+        public static final String COLUMN_IS_IN_CART = "is_in_cart";
+        public static final String COLUMN_CART_ID = "cart_id";
+
 
         public static final String[] ALL_PRODUCT_COLUMNS_PROJECTION = new String[]{ //Todas as colunas da tabela
                 ProductsEntry._ID,
@@ -138,7 +143,10 @@ public class ProductsContract {
                 ProductsEntry.COLUMN_MP_OPTIONS_NAME2,
                 ProductsEntry.COLUMN_MP_OPTIONS_NAME3,
                 ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID,
-                ProductsEntry.COLUMN_ARRAYLIST_IMAGES
+                ProductsEntry.COLUMN_ARRAYLIST_IMAGES,
+                ProductsEntry.COLUMN_NOTIFICATIONS,
+                ProductsEntry.COLUMN_IS_IN_CART,
+                ProductsEntry.COLUMN_CART_ID
         };
     }
 
@@ -167,13 +175,14 @@ public class ProductsContract {
                 PricesEntry.COLUMN_PRODUCT_PRICE_DATE
         };
     }
+
     public static final class VouchersEntry implements BaseColumns {
         public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_VOUCHERS).build();
 
         public static final String CONTENT_DIR_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_VOUCHERS;
         public static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_VOUCHERS;
 
-        // Prices table
+        // Vouchers table
         public static final String TABLE_NAME = "vouchers_table";
         public static final String COLUMN_VOUCHER_CODE = "voucher_code";
         public static final String COLUMN_VOUCHER_DISCOUNT = "voucher_discount";
@@ -194,6 +203,30 @@ public class ProductsContract {
                 VouchersEntry.COLUMN_VOUCHER_WEBSTORE,
                 VouchersEntry.COLUMN_VOUCHER_COUNTRY_CODE,
                 VouchersEntry.COLUMN_VOUCHER_IS_ACTIVE
+        };
+
+    }
+
+    public static final class CartsEntry implements BaseColumns {
+        public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_CARTS).build();
+
+        public static final String CONTENT_DIR_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_CARTS;
+        public static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_CARTS;
+
+        // Carts table
+        public static final String TABLE_NAME = "carts_table";
+        public static final String COLUMN_ID_PRODUCTS = "_id_products";
+        public static final String COLUMN_CART_ID = "cart_id";
+
+
+        public static Uri buildCartssUri(long id) {
+            return ContentUris.withAppendedId(CONTENT_URI, id);
+        }
+
+        public static final String[] ALL_CARTS_COLUMNS_PROJECTION = new String[]{
+                CartsEntry._ID,
+                CartsEntry.COLUMN_ID_PRODUCTS,
+                CartsEntry.COLUMN_CART_ID
         };
 
     }

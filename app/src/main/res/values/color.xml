@@ -6,7 +6,7 @@
     <color name="colorPrimary">#1e88e5</color>
     <color name="colorPrimaryLight">#90caf9</color>
     <color name="colorPrimaryDark">#1565c0</color>
-    <color name="colorPrimaryDarker">#1565c0</color>
+    <color name="colorPrimaryDarker">#01579b</color>
     <color name="transparent">#00ffffff</color>
     <color name="cardsColor">#ffffff</color>
     <color name="appBackground">#f2f1f1</color>
@@ -17,6 +17,7 @@
     <color name="red_light">#ff6060</color>
     <color name="darker_red">#ab2f2f</color>
     <color name="text_gray">#616161</color>
+    <color name="light_gray">#e0e0e0</color>
 
     <color name="f_color1">#2196F3</color>
     <color name="f_color2">#4CAF50</color>

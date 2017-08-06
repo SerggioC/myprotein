@@ -73,6 +73,55 @@ public class MyProteinDomain {
         return href;
     }
 
+    public static final String[] MP_DESKTOP_SITES = new String[]{
+            "www.myprotein.ae",
+            "www.myprotein.at",
+            "au.myprotein.com",
+            "www.myprotein.az",
+            "www.myprotein.ba",
+            "www.myprotein.be",
+            "www.myprotein.bg",
+            "ca.myprotein.com",
+            "www.myprotein.ch",
+            "www.myprotein.cn",
+            "www.myprotein.cz",
+            "www.myprotein.com.cy",
+            "www.myprotein.dk",
+            "de.myprotein.com",
+            "www.myprotein.ee",
+            "www.myprotein.gr",
+            "www.myprotein.com",
+            "www.myprotein.es",
+            "www.myprotein.fi",
+            "fr.myprotein.com",
+            "www.myprotein.com.hk",
+            "www.myprotein.hr",
+            "www.myprotein.hu",
+            "www.myprotein.ie",
+            "www.myprotein.co.in",
+            "www.myprotein.it",
+            "www.myprotein.jp",
+            "www.myprotein.co.kr",
+            "www.myprotein.lt",
+            "www.myprotein.lv",
+            "www.myprotein.no",
+            "nl.myprotein.com",
+            "nz.myprotein.com",
+            "www.myprotein.pl",
+            "pt.myprotein.com",
+            "www.myprotein.ro",
+            "www.myprotein.rs",
+            "www.myprotein.ru",
+            "www.myprotein.com.sg",
+            "www.myprotein.sk",
+            "si.myprotein.com",
+            "www.myprotein.se",
+            "www.myprotein.tw",
+            "www.myprotein.com.ua",
+            "us.myprotein.com",
+            "fr-ca.myprotein.com",
+            "www.myprotein.co.za"
+    };
     public static final String[] MP_MOBILE_SITES = new String[]{
             "m.myprotein.ae",
             "m.myprotein.at",
@@ -123,6 +172,107 @@ public class MyProteinDomain {
             "m.myprotein.co.za"
     };
 
+    public static String getCountryFromUrl(String theSite) {
+        String country;
+        switch (theSite) {
+            case "www.myprotein.ae": country = "United Arab Emirates"; break;
+            case "m.myprotein.ae": country = "United Arab Emirates"; break;
+            case "www.myprotein.at": country = "Austria"; break;
+            case "m.myprotein.at": country = "Austria"; break;
+            case "au.myprotein.com": country = "Australia"; break;
+            case "m.au.myprotein.com": country = "Australia"; break;
+            case "www.myprotein.az": country = "Azerbaijan"; break;
+            case "m.myprotein.az": country = "Azerbaijan"; break;
+            case "www.myprotein.ba": country = "Bosnia and Herzegovina"; break;
+            case "m.myprotein.ba": country = "Bosnia and Herzegovina"; break;
+            case "www.myprotein.be": country = "Belgium"; break;
+            case "m.myprotein.be": country = "Belgium"; break;
+            case "www.myprotein.bg": country = "Bulgaria"; break;
+            case "m.myprotein.bg": country = "Bulgaria"; break;
+            case "ca.myprotein.com": country = "Canada"; break;
+            case "m.ca.myprotein.com": country = "Canada"; break;
+            case "www.myprotein.ch": country = "Switzerland"; break;
+            case "m.myprotein.ch": country = "Switzerland"; break;
+            case "www.myprotein.cn": country = "China"; break;
+            case "m.myprotein.cn": country = "China"; break;
+            case "www.myprotein.cz": country = "Czech Republic"; break;
+            case "m.myprotein.cz": country = "Czech Republic"; break;
+            case "www.myprotein.com.cy": country = "Cyprus"; break;
+            case "m.myprotein.com.cy": country = "Cyprus"; break;
+            case "www.myprotein.dk": country = "Denmark"; break;
+            case "m.myprotein.dk": country = "Denmark"; break;
+            case "de.myprotein.com": country = "Germany"; break;
+            case "m.de.myprotein.com": country = "Germany"; break;
+            case "www.myprotein.ee": country = "Estonia"; break;
+            case "m.myprotein.ee": country = "Estonia"; break;
+            case "www.myprotein.gr": country = "Greece"; break;
+            case "m.myprotein.gr": country = "Greece"; break;
+            case "www.myprotein.com": country = "United Kingdom"; break;
+            case "m.myprotein.com": country = "United Kingdom"; break;
+            case "www.myprotein.es": country = "Spain"; break;
+            case "m.myprotein.es": country = "Spain"; break;
+            case "www.myprotein.fi": country = "Finland"; break;
+            case "m.myprotein.fi": country = "Finland"; break;
+            case "fr.myprotein.com": country = "France"; break;
+            case "m.fr.myprotein.com": country = "France"; break;
+            case "www.myprotein.com.hk": country = "Hong Kong"; break;
+            case "m.myprotein.com.hk": country = "Hong Kong"; break;
+            case "www.myprotein.hr": country = "Croatia"; break;
+            case "m.myprotein.hr": country = "Croatia"; break;
+            case "www.myprotein.hu": country = "Hungary"; break;
+            case "m.myprotein.hu": country = "Hungary"; break;
+            case "www.myprotein.ie": country = "Ireland"; break;
+            case "m.myprotein.ie": country = "Ireland"; break;
+            case "www.myprotein.co.in": country = "India"; break;
+            case "m.myprotein.co.in": country = "India"; break;
+            case "www.myprotein.it": country = "Italy"; break;
+            case "m.myprotein.it": country = "Italy"; break;
+            case "www.myprotein.jp": country = "Japan"; break;
+            case "m.myprotein.jp": country = "Japan"; break;
+            case "www.myprotein.co.kr": country = "Korea, Republic of"; break;
+            case "m.myprotein.co.kr": country = "Korea, Republic of"; break;
+            case "www.myprotein.lt": country = "Lithuania"; break;
+            case "m.myprotein.lt": country = "Lithuania"; break;
+            case "www.myprotein.lv": country = "Latvia"; break;
+            case "m.myprotein.lv": country = "Latvia"; break;
+            case "www.myprotein.no": country = "Norway"; break;
+            case "m.myprotein.no": country = "Norway"; break;
+            case "nl.myprotein.com": country = "Netherlands"; break;
+            case "m.nl.myprotein.com": country = "Netherlands"; break;
+            case "nz.myprotein.com": country = "New Zealand"; break;
+            case "m.nz.myprotein.com": country = "New Zealand"; break;
+            case "www.myprotein.pl": country = "Poland"; break;
+            case "m.myprotein.pl": country = "Poland"; break;
+            case "pt.myprotein.com": country = "Portugal"; break;
+            case "m.pt.myprotein.com": country = "Portugal"; break;
+            case "www.myprotein.ro": country = "Romania"; break;
+            case "m.myprotein.ro": country = "Romania"; break;
+            case "www.myprotein.rs": country = "Serbia"; break;
+            case "m.myprotein.rs": country = "Serbia"; break;
+            case "www.myprotein.ru": country = "Russian Federation"; break;
+            case "m.myprotein.ru": country = "Russian Federation"; break;
+            case "www.myprotein.com.sg": country = "Singapore"; break;
+            case "m.myprotein.com.sg": country = "Singapore"; break;
+            case "www.myprotein.sk": country = "Slovakia"; break;
+            case "m.myprotein.sk": country = "Slovakia"; break;
+            case "si.myprotein.com": country = "Slovenia"; break;
+            case "m.si.myprotein.com": country = "Slovenia"; break;
+            case "www.myprotein.se": country = "Sweden"; break;
+            case "m.myprotein.se": country = "Sweden"; break;
+            case "www.myprotein.tw": country = "Taiwan"; break;
+            case "m.myprotein.tw": country = "Taiwan"; break;
+            case "www.myprotein.com.ua": country = "Ukraine"; break;
+            case "m.myprotein.com.ua": country = "Ukraine"; break;
+            case "us.myprotein.com": country = "United States"; break;
+            case "m.us.myprotein.com": country = "United States"; break;
+            case "fr-ca.myprotein.com": country = "Canada"; break;
+            case "m.fr-ca.myprotein.com": country = "Canada"; break;
+            case "www.myprotein.co.za": country = "South Africa"; break;
+            case "m.myprotein.co.za": country = "South Africa"; break;
+            default: country = "United Kingdom"; break;
+        }
+            return country;
+    }
 }
 /*
 *

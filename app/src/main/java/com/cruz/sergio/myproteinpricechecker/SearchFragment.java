@@ -108,27 +108,12 @@ public class SearchFragment extends Fragment {
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_SEARCH) { //search no keyboard
                     String querystr = searchTV.getText().toString();
-
-                    if (Patterns.WEB_URL.matcher(querystr).matches()) {
-                        boolean isSupportedWebstore = false;
-                        for (int i = 0; i < WEBSTORES.length; i++) {
-                            if (querystr.contains(WEBSTORES[i])) {
-                                isSupportedWebstore = true;
-                            }
-                        }
-                        if (isSupportedWebstore) {
-                            go_to_webAdress_details(querystr);
-                        } else {
-                            showCustomSlimToast(mActivity, "Unsupported Webshop\nRequest to add this webshop in future versions", Toast.LENGTH_LONG);
-                        }
-                    } else {
-                        performSearch(querystr);
-                    }
-
+                    checkSearchQuery(querystr);
                     return true;
                 }
                 return false;
             }
+
         });
         final View btn_clear = resultsListView.findViewById(R.id.btn_clear);
         final View btn_voice = resultsListView.findViewById(R.id.btn_voice);
@@ -164,7 +149,7 @@ public class SearchFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 String querystr = searchTV.getText().toString();
-                performSearch(querystr);
+                checkSearchQuery(querystr);
             }
         });
 
@@ -176,7 +161,7 @@ public class SearchFragment extends Fragment {
                 try {
                     startActivityForResult(intent, VOICE_REQUEST_CODE);
                 } catch (ActivityNotFoundException a) {
-                    NetworkUtils.showCustomToast(mActivity, "Oops! Your device doesn't support Speech to Text", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
+                    NetworkUtils.showCustomToast(mActivity, "Oops! Your device doesn't support Speech Recognition", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
                 }
 
             }
@@ -196,6 +181,24 @@ public class SearchFragment extends Fragment {
 
         horizontalProgressBar = (ProgressBar) resultsListView.findViewById(R.id.progressBarHorizontal);
 
+    }
+
+    public void checkSearchQuery(String querystr) {
+        if (Patterns.WEB_URL.matcher(querystr).matches()) {
+            boolean isSupportedWebstore = false;
+            for (int i = 0; i < WEBSTORES.length; i++) {
+                if (querystr.contains(WEBSTORES[i])) {
+                    isSupportedWebstore = true;
+                }
+            }
+            if (isSupportedWebstore) {
+                go_to_webAdress_details(querystr);
+            } else {
+                showCustomSlimToast(mActivity, "Unsupported Webstore\nRequest to add this Webstore in a future version", Toast.LENGTH_LONG);
+            }
+        } else {
+            performSearch(querystr);
+        }
     }
 
     private void go_to_webAdress_details(String url_from_querystr) {
