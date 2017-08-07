@@ -8,7 +8,6 @@
     android:orientation="vertical">
 
     <android.support.v4.widget.SwipeRefreshLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
         android:id="@+id/watching_swiperefresh"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -19,8 +18,7 @@
             android:layout_height="match_parent"
             android:divider="@android:color/transparent"
             tools:listheader="@layout/watch_list_header_view"
-            tools:listitem="@layout/watching_item_layout"
-            />
+            tools:listitem="@layout/watching_item_layout"/>
 
     </android.support.v4.widget.SwipeRefreshLayout>
 </RelativeLayout>

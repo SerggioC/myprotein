@@ -177,17 +177,20 @@ public class MainActivity extends AppCompatActivity {
                 int menu_Item_Id = menuItem.getItemId();
 
                 switch (menu_Item_Id) {
-                    case R.id.nav_item_watching:
+                    case R.id.nav_item_news:
                         index = 0;
                         break;
-                    case R.id.nav_item_search:
+                    case R.id.nav_item_watching:
                         index = 1;
                         break;
-                    case R.id.nav_item_graphs:
+                    case R.id.nav_item_search:
                         index = 2;
                         break;
-                    case R.id.nav_item_voucher:
+                    case R.id.nav_item_graphs:
                         index = 3;
+                        break;
+                    case R.id.nav_item_voucher:
+                        index = 4;
                         break;
                     case R.id.nav_item_settings:
                         Intent intent = new Intent(mActivity, SettingsActivity.class);

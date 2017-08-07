@@ -34,12 +34,14 @@ public class TabFragment extends Fragment {
         super.onCreate(savedInstanceState);
         extras = getArguments();
         tab_text = new String[]{
+                getString(R.string.tab_news),
                 getString(R.string.tab_text_watching),
                 getString(R.string.tab_text_search),
                 getString(R.string.tab_text_graph),
                 getString(R.string.tab_text_voucher)
         };
         tab_icons = new int[]{
+                R.drawable.ic_news_statelist,
                 R.drawable.ic_view_statelist,
                 R.drawable.ic_search_statelist,
                 R.drawable.ic_graph_statelist,
@@ -58,7 +60,7 @@ public class TabFragment extends Fragment {
         viewPager = (ViewPager) tabLayout.findViewById(R.id.viewpager);
 
         /*** Set an Adapter for the View Pager */
-        viewPager.setAdapter(new MyAdapter(getChildFragmentManager()));
+        viewPager.setAdapter(new MyTabAdapter(getChildFragmentManager()));
         //Manter o conteúdo das tabs ao passar de uma para a outra
         viewPager.setOffscreenPageLimit(numberOfTabs);
 
@@ -105,15 +107,18 @@ public class TabFragment extends Fragment {
                 Menu menulateral = mNavigationView.getMenu();
                 switch (position) {
                     case 0:
-                        menuItem = menulateral.findItem(R.id.nav_item_watching);
+                        menuItem = menulateral.findItem(R.id.nav_item_news);
                         break;
                     case 1:
-                        menuItem = menulateral.findItem(R.id.nav_item_search);
+                        menuItem = menulateral.findItem(R.id.nav_item_watching);
                         break;
                     case 2:
-                        menuItem = menulateral.findItem(R.id.nav_item_graphs);
+                        menuItem = menulateral.findItem(R.id.nav_item_search);
                         break;
                     case 3:
+                        menuItem = menulateral.findItem(R.id.nav_item_graphs);
+                        break;
+                    case 4:
                         menuItem = menulateral.findItem(R.id.nav_item_voucher);
                         break;
                 }
@@ -134,9 +139,9 @@ public class TabFragment extends Fragment {
         super.onConfigurationChanged(newConfig);
     }
 
-    class MyAdapter extends FragmentPagerAdapter {
+    class MyTabAdapter extends FragmentPagerAdapter {
 
-        MyAdapter(FragmentManager fm) {
+        MyTabAdapter(FragmentManager fm) {
             super(fm);
         }
 
@@ -146,12 +151,14 @@ public class TabFragment extends Fragment {
 
             switch (position) {
                 case 0:
-                    return new WatchingFragment();
+                    return new NewsFragment();
                 case 1:
-                    return new SearchFragment();
+                    return new WatchingFragment();
                 case 2:
-                    return new GraphsFragment();
+                    return new SearchFragment();
                 case 3:
+                    return new GraphsFragment();
+                case 4:
                     return new VoucherFragment();
             }
             return null;

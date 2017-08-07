@@ -4,6 +4,11 @@
         <item android:title="Main">
             <menu>
                 <item
+                    android:id="@+id/nav_item_news"
+                    android:checkable="true"
+                    android:icon="@drawable/ic_news_statelist"
+                    android:title="@string/tab_news"/>
+                <item
                     android:id="@+id/nav_item_watching"
                     android:checkable="true"
                     android:icon="@drawable/ic_view_statelist"

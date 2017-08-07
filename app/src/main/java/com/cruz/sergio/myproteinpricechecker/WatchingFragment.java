@@ -527,19 +527,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 }
             });
 
-            mainCardView.findViewById(R.id.expand_underview).setTag(false);
-            mainCardView.findViewById(R.id.expand_underview).setOnClickListener(new View.OnClickListener() {
+            mainCardView.findViewById(R.id.expand_underview_tv).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if ((Boolean) v.getTag()) {
-                        ((TextView) v).setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_expand_more), null, null, null);
-                        ((TextView) v).setText("Details");
-                        v.setTag(false);
-                    } else {
-                        ((TextView) v).setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_expand_less_black_24dp), null, null, null);
-                        ((TextView) v).setText("Close");
-                        v.setTag(true);
-                    }
                     if (mCursor != null) {
                         final CardView under_view = (CardView) view.findViewById(R.id.under_cardview);
 
@@ -616,9 +606,13 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
                         Boolean isExpanded = isExpandedArray[this_position];
                         if (isExpanded) {
+                            ((TextView) v).setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_expand_more), null, null, null);
+                            ((TextView) v).setText("Details");
                             collapseIt(under_view);
                             isExpandedArray[this_position] = false;
                         } else {
+                            ((TextView) v).setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_expand_less_black_24dp), null, null, null);
+                            ((TextView) v).setText("Close");
                             if (this_position == mCursor.getCount() - 1) {
                                 expandIt(under_view, true);
                             } else {
@@ -830,8 +824,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             }
             if (isExpandedArray[cursor.getPosition()]) {
                 expandIt(view, false);
-                expandIt(view, false);
-                Log.w("Sergio>", this + "expandOrCollapse: \n" + "cursor.getPosition()= " + cursor.getPosition());
+                TextView textView = (TextView) ((LinearLayout) view.getParent()).findViewById(R.id.expand_underview_tv);
+                textView.setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_expand_less_black_24dp), null, null, null);
+                textView.setText("Close");
             }
         }
 

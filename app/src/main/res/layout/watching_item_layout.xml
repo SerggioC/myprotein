@@ -3,21 +3,22 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:ndroid="http://schemas.android.com/tools"
     android:id="@+id/watch_ll_item"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:gravity="center_vertical"
     android:orientation="vertical"
-    android:paddingLeft="4dp"
-    android:paddingRight="4dp"
     app:cardBackgroundColor="@color/cardsColor">
 
     <android.support.v7.widget.CardView
         android:id="@+id/main_cardview"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="4dp"
+
+        android:layout_marginBottom="3dp"
+        android:layout_marginLeft="6dp"
+        android:layout_marginRight="6dp"
+        android:layout_marginTop="3dp"
         app:cardBackgroundColor="@color/cardsColor"
         app:cardCornerRadius="@dimen/card_radius"
         app:cardElevation="@dimen/card_elevation"
@@ -215,18 +216,19 @@
                 android:layout_marginRight="6dp"
                 android:background="@color/light_gray"/>
 
-            <RelativeLayout
+
+            <LinearLayout
                 android:id="@+id/icons"
                 android:layout_width="match_parent"
                 android:layout_height="24dp">
 
                 <TextView
-                    android:id="@+id/expand_underview"
+                    android:id="@+id/expand_underview_tv"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_alignParentLeft="true"
-                    android:layout_centerVertical="true"
                     android:layout_marginLeft="4dp"
+                    android:layout_marginRight="4dp"
+                    android:layout_weight="1"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
                     android:contentDescription="Expand view for more details"
@@ -234,46 +236,46 @@
                     android:gravity="center"
                     android:text="Details"/>
 
+
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_alignParentRight="true"
-                    android:layout_centerVertical="true"
-                    android:orientation="horizontal">
+                    android:layout_weight="8"
+                    android:gravity="right">
 
                     <ImageView
                         android:id="@+id/open_web"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginRight="12dp"
+                        android:layout_marginRight="24dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
                         android:clickable="true"
                         android:contentDescription="Open webpage"
-                        android:background="@drawable/ic_open_in_browser"
-                        ndroid:src="?attr/selectableItemBackgroundBorderless"/>
+                        android:src="@drawable/ic_open_in_browser"/>
 
                     <ImageView
                         android:id="@+id/add_to_cart"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginRight="12dp"
+                        android:layout_marginRight="24dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
                         android:clickable="true"
                         android:contentDescription="Add to virtual cart"
-                        android:background="@drawable/ic_add_shopping_cart"
-                        ndroid:src="?attr/selectableItemBackgroundBorderless"/>
+                        android:src="@drawable/ic_add_shopping_cart"/>
 
                     <ImageView
                         android:id="@+id/notify"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginRight="4dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
                         android:clickable="true"
                         android:contentDescription="Set notification"
-                        android:background="@drawable/ic_notifications_none"
-                        ndroid:src="?attr/selectableItemBackgroundBorderless"/>
+                        android:src="@drawable/ic_notifications_none"/>
                 </LinearLayout>
 
+            </LinearLayout>
 
-            </RelativeLayout>
         </LinearLayout>
 
     </android.support.v7.widget.CardView>
@@ -283,9 +285,10 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginBottom="2dp"
-        android:layout_marginLeft="4dp"
-        android:layout_marginRight="4dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
         android:layout_marginTop="-4dp"
+        android:visibility="gone"
         app:cardBackgroundColor="@color/appBackground"
         app:cardCornerRadius="2dp"
         app:cardElevation="2dp"
@@ -310,6 +313,7 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentRight="true"
                 android:layout_below="@id/description_undercard"
+                android:layout_marginBottom="2dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
                 android:contentDescription="Delete entry"

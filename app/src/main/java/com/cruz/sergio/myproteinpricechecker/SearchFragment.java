@@ -43,6 +43,7 @@ import com.cruz.sergio.myproteinpricechecker.helper.MyProteinDomain;
 import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
 
 import org.jsoup.Jsoup;
+import org.jsoup.helper.StringUtil;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -144,7 +145,6 @@ public class SearchFragment extends Fragment {
             }
         });
 
-
         resultsListView.findViewById(R.id.btn_search).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -226,7 +226,7 @@ public class SearchFragment extends Fragment {
         if (hasAsyncTaskRuning) {
             NetworkUtils.showCustomToast(mActivity, "Ongoing search...", R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_SHORT);
         } else {
-            if (searchString.isEmpty()) {
+            if (StringUtil.isBlank(searchString)) {
                 NetworkUtils.showCustomToast(mActivity, "Search product name or enter product URL", R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_SHORT);
             } else {
                 horizontalProgressBar.setVisibility(View.VISIBLE);

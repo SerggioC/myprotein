@@ -11,18 +11,18 @@
     <FrameLayout
         android:id="@+id/frame_search"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical|center_horizontal">
+        android:layout_height="wrap_content">
 
         <EditText
             android:id="@+id/searchTextView"
             android:layout_width="match_parent"
             android:layout_height="@dimen/edittextsize"
-            android:layout_gravity="center_horizontal|top"
             android:background="@drawable/edittextstyle"
+            android:gravity="center"
             android:hint="@string/lets_find_a_deal"
             android:imeOptions="actionSearch"
             android:inputType="text"
+            android:text="impact whey protein"
             android:maxLines="1"
             android:textAlignment="center"/>
 
@@ -31,7 +31,7 @@
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:layout_gravity="center_vertical|left"
-            android:layout_marginLeft="12dp"
+            android:layout_marginLeft="4dp"
             android:background="@drawable/ic_search_statelist"/>
 
         <Button
@@ -39,7 +39,7 @@
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:layout_gravity="center_vertical|right"
-            android:layout_marginRight="12dp"
+            android:layout_marginRight="4dp"
             android:background="@drawable/clear_icon_statelist"
             android:visibility="gone"/>
 
@@ -48,7 +48,7 @@
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:layout_gravity="center_vertical|right"
-            android:layout_marginRight="12dp"
+            android:layout_marginRight="4dp"
             android:background="@android:drawable/ic_btn_speak_now"
             android:visibility="visible"/>
 
