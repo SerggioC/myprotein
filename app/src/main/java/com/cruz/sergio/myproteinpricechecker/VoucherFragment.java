@@ -11,12 +11,14 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 
@@ -25,7 +27,6 @@ import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
@@ -42,7 +43,6 @@ import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgen
  */
 
 public class VoucherFragment extends Fragment {
-
     Activity mActivity;
     SwipeRefreshLayout mySwipeRefreshLayout;
     ListView voucherListView;
@@ -86,8 +86,11 @@ public class VoucherFragment extends Fragment {
         if (childCount > 1) {
             ll_scroll.removeViews(1, childCount - 1);
         }
+
         AsyncTask<Void, Void, Boolean> internetAsyncTask = new checkInternetAsyncTask();
         internetAsyncTask.execute();
+
+
     }
 
     public class checkInternetAsyncTask extends AsyncTask<Void, Void, Boolean> {
@@ -114,18 +117,21 @@ public class VoucherFragment extends Fragment {
                     voucher_url_sufix = "vaucer-kodovi.list";
                 } else if (pref_MP_Domain.equals("fr-ca")) {
                     voucher_url_sufix = "codes-de-reduction.list";
-                } else if(pref_MP_Domain.equals("pt-pt")) {
+                } else if (pref_MP_Domain.equals("pt-pt")) {
                     voucher_url_sufix = "cupoes-desconto-myprotein.list";
                 } else {
                     voucher_url_sufix = "voucher-codes.list";
+
                 }
 
-                String voucher_url = MP_Domain + voucher_url_sufix;
+                String mp_voucher_url = MP_Domain + voucher_url_sufix;
+                AsyncTask<String, Void, Document> getMPVouchersAsync = new GetMPVouchersAsync();
+                getMPVouchersAsync.executeOnExecutor(THREAD_POOL_EXECUTOR, mp_voucher_url);
 
-                //Log.i("Sergio>>>", "voucher_url=" + voucher_url);
+                String prz_voucher_url = "https://www.prozis.com/pt/pt/promotional-coupons";
+                AsyncTask<String, Void, Document> GetPRZVouchersAsync = new GetPRZVouchersAsync();
+                GetPRZVouchersAsync.executeOnExecutor(THREAD_POOL_EXECUTOR, prz_voucher_url);
 
-                AsyncTask<String, Void, Document> getVouchersAsync = new GetVouchersAsync();
-                getVouchersAsync.execute(voucher_url);
 
             } else {
                 mySwipeRefreshLayout.setRefreshing(false);
@@ -139,7 +145,7 @@ public class VoucherFragment extends Fragment {
         }
     }
 
-    class GetVouchersAsync extends AsyncTask<String, Void, Document> {
+    class GetMPVouchersAsync extends AsyncTask<String, Void, Document> {
         @Override
         protected Document doInBackground(String... params) {
             Document resultDocument = null;
@@ -159,20 +165,13 @@ public class VoucherFragment extends Fragment {
         @Override
         protected void onPostExecute(Document document) {
             super.onPostExecute(document);
-
+            setStoreLogo(R.drawable.myprotein_logo);
             if (document != null) {
                 Elements voucherElements = document.getElementsByClass("voucher-info-wrapper");
-
-                if (voucherElements == null || voucherElements.size() == 0) {
-
-                    set_webView("No Vouchers Found");
-
-                } else {
-                    for (Element singlevoucherElement : voucherElements) {
-                        String voucherText = singlevoucherElement.html();
-
+                if (voucherElements != null && voucherElements.size() != 0) {
+                    for (int i = 0; i < voucherElements.size(); i++) {
+                        String voucherText = voucherElements.get(i).html();
                         // <a href="/clothing/all-clothing.list" class="voucher-button btn-primary btn">Compra já</a>
-
                         String replace = "<a href=\"/";
                         int indexOfHref = voucherText.indexOf(replace);
                         if (indexOfHref > 0) {
@@ -183,10 +182,55 @@ public class VoucherFragment extends Fragment {
                     }
                 }
             }
-
             mySwipeRefreshLayout.setRefreshing(false);
-
         }
+    }
+
+    class GetPRZVouchersAsync extends AsyncTask<String, Void, Document> {
+        @Override
+        protected Document doInBackground(String... params) {
+            Document resultDocument = null;
+            try {
+                resultDocument = Jsoup.connect(params[0])
+                        .userAgent(userAgent)
+                        .timeout(NET_TIMEOUT)
+                        .maxBodySize(0) //sem limite de tamanho do doc recebido
+                        .get();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return resultDocument;
+        }
+
+        @Override
+        protected void onPostExecute(Document document) {
+            super.onPostExecute(document);
+            setStoreLogo(R.drawable.prozis_logo34);
+            if (document != null) {
+                Elements voucherElements = document.getElementsByClass("each-coupon-holder");
+                if (voucherElements != null && voucherElements.size() != 0) {
+                    for (int i = 0; i < voucherElements.size(); i++) {
+                        String voucherText = voucherElements.get(i).html();
+                        set_webView(voucherText);
+                    }
+                } else {
+                    set_webView("No available coupons or discount codes.");
+                }
+            } else {
+                set_webView("Couldn't get coupons webpage.\nTry again later");
+            }
+            mySwipeRefreshLayout.setRefreshing(false);
+        }
+    }
+
+    private void setStoreLogo(int logo) {
+        ImageView image = new ImageView(mActivity);
+        float dpvalue = 8;
+        int pixels = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dpvalue, getResources().getDisplayMetrics());
+        image.setPadding(0, pixels, 0, pixels);
+        image.setImageResource(logo);
+        ll_scroll.addView(image);
     }
 
     private void set_webView(String voucherText) {

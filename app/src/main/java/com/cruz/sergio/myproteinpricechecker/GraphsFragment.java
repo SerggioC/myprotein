@@ -11,12 +11,12 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.SwitchCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.TextView;
 
 import com.cruz.sergio.myproteinpricechecker.helper.DBHelper;
@@ -356,11 +356,11 @@ public class GraphsFragment extends Fragment {
 
             graphs_options(lineChart, dataSets, allLineDataSets);
 
-            final CheckBox gCheckBox = (CheckBox) getActivity().findViewById(R.id.g_checkBox);
-            gCheckBox.setOnClickListener(new View.OnClickListener() {
+            final SwitchCompat switchCompat = (SwitchCompat) getActivity().findViewById(R.id.g_switch);
+            switchCompat.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    lineChart.getLegend().setEnabled(gCheckBox.isChecked());
+                    lineChart.getLegend().setEnabled(switchCompat.isChecked());
                     lineChart.invalidate();
                 }
             });

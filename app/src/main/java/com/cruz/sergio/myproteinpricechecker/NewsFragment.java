@@ -36,12 +36,7 @@ public class NewsFragment extends Fragment {
     Activity mActivity;
     SwipeRefreshLayout refreshNewsLayout;
     LinearLayout ll_news_vertical;
-    String MP_Domain;
-    String[] NEWS_SITES = new String[]{
-            "https://pt.myprotein.com",
-            "https://www.prozis.com/pt/pt",
 
-    };
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -67,15 +62,15 @@ public class NewsFragment extends Fragment {
                 new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {
-                        getVouchers();
+                        getNews();
                     }
                 }
         );
         ll_news_vertical = (LinearLayout) mActivity.findViewById(R.id.ll_news_vertical);
-        getVouchers();
+        getNews();
     }
 
-    public void getVouchers() {
+    public void getNews() {
         int childCount = ll_news_vertical.getChildCount();
         if (childCount > 1) {
             ll_news_vertical.removeViews(1, childCount - 1);
@@ -99,14 +94,15 @@ public class NewsFragment extends Fragment {
             if (hasInternet) {
                 SharedPreferences prefManager = PreferenceManager.getDefaultSharedPreferences(mActivity);
                 String pref_MP_Domain = prefManager.getString("mp_website_location", "en-gb");
-                MP_Domain = MyProteinDomain.getHref(pref_MP_Domain);
+                String MP_Domain = MyProteinDomain.getHref(pref_MP_Domain);
 
-                String news_url = NEWS_SITES[0];
+                AsyncTask<String, Void, Document> getMPNewsAsync = new GetMPNewsAsync();
+                getMPNewsAsync.executeOnExecutor(THREAD_POOL_EXECUTOR, MP_Domain);
 
-                Log.i("Sergio>>>", "news_url=" + news_url);
+                String PRZ_Domain = "https://www.prozis.com/pt/pt/";
 
-                AsyncTask<String, Void, Document> getNewsAsync = new GetNewsAsync();
-                getNewsAsync.executeOnExecutor(THREAD_POOL_EXECUTOR, news_url);
+                AsyncTask<String, Void, Document> getPRZNewsAsync = new GetPRZNewsAsync();
+                getPRZNewsAsync.executeOnExecutor(THREAD_POOL_EXECUTOR, PRZ_Domain);
 
             } else {
                 refreshNewsLayout.setRefreshing(false);
@@ -119,13 +115,15 @@ public class NewsFragment extends Fragment {
         }
     }
 
-    class GetNewsAsync extends AsyncTask<String, Void, Document> {
+    class GetMPNewsAsync extends AsyncTask<String, Void, Document> {
+        String url;
 
         @Override
         protected Document doInBackground(String... params) {
+            this.url = params[0];
             Document resultDocument = null;
             try {
-                resultDocument = Jsoup.connect(params[0])
+                resultDocument = Jsoup.connect(url)
                         .userAgent(userAgent)
                         .timeout(NET_TIMEOUT)
                         .maxBodySize(0) //sem limite de tamanho do doc recebido
@@ -143,24 +141,21 @@ public class NewsFragment extends Fragment {
 
             if (document != null) {
                 Elements newsElements = document.getElementsByClass("carouselMain__slide");
-                Log.i("Sergio>", this + " onPostExecute\nnewsElements= " + newsElements);
 
-                if (newsElements == null || newsElements.size() == 0) {
-                    set_webView("No News Found");
-
-                } else {
+                if (newsElements != null && newsElements.size() != 0) {
+                    String replace = "<a href=\"/";
                     for (int i = 0; i < newsElements.size(); i++) {
                         Element element = newsElements.get(i);
-                        String voucherText = element.html();
-
-                        String replace = "<a href=\"/";
-                        int indexOfHref = voucherText.indexOf(replace);
+                        String newsText = element.html();
+                        int indexOfHref = newsText.indexOf(replace);
                         if (indexOfHref > 0) {
-                            voucherText = voucherText.replaceAll(replace, "<a href=" + MP_Domain);
+                            newsText = newsText.replaceAll(replace, "<a href=" + url);
                         }
-
-                        set_webView(voucherText);
+                        set_webView(newsText, 0);
                     }
+                } else {
+                    set_webView("No News Found", -1);
+
                 }
             }
 
@@ -169,12 +164,99 @@ public class NewsFragment extends Fragment {
         }
     }
 
-    private void set_webView(String news_text) {
+    class GetPRZNewsAsync extends AsyncTask<String, Void, Document> {
+        String url;
+
+        @Override
+        protected Document doInBackground(String... params) {
+            this.url = params[0];
+            Document resultDocument = null;
+            try {
+                resultDocument = Jsoup.connect(url)
+                        .userAgent(userAgent)
+                        .timeout(NET_TIMEOUT)
+                        .maxBodySize(0) //sem limite de tamanho do doc recebido
+                        .get();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return resultDocument;
+        }
+
+        @Override
+        protected void onPostExecute(Document document) {
+            super.onPostExecute(document);
+
+            if (document != null) {
+                Elements newsElements = document.getElementsByClass("slider-item");
+                if (newsElements != null && newsElements.size() != 0) {
+                    String replace1 = "href=\"/";
+                    String replace2 = "src=\"//";
+                    for (int i = 1; i < newsElements.size(); i++) {
+                        String newsText = newsElements.get(i).html();
+
+                        int indexofHref = newsText.indexOf(replace1);
+                        if (indexofHref > 0) {
+                            newsText = newsText.replaceAll(replace1, "href=\"" + "https://www.prozis.com/");
+                        }
+
+                        int indexOfimg_src = newsText.indexOf(replace2);
+                        if (indexOfimg_src > 0) {
+                            newsText = newsText.replaceAll(replace2, "src=\"" + "https://");
+                        }
+
+                        set_webView(newsText, 1);
+                    }
+                } else {
+                    set_webView("No News Found", -1);
+
+                }
+            }
+
+            refreshNewsLayout.setRefreshing(false);
+
+        }
+    }
+
+    private void set_webView(String news_text, int style) {
         LayoutInflater inflater = (LayoutInflater) mActivity.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
         View view = inflater.inflate(R.layout.news_webview_layout, null);
         WebView webView = (WebView) view.findViewById(R.id.news_webview);
+        webView.getSettings().setBuiltInZoomControls(false);
+        webView.getSettings().setDisplayZoomControls(false);
+
+        switch (style) {
+            case 0:
+                news_text = getCSS_Styling_MP(news_text);
+                break;
+            case 1:
+                news_text = getCSS_Styling_PRZ(news_text);
+                break;
+        }
         webView.loadData(news_text, "text/html; charset=utf-8", "utf-8");
         ll_news_vertical.addView(view);
     }
 
+    private String getCSS_Styling_MP(String bodyHTML) {
+        String style = "<style>" +
+                "div{" +
+                "background-repeat:no-repeat;" +
+                "background-position: center center;" +
+                "background-size: cover;" +
+                "font-size:x-small;" +
+                "}" +
+                "</style>";
+        return "<html><head>" + style + "</head><body>" + bodyHTML + "</body></html>";
+    }
+
+    private String getCSS_Styling_PRZ(String bodyHTML) {
+        String style = "<style>" +
+                "img{" +
+                "width:100%;" +
+                "align-content:center center;" +
+                "}" +
+                "</style>";
+        return "<html><head>" + style + "</head><body>" + bodyHTML + "</body></html>";
+    }
 }

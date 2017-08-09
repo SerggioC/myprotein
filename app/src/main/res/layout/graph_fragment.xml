@@ -8,8 +8,8 @@
     android:background="@color/white"
     android:orientation="vertical">
 
-    <CheckBox
-        android:id="@+id/g_checkBox"
+    <android.support.v7.widget.SwitchCompat
+        android:id="@+id/g_switch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
@@ -35,8 +35,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@+id/line_chart"
-        android:layout_centerHorizontal="true"
         android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
         android:layout_margin="2dp"
         android:background="@drawable/button_statelist"
         android:text="Range"
@@ -46,9 +46,8 @@
         android:id="@+id/line_chart"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/g_checkBox"
+        android:layout_below="@id/g_switch"
         android:layout_marginBottom="4dp"/>
-
 
 
 </RelativeLayout>

@@ -16,7 +16,6 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -45,26 +44,22 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState, @Nullable PersistableBundle persistentState) {
         super.onCreate(savedInstanceState, persistentState);
-        Log.w("Sergio>", this + " onCreate\nBC_Registered= " + BC_Registered);
     }
 
     @Override
     protected void onRestart() {
         super.onRestart();
-        Log.w("Sergio>", this + " onRestart\nBC_Registered= " + BC_Registered);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
         BC_Registered = NetworkUtils.createBroadcast(mActivity);
-        Log.w("Sergio>", this + " onStart\nBC_Registered= " + BC_Registered);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        Log.w("Sergio>", this + " onResume\nBC_Registered= " + BC_Registered);
     }
 
     String getCurrencyCode(String symbol) {

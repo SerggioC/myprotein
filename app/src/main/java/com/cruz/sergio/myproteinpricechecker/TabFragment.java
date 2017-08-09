@@ -1,12 +1,15 @@
 package com.cruz.sergio.myproteinpricechecker;
 
+import android.content.Context;
 import android.content.res.Configuration;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -15,6 +18,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.TheMenuItem.lastMenuItem;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.mNavigationView;
@@ -26,8 +32,12 @@ public class TabFragment extends Fragment {
     Bundle extras;
     MenuItem menuItem;
     int[] tab_icons;
+    int[] tab_icons_selected;
     String[] tab_text;
     int numberOfTabs;
+    int lastPosition = 0;
+    List<TextView> tab_textViews;
+    List<ImageView> tab_imageViews;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -47,7 +57,19 @@ public class TabFragment extends Fragment {
                 R.drawable.ic_graph_statelist,
                 R.drawable.ic_voucher_statelist
         };
+
+        tab_icons_selected = new int[]{
+                R.drawable.ic_news_pressed,
+                R.mipmap.ic_menu_view_pressed,
+                R.drawable.ic_search_selected2,
+                R.mipmap.ic_graph_selected,
+                R.mipmap.ic_voucher_selected
+        };
+
         numberOfTabs = tab_text.length;
+        tab_textViews = new ArrayList<>(numberOfTabs);
+        tab_imageViews = new ArrayList<>(numberOfTabs);
+
     }
 
     @Nullable
@@ -77,16 +99,19 @@ public class TabFragment extends Fragment {
                 for (int i = 0; i < numberOfTabs; i++) {
                     // Alternativa
 //                    LayoutInflater inf = getActivity().getLayoutInflater();
-//                    View one_tab = inf.inflate(R.layout.one_tab_layout, null);
 
-                    //Context context = getActivity().getApplicationContext();
+                    Context context = getActivity().getApplicationContext();
 
-                    View one_tab = LayoutInflater.from(getActivity()).inflate(R.layout.one_tab_layout, null);
+                    View one_tab = LayoutInflater.from(context).inflate(R.layout.one_tab_layout, null);
                     TabFragment.tabLayout.getTabAt(i).setCustomView(one_tab);
                     TextView textView = (TextView) one_tab.findViewById(R.id.tabText);
                     textView.setText(tab_text[i]);
+                    tab_textViews.add(textView);
+
                     ImageView imageView = (ImageView) one_tab.findViewById(R.id.tabImage);
                     imageView.setImageResource(tab_icons[i]);
+                    tab_imageViews.add(imageView);
+
                 }
 
                 if (extras != null) {
@@ -122,6 +147,14 @@ public class TabFragment extends Fragment {
                         menuItem = menulateral.findItem(R.id.nav_item_voucher);
                         break;
                 }
+
+                tab_textViews.get(lastPosition).setTextColor(ContextCompat.getColor(getActivity(), R.color.white));
+                tab_textViews.get(lastPosition).setTypeface(Typeface.DEFAULT);
+                tab_imageViews.get(lastPosition).setImageResource(tab_icons[lastPosition]);
+                tab_textViews.get(position).setTextColor(ContextCompat.getColor(getActivity(), R.color.orange));
+                tab_textViews.get(position).setTypeface(Typeface.DEFAULT_BOLD);
+                tab_imageViews.get(position).setImageResource(tab_icons_selected[position]);
+                lastPosition = position;
                 lastMenuItem.setChecked(false);
                 menuItem.setChecked(true);
                 lastMenuItem = menuItem;

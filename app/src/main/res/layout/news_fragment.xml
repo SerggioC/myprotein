@@ -18,7 +18,7 @@
             <LinearLayout
                 android:id="@+id/ll_news_vertical"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:orientation="vertical"
                 android:padding="2dp">
 
@@ -41,6 +41,7 @@
                         android:layout_height="wrap_content"
                         android:layout_toRightOf="@id/image_news"
                         android:text="Latest News and Offers"
+                        android:fontFamily="sserif"
                         android:textAlignment="center"
                         android:textColor="@android:color/holo_red_light"
                         android:textSize="20sp"/>
