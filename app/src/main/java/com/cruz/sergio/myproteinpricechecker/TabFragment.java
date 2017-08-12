@@ -96,12 +96,9 @@ public class TabFragment extends Fragment {
             public void run() {
                 TabFragment.tabLayout.setupWithViewPager(viewPager);
 
+                Context context = getActivity().getApplicationContext();
+
                 for (int i = 0; i < numberOfTabs; i++) {
-                    // Alternativa
-//                    LayoutInflater inf = getActivity().getLayoutInflater();
-
-                    Context context = getActivity().getApplicationContext();
-
                     View one_tab = LayoutInflater.from(context).inflate(R.layout.one_tab_layout, null);
                     TabFragment.tabLayout.getTabAt(i).setCustomView(one_tab);
                     TextView textView = (TextView) one_tab.findViewById(R.id.tabText);
@@ -113,6 +110,9 @@ public class TabFragment extends Fragment {
                     tab_imageViews.add(imageView);
 
                 }
+                tab_textViews.get(0).setTextColor(ContextCompat.getColor(getActivity(), R.color.orange));
+                tab_textViews.get(0).setTypeface(Typeface.DEFAULT_BOLD);
+                tab_imageViews.get(0).setImageResource(tab_icons_selected[0]);
 
                 if (extras != null) {
                     int index = extras.getInt("index");

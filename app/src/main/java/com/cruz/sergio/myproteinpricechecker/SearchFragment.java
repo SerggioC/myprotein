@@ -83,7 +83,6 @@ public class SearchFragment extends Fragment {
     };
 
 
-
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -231,7 +230,7 @@ public class SearchFragment extends Fragment {
             } else {
                 horizontalProgressBar.setVisibility(View.VISIBLE);
                 AsyncTask<String, Void, Boolean> internetAsyncTask = new checkInternetAsyncTask();
-                internetAsyncTask.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, searchString);
+                internetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, searchString);
             }
         }
     }
@@ -530,13 +529,6 @@ public class SearchFragment extends Fragment {
                 @Override
                 public void onClick(View v) {
 
-//                    Bundle productBundle = new Bundle();
-//                    productBundle.putString("url", product.productHref);
-//                    productBundle.putStringArrayList("description", product.pptList_stringarray);
-//                    productBundle.putString("productID", product.productID);
-//                    productBundle.putString("image_url", product.imgURL);
-
-
                     Intent intent = new Intent(mActivity, DetailsActivity.class);
                     intent.putExtra("url", product.productHref);
                     intent.putStringArrayListExtra("description", product.pptList_stringarray);
@@ -550,21 +542,6 @@ public class SearchFragment extends Fragment {
                             android.R.anim.fade_in,
                             android.R.anim.fade_out).toBundle();
                     startActivityForResult(intent, SEARCH_REQUEST_CODE, bundle);
-
-                    //startActivity(intent, bundle);
-
-//
-//
-//                    DetailsFragment detailsFragment = new DetailsFragment();
-//                    detailsFragment.setArguments(productBundle);
-//
-//                    FragmentTransaction ft = MainActivity.mFragmentManager.beginTransaction();
-//                    ft.hide(getParentFragment());
-//                    ft.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out);
-//                    ft.add(android.R.id.content, detailsFragment, DETAILS_FRAGMENT_TAG);
-//                    ft.addToBackStack(null);
-//                    ft.commit();
-//
 
                 }
             });

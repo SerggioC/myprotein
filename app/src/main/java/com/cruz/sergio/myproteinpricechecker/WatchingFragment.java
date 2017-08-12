@@ -42,7 +42,6 @@ import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.Transformation;
-import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ImageSwitcher;
 import android.widget.ImageView;
@@ -210,8 +209,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 timer.cancel();
                 timer.purge();
                 timer = new Timer();
-                TabLayout.Tab tab = tabLayout.getTabAt(0);
-                tabLayout.setScrollPosition(0, 0f, true);
+                TabLayout.Tab tab = tabLayout.getTabAt(1);
+                tabLayout.setScrollPosition(1, 0f, true);
                 tab.select();
                 getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
                 addedNewProduct = addedNew;
@@ -242,43 +241,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         listViewItems = (ListView) rootview.findViewById(R.id.watching_listview);
         listViewItems.addHeaderView(View.inflate(mActivity, R.layout.watch_list_header_view, null));
         listViewItems.setAdapter(cursorDBAdapter);
-
-        listViewItems.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                current_position = position;
-            }
-        });
-
-//        listViewItems.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-//            @Override
-//            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-//
-//                Cursor cursor = (Cursor) adapterView.getItemAtPosition(position);
-//                if (cursor != null) {
-//                    int cursorPosition = cursor.getPosition();
-//                    Log.i("Sergio>>>", this + "\n" +
-//                            "cursor get position = " + cursorPosition + "\n" +
-//                            "list item position = " + position);
-//
-//                    Boolean isExpanded = isExpandedArray[cursorPosition];
-//                    View under_view = view.findViewById(R.id.undercard_tv_desc);
-//
-//                    if (isExpanded) {
-//                        collapseIt(under_view);
-//                        isExpandedArray[cursorPosition] = false;
-//                    } else {
-//                        if (cursorPosition == cursor.getCount() - 1) {
-//                            expandIt(under_view, true);
-//                        } else {
-//                            expandIt(under_view, false);
-//                        }
-//                        isExpandedArray[cursorPosition] = true;
-//                    }
-//
-//                }
-//            }
-//        });
 
         watchingSwipeRefreshLayout = (SwipeRefreshLayout) rootview.findViewById(R.id.watching_swiperefresh);
         watchingSwipeRefreshLayout.setOnRefreshListener(
@@ -650,7 +612,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             if (options_sabor == null) options_sabor = "";
             if (options_caixa == null) options_caixa = "";
             if (options_quant == null) options_quant = "";
-            if (current_price_string == null || current_price_string.equals("")) current_price_string = "---";
+            if (current_price_string == null || current_price_string.equals("")) current_price_string = "N/A";
 
             String sub_title = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_SUBTITLE));
             String webstore_name = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_WEBSTORE_NAME));

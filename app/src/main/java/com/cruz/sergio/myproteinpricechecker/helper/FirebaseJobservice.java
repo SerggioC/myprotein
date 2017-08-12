@@ -49,8 +49,9 @@ public class FirebaseJobservice extends JobService {
     private static int cursorSize;
     private static int currentCursor;
     static Boolean isJob;
-    public static UpdateCompleteListener listener;
     static int delta_time = 0;
+
+    public static UpdateCompleteListener listener;
 
     // This interface defines the type of messages I want to communicate to my owner
     public interface UpdateCompleteListener {
@@ -335,7 +336,7 @@ public class FirebaseJobservice extends JobService {
             String priceJson = null;
             if (json != null) {
                 try {
-                    priceJson = (String) json.get("price");
+                    priceJson = json.isNull("price") ? null : (String) json.get("price");
                 } catch (JSONException e) {
                     Log.e("Sergio>", " onPostExecute GetUpdatedPriceJSON JSONException error" + e);
                     e.printStackTrace();
@@ -446,9 +447,9 @@ public class FirebaseJobservice extends JobService {
 
         currentCursor++;
         if (currentCursor == cursorSize) {
-            Log.w("Sergio>", "savePriceToDB: \n" + "listener= " + listener);
             if (listener != null) {
                 listener.onUpdateReady(true);
+                Log.w("Sergio>", "savePriceToDB: \n" + "listener= " + listener);
             }
         }
 

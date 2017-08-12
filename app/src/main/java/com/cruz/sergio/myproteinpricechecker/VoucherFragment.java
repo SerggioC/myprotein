@@ -182,7 +182,6 @@ public class VoucherFragment extends Fragment {
                     }
                 }
             }
-            mySwipeRefreshLayout.setRefreshing(false);
         }
     }
 

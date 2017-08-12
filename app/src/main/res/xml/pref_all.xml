@@ -81,11 +81,17 @@
         android:title="@string/pref_title_cache"/>
 
     <SwitchPreference
-
         android:defaultValue="false"
         android:icon="@mipmap/ic_poweron"
         android:key="update_on_start"
         android:title="@string/pref_update_on_start"/>
+
+    <SwitchPreference
+        android:defaultValue="false"
+        android:icon="@mipmap/ic_new_view"
+        android:key="getnews_on_start"
+        android:title="@string/pref_getnews_on_start"/>
+
     </PreferenceCategory>
 
 </PreferenceScreen>

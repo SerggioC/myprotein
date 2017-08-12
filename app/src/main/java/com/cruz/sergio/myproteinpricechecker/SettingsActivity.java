@@ -182,7 +182,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         if (bundle != null) {
             int menuId = bundle.getInt("menuId");
             mNavigationView.setCheckedItem(menuId);
-            //MainActivity.TheMenuItem.lastMenuItem =
         }
     }
 

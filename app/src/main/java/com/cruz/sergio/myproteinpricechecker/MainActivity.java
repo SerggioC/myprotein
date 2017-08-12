@@ -34,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     Handler mHandler;
     Bundle indexBundle;
     int index = 0;
+    public static Boolean GETNEWS_ONSTART;
     public static Boolean CACHE_IMAGES;
     public static Boolean UPDATE_ONSTART;
     public static Boolean BC_Registered = false;
@@ -131,6 +132,7 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
         CACHE_IMAGES = sharedPrefs.getBoolean("cache_images", false);
         UPDATE_ONSTART = sharedPrefs.getBoolean("update_on_start", false);
+        GETNEWS_ONSTART = sharedPrefs.getBoolean("getnews_on_start", false);
 
         StartFirebase.createJobDispatcher(this);
 
