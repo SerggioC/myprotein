@@ -1,28 +1,23 @@
 package com.cruz.sergio.myproteinpricechecker;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.annotation.LayoutRes;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
-import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 
 import com.cruz.sergio.myproteinpricechecker.helper.MyProteinDomain;
 import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
@@ -47,32 +42,34 @@ public class NewsFragment extends Fragment {
     SwipeRefreshLayout refreshNewsLayout;
     LinearLayout ll_news_vertical;
     RecyclerView newsListView;
-    ProgressBar newsProgressBar;
     private static final int NUMBER_OF_NEWS_SITES = 2;
-    int news_fetched = 0;
+    public int news_fetched = 0;
     List<String> list_NewsContent = new ArrayList<>();
 
     NewsFetchedListener listener;
     public interface NewsFetchedListener {
-        void onNewsFetched(Boolean fetched);
+        void OnNewsFetched(Boolean fetched);
     }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mActivity = getActivity();
+        list_NewsContent.add("header");
 
         listener = new NewsFetchedListener() {
             @Override
-            public void onNewsFetched(Boolean fetched) {
+            public void OnNewsFetched(Boolean fetched) {
                 if (fetched) {
                     news_fetched++;
                     if (news_fetched == NUMBER_OF_NEWS_SITES) {
-                        Log.i("Sergio>", this + " onNewsFetched fetched total");
-                        //newsListView.setAdapter(new NewsArrayAdapter(mActivity, R.layout.news_webview_layout, list_NewsContent));
                         newsListView.setAdapter(new RecyclerViewAdapter(list_NewsContent));
                     }
+                } else {
+                    // sem internet
+                    newsListView.setAdapter(new RecyclerViewAdapter(list_NewsContent));
                 }
+                refreshNewsLayout.setRefreshing(false);
             }
         };
     }
@@ -97,10 +94,6 @@ public class NewsFragment extends Fragment {
         linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         newsListView.setLayoutManager(linearLayoutManager);
 
-        //newsListView.addHeaderView(View.inflate(mActivity, R.layout.news_header_view, null));
-        //newsProgressBar = (ProgressBar) mActivity.findViewById(R.id.news_progressBar);
-        //Log.w("Sergio>", this + "onViewCreated: \n" + "newsProgressBar= " + newsProgressBar);
-
         refreshNewsLayout = (SwipeRefreshLayout) mActivity.findViewById(R.id.news_swiperefresh);
         refreshNewsLayout.setOnRefreshListener(
                 new SwipeRefreshLayout.OnRefreshListener() {
@@ -108,33 +101,37 @@ public class NewsFragment extends Fragment {
                     public void onRefresh() {
                         newsListView.setAdapter(null);
                         list_NewsContent.clear();
+                        list_NewsContent.add("header");
                         news_fetched = 0;
                         getNews();
                     }
                 }
         );
-//        ll_news_vertical = (LinearLayout) mActivity.findViewById(R.id.ll_news_vertical);
 
         if (GETNEWS_ONSTART) {
-            //newsProgressBar.setVisibility(View.VISIBLE);
+            refreshNewsLayout.setRefreshing(true);
             getNews();
         }
     }
 
-
     public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapter.ViewHolder> {
         private List<String> mDataset;
+        static final int HEADER_VIEW = 0;
+        static final int ITEM_VIEW = 1;
 
         // Provide a reference to the views for each data item
         // Complex data items may need more than one view per item, and
         // you provide access to all the views for a data item in a view holder
         public class ViewHolder extends RecyclerView.ViewHolder {
-            // each data item is just a string in this case
             public WebView mWebView;
 
             public ViewHolder(CardView c) {
                 super(c);
                 mWebView = (WebView) c.findViewById(R.id.news_webview);
+            }
+
+            public ViewHolder(RelativeLayout r) {
+                super(r);
             }
         }
 
@@ -144,17 +141,16 @@ public class NewsFragment extends Fragment {
         }
 
         // Create new views (invoked by the layout manager)
+        // set the view's size, margins, paddings and layout parameters
         @Override
         public RecyclerViewAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-
-            // create a new view
-            CardView c = (CardView) LayoutInflater.from(getContext()).inflate(R.layout.news_webview_layout, parent, false);
-            // set the view's size, margins, paddings and layout parameters
-
-            ViewHolder vh = new ViewHolder(c);
-            return vh;
-
-
+            if (viewType == HEADER_VIEW) {
+                RelativeLayout r = (RelativeLayout) LayoutInflater.from(getContext()).inflate(R.layout.news_header_view, parent, false);
+                return new ViewHolder(r);
+            } else {
+                CardView c = (CardView) LayoutInflater.from(getContext()).inflate(R.layout.news_webview_layout, parent, false);
+                return new ViewHolder(c);
+            }
         }
 
         // Replace the contents of a view (invoked by the layout manager)
@@ -162,7 +158,9 @@ public class NewsFragment extends Fragment {
         public void onBindViewHolder(ViewHolder holder, int position) {
             // - get element from your dataset at this position
             // - replace the contents of the view with that element
-            holder.mWebView.loadData(mDataset.get(position), "text/html; charset=utf-8", "utf-8");
+            if (position > 0) {
+                holder.mWebView.loadData(mDataset.get(position), "text/html; charset=utf-8", "utf-8");
+            }
         }
 
         // Return the size of your dataset (invoked by the layout manager)
@@ -170,42 +168,19 @@ public class NewsFragment extends Fragment {
         public int getItemCount() {
             return mDataset.size();
         }
-    }
 
-
-    public class NewsArrayAdapter extends ArrayAdapter {
-
-        /**
-         * Constructor
-         *
-         * @param context  The current context.
-         * @param resource The resource ID for a layout file containing a TextView to use when
-         *                 instantiating views.
-         * @param objects  The objects to represent in the ListView.
-         */
-        public NewsArrayAdapter(@NonNull Context context, @LayoutRes int resource, @NonNull List objects) {
-            super(context, resource, objects);
-        }
-
-
-        @NonNull
         @Override
-        public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-            LayoutInflater inflater = (LayoutInflater) mActivity.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
-            View view = inflater.inflate(R.layout.news_webview_layout, null);
-
-            WebView webView = (WebView) view.findViewById(R.id.news_webview);
-            webView.getSettings().setBuiltInZoomControls(false);
-            webView.getSettings().setDisplayZoomControls(false);
-            webView.setVerticalScrollBarEnabled(false);
-            webView.setHorizontalScrollBarEnabled(false);
-
-            webView.loadData(list_NewsContent.get(position), "text/html; charset=utf-8", "utf-8");
-
-            return webView;
+        public int getItemViewType(int position) {
+            super.getItemViewType(position);
+            if (position == 0) {
+                return HEADER_VIEW;
+            } else {
+                return ITEM_VIEW;
+            }
         }
-    }
 
+
+    }
 
     public void getNews() {
 //        int childCount = ll_news_vertical.getChildCount();
@@ -242,12 +217,12 @@ public class NewsFragment extends Fragment {
                 getPRZNewsAsync.executeOnExecutor(THREAD_POOL_EXECUTOR, PRZ_Domain);
 
             } else {
-                refreshNewsLayout.setRefreshing(false);
                 if (noNetworkSnackBar != null && !noNetworkSnackBar.isShown()) {
                     noNetworkSnackBar.show();
                 } else {
                     makeNoNetworkSnackBar(mActivity);
                 }
+                listener.OnNewsFetched(false);
             }
         }
     }
@@ -301,11 +276,7 @@ public class NewsFragment extends Fragment {
 
                 }
             }
-
-            listener.onNewsFetched(true);
-            refreshNewsLayout.setRefreshing(false);
-            //newsProgressBar.setVisibility(View.GONE);
-
+            listener.OnNewsFetched(true);
         }
     }
 
@@ -362,10 +333,7 @@ public class NewsFragment extends Fragment {
                 }
             }
 
-            listener.onNewsFetched(true);
-            refreshNewsLayout.setRefreshing(false);
-            //newsProgressBar.setVisibility(View.GONE);
-
+            listener.OnNewsFetched(true);
         }
     }
 

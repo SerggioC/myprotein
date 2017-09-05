@@ -372,7 +372,7 @@ public class GraphsFragment extends Fragment {
         openOptions.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final boolean[] in_wich = which_checked.clone();
+                final boolean[] in_which = which_checked.clone();
                 CharSequence[] dialogList = product_names_arrayList.toArray(new CharSequence[product_names_arrayList.size()]);
 
                 AlertDialog.Builder builderDialog = new AlertDialog.Builder(getActivity());
@@ -412,7 +412,7 @@ public class GraphsFragment extends Fragment {
 
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                which_checked = in_wich.clone();
+                                which_checked = in_which.clone();
                             }
 
                         });

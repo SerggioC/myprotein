@@ -3,6 +3,7 @@ package com.cruz.sergio.myproteinpricechecker;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
@@ -16,6 +17,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.res.ResourcesCompat;
+import android.support.v7.app.AlertDialog;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -81,7 +83,12 @@ public class SearchFragment extends Fragment {
             "bulkpowders",
             "myvitamins"
     };
-
+    boolean[] which_webstores_checked = new boolean[]{
+            true,
+            true,
+            true,
+            true
+    };
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -115,8 +122,11 @@ public class SearchFragment extends Fragment {
             }
 
         });
+
+        final View btn_search = resultsListView.findViewById(R.id.btn_search);
         final View btn_clear = resultsListView.findViewById(R.id.btn_clear);
         final View btn_voice = resultsListView.findViewById(R.id.btn_voice);
+        final View btn_options = resultsListView.findViewById(R.id.btn_search_options);
 
         searchTV.addTextChangedListener(new TextWatcher() {
             @Override
@@ -127,11 +137,13 @@ public class SearchFragment extends Fragment {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (s.length() > 0 && !btn_clear_visible) {
+                    btn_search.setVisibility(View.VISIBLE);
                     btn_clear.setVisibility(View.VISIBLE);
                     btn_voice.setVisibility(View.GONE);
                     btn_clear_visible = true;
                 }
                 if (s.length() == 0) {
+                    btn_search.setVisibility(View.GONE);
                     btn_clear.setVisibility(View.GONE);
                     btn_voice.setVisibility(View.VISIBLE);
                     btn_clear_visible = false;
@@ -172,6 +184,48 @@ public class SearchFragment extends Fragment {
                 searchTV.setText("");
             }
         });
+
+        btn_options.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                AlertDialog.Builder builderDialog = new AlertDialog.Builder(getActivity());
+                builderDialog.setTitle("Select Webstores to search from");
+
+                final boolean[] in_which = which_webstores_checked.clone();
+                CharSequence[] dialogList = WEBSTORES;
+
+                // Creating multiple selection by using setMultiChoiceItem method
+                builderDialog.setMultiChoiceItems(dialogList, which_webstores_checked, new DialogInterface.OnMultiChoiceClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton, boolean isChecked) {
+
+                    }
+                });
+
+                builderDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        for (int i = 0; i < which_webstores_checked.length; i++) {
+                            SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
+                            SharedPreferences.Editor editor = sharedPref.edit();
+                            editor.putBoolean(WEBSTORES[i], which_webstores_checked[i]);
+                            editor.commit();
+                        }
+                    }
+                });
+
+                builderDialog.setNegativeButton("Cancel",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                which_webstores_checked = in_which.clone();
+                            }
+                        });
+
+                AlertDialog alert = builderDialog.create();
+                alert.show();
+            }
+        });
+
 
         ArrayList item = new ArrayList(1);
         item.add("");

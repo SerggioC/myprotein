@@ -57,7 +57,6 @@ import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.cruz.sergio.myproteinpricechecker.helper.DBHelper;
 import com.cruz.sergio.myproteinpricechecker.helper.FirebaseJobservice;
-import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
 import com.cruz.sergio.myproteinpricechecker.helper.ProductsContract;
 
 import org.json.JSONArray;
@@ -83,7 +82,6 @@ import static android.util.DisplayMetrics.DENSITY_LOW;
 import static android.util.DisplayMetrics.DENSITY_MEDIUM;
 import static android.util.DisplayMetrics.DENSITY_XHIGH;
 import static android.util.DisplayMetrics.DENSITY_XXHIGH;
-import static android.widget.Toast.LENGTH_LONG;
 import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.CACHE_IMAGES;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.UPDATE_ONSTART;
@@ -92,6 +90,7 @@ import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
 import static com.cruz.sergio.myproteinpricechecker.R.id.main_cardview;
 import static com.cruz.sergio.myproteinpricechecker.TabFragment.tabLayout;
 import static com.cruz.sergio.myproteinpricechecker.helper.FirebaseJobservice.updatePricesOnStart;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomSlimToast;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomToast;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.ALL_PRODUCT_COLUMNS_PROJECTION;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.CONTENT_DIR_TYPE;
@@ -112,7 +111,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     Timer timer = new Timer();
     Boolean[] isExpandedArray = null;
     Boolean addedNewProduct = false;
-    int current_position;
 
     public static class ViewHolder {
         public final TextView titleView; // ou Product Name
@@ -197,7 +195,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                         watchingSwipeRefreshLayout.setRefreshing(false);
                     }
                 }
-
             }
         });
 
@@ -209,7 +206,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 timer.cancel();
                 timer.purge();
                 timer = new Timer();
-                TabLayout.Tab tab = tabLayout.getTabAt(1);
+                TabLayout.Tab tab = tabLayout.getTabAt(MainActivity.TAB_IDS.WATCHING);
                 tabLayout.setScrollPosition(1, 0f, true);
                 tab.select();
                 getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
@@ -250,7 +247,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                         timer.cancel();
                         timer.purge();
                         timer = new Timer();
-                        NetworkUtils.showCustomSlimToast(mActivity, "Updating Prices", LENGTH_LONG);
                         updatePricesOnStart(mActivity, false);
                     }
                 }
@@ -360,7 +356,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
 
 //        dump_BIGdata_toLog(dumpCursorToString(data));
-
         if (data.getCount() == 0) {
             showCustomToast(mActivity, "Empty DataBase.\n" +
                             "Add products to track their prices.",
@@ -471,7 +466,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             mainCardView.findViewById(R.id.add_to_cart).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    NetworkUtils.showCustomSlimToast(mActivity, "Add product to virtual cart", Toast.LENGTH_SHORT);
+                    showCustomSlimToast(mActivity, "Add product to virtual cart", Toast.LENGTH_SHORT);
                 }
             });
 
@@ -629,7 +624,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
             if (!StringUtil.isBlank(prod_description)) {
 
-                String prod_benefits = "\n"+"Product benefits" + "\n";
+                String prod_benefits = "\n" + "Product benefits" + "\n";
                 pptList_SSB.append(prod_benefits);
                 pptList_SSB.setSpan(new RelativeSizeSpan(1.1f), pptList_SSB.length() - prod_benefits.length(), pptList_SSB.length(), SPAN_EXCLUSIVE_EXCLUSIVE);
                 pptList_SSB.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), pptList_SSB.length() - prod_benefits.length(), pptList_SSB.length(), SPAN_EXCLUSIVE_EXCLUSIVE);

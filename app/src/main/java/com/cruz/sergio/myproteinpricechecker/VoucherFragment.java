@@ -20,7 +20,6 @@ import android.webkit.WebView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 
 import com.cruz.sergio.myproteinpricechecker.helper.MyProteinDomain;
 import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
@@ -45,7 +44,6 @@ import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgen
 public class VoucherFragment extends Fragment {
     Activity mActivity;
     SwipeRefreshLayout mySwipeRefreshLayout;
-    ListView voucherListView;
     LinearLayout ll_scroll;
     String MP_Domain;
 

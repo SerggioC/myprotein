@@ -10,6 +10,7 @@ import android.os.PersistableBundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.design.widget.NavigationView;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
@@ -22,6 +23,7 @@ import android.view.MenuItem;
 import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
 import com.cruz.sergio.myproteinpricechecker.helper.StartFirebase;
 
+import static com.cruz.sergio.myproteinpricechecker.TabFragment.tabLayout;
 import static com.cruz.sergio.myproteinpricechecker.TabFragment.viewPager;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.UnregisterBroadcastReceiver;
 
@@ -41,6 +43,16 @@ public class MainActivity extends AppCompatActivity {
     public static float scale;
     public static int density;
     public static boolean detailsActivityIsActive;
+
+    public static class TAB_IDS {
+        public static final int NEWS = 0;
+        public static final int WATCHING = 1;
+        public static final int SEARCH = 2;
+        public static final int GRAPHS = 3;
+        public static final int VOUCHERS = 4;
+        public static final int CARTS = 5;
+    }
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState, @Nullable PersistableBundle persistentState) {
@@ -138,6 +150,7 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
+
         scale = getResources().getDisplayMetrics().density;
         density = getResources().getDisplayMetrics().densityDpi;
         mHandler = new Handler();
@@ -218,6 +231,11 @@ public class MainActivity extends AppCompatActivity {
 
         /** Setup Drawer Toggle on the Toolbar ? triple parallel lines on the left **/
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+//        Toolbar.LayoutParams lp = new Toolbar.LayoutParams(Toolbar.LayoutParams.WRAP_CONTENT, Toolbar.LayoutParams.WRAP_CONTENT);
+//        lp.setMargins(0, 0, 0, 0);
+//        toolbar.getChildAt(0).setLayoutParams(lp);
+
+
 
         // Menu icons are inflated just as they were with actionbar
         // Sets the Toolbar to act as the ActionBar for this Activity window.
@@ -239,7 +257,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-
         int count = getFragmentManager().getBackStackEntryCount();
         boolean drawerOpen = mDrawerLayout.isDrawerOpen(mNavigationView);
 
@@ -254,7 +271,6 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
-
         return true;
     }
 
@@ -264,12 +280,17 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.action_settings) {
             startActivity(new Intent(mActivity, SettingsActivity.class));
         }
+
+        if (id == R.id.action_search) {
+            TabLayout.Tab tab = tabLayout.getTabAt(TAB_IDS.SEARCH);
+            tab.select();
+        }
+
         return super.onOptionsItemSelected(item);
     }
 
     public static class TheMenuItem {
         static MenuItem lastMenuItem;
-
         TheMenuItem(MenuItem lastMenuItem) {
             this.lastMenuItem = lastMenuItem;
         }
