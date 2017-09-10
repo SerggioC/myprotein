@@ -742,12 +742,14 @@ public class DetailsActivity extends AppCompatActivity {
                         if (url.contains(MP_MOBILE_SITES[i])) {
                             isMobileSite = true;
                             theSite = MP_MOBILE_SITES[i];
+                            break;
                         }
                     }
                     for (int i = 0; i < MP_DESKTOP_SITES.length; i++) {
                         if (url.contains(MP_DESKTOP_SITES[i])) {
                             isDesktopSite = true;
                             theSite = MP_DESKTOP_SITES[i];
+                            break;
                         }
                     }
 
@@ -762,10 +764,10 @@ public class DetailsActivity extends AppCompatActivity {
                     ((TextView) mActivity.findViewById(R.id.title_tv)).append(title);
                     productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME, title);
 
-                    Elements subtitle_element;
+                    Elements subtitle_element = null;
                     if (isMobileSite) {
                         subtitle_element = resultDocument.getElementsByClass("product-subtitle");
-                    } else {
+                    } else if (isDesktopSite) {
                         subtitle_element = resultDocument.getElementsByClass("product-sub-name");
                     }
                     String subtitle = subtitle_element != null ? subtitle_element.text() : "no info";
@@ -783,11 +785,10 @@ public class DetailsActivity extends AppCompatActivity {
                     customProductID = theSite + "pid" + productID;
                     productContentValues.put(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID, customProductID);
 
-                    Elements productVariationsLabels;
-
+                    Elements productVariationsLabels = null;
                     if (isMobileSite) {
                         productVariationsLabels = resultDocument.getElementsByClass("product-variations");
-                    } else {
+                    } else if (isDesktopSite) {
                         productVariationsLabels = resultDocument.getElementsByClass("productVariations__label");
                     }
 
@@ -949,6 +950,7 @@ public class DetailsActivity extends AppCompatActivity {
                 } else {
                     Log.w("Sergio>", this + " onPostExecute: falhou ao sacar o json ");
                     mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
+                    NetworkUtils.showCustomSlimToast(mActivity, "Error getting price. Try again.", Toast.LENGTH_SHORT);
                 }
 
             } else {

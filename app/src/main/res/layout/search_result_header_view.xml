@@ -31,9 +31,7 @@
             android:layout_height="32dp"
             android:layout_gravity="center_vertical|left"
             android:layout_marginLeft="4dp"
-            android:background="@drawable/ic_search_statelist"
-            android:visibility="gone"
-            />
+            android:background="@drawable/ic_search_statelist"/>
 
         <Button
             android:id="@+id/btn_clear"

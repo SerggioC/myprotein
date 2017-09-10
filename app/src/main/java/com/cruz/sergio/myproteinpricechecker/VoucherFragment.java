@@ -173,7 +173,7 @@ public class VoucherFragment extends Fragment {
                         String replace = "<a href=\"/";
                         int indexOfHref = voucherText.indexOf(replace);
                         if (indexOfHref > 0) {
-                            voucherText = voucherText.replaceAll(replace, "<a href=" + MP_Domain);
+                            voucherText = voucherText.replaceAll(replace, "<a href=\"" + MP_Domain);
                         }
 
                         set_webView(voucherText);

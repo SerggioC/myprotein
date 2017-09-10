@@ -83,6 +83,15 @@ public class SearchFragment extends Fragment {
             "bulkpowders",
             "myvitamins"
     };
+    String[] SUPPORTED_WEBSTORES = new String[]{
+            "myprotein"
+    };
+    String[] WEBSTORES_NAMES = new String[]{
+            "Myprotein",
+            "Prozis",
+            "Bulk Powders",
+            "Myvitamins"
+    };
     boolean[] which_webstores_checked = new boolean[]{
             true,
             true,
@@ -94,6 +103,12 @@ public class SearchFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mActivity = getActivity();
+
+        SharedPreferences sharedPref = mActivity.getPreferences(Context.MODE_PRIVATE);
+        for (int i = 0; i < WEBSTORES_NAMES.length; i++) {
+            which_webstores_checked[i] = sharedPref.getBoolean(WEBSTORES_NAMES[i], true);
+        }
+
     }
 
     @Nullable
@@ -123,7 +138,7 @@ public class SearchFragment extends Fragment {
 
         });
 
-        final View btn_search = resultsListView.findViewById(R.id.btn_search);
+        //final View btn_search = resultsListView.findViewById(R.id.btn_search);
         final View btn_clear = resultsListView.findViewById(R.id.btn_clear);
         final View btn_voice = resultsListView.findViewById(R.id.btn_voice);
         final View btn_options = resultsListView.findViewById(R.id.btn_search_options);
@@ -137,13 +152,13 @@ public class SearchFragment extends Fragment {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (s.length() > 0 && !btn_clear_visible) {
-                    btn_search.setVisibility(View.VISIBLE);
+                    //btn_search.setVisibility(View.VISIBLE);
                     btn_clear.setVisibility(View.VISIBLE);
                     btn_voice.setVisibility(View.GONE);
                     btn_clear_visible = true;
                 }
                 if (s.length() == 0) {
-                    btn_search.setVisibility(View.GONE);
+                    //btn_search.setVisibility(View.GONE);
                     btn_clear.setVisibility(View.GONE);
                     btn_voice.setVisibility(View.VISIBLE);
                     btn_clear_visible = false;
@@ -189,13 +204,12 @@ public class SearchFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 AlertDialog.Builder builderDialog = new AlertDialog.Builder(getActivity());
-                builderDialog.setTitle("Select Webstores to search from");
+                builderDialog.setTitle("Webstores to search from");
 
                 final boolean[] in_which = which_webstores_checked.clone();
-                CharSequence[] dialogList = WEBSTORES;
 
                 // Creating multiple selection by using setMultiChoiceItem method
-                builderDialog.setMultiChoiceItems(dialogList, which_webstores_checked, new DialogInterface.OnMultiChoiceClickListener() {
+                builderDialog.setMultiChoiceItems(WEBSTORES_NAMES, which_webstores_checked, new DialogInterface.OnMultiChoiceClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton, boolean isChecked) {
 
                     }
@@ -207,7 +221,7 @@ public class SearchFragment extends Fragment {
                         for (int i = 0; i < which_webstores_checked.length; i++) {
                             SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
                             SharedPreferences.Editor editor = sharedPref.edit();
-                            editor.putBoolean(WEBSTORES[i], which_webstores_checked[i]);
+                            editor.putBoolean(WEBSTORES_NAMES[i], which_webstores_checked[i]);
                             editor.commit();
                         }
                     }
@@ -226,7 +240,6 @@ public class SearchFragment extends Fragment {
             }
         });
 
-
         ArrayList item = new ArrayList(1);
         item.add("");
         ArrayAdapter noAdapter = new ArrayAdapter(mActivity, android.R.layout.simple_list_item_1, item);
@@ -239,15 +252,15 @@ public class SearchFragment extends Fragment {
     public void checkSearchQuery(String querystr) {
         if (Patterns.WEB_URL.matcher(querystr).matches()) {
             boolean isSupportedWebstore = false;
-            for (int i = 0; i < WEBSTORES.length; i++) {
-                if (querystr.contains(WEBSTORES[i])) {
+            for (int i = 0; i < SUPPORTED_WEBSTORES.length; i++) {
+                if (querystr.contains(SUPPORTED_WEBSTORES[i])) {
                     isSupportedWebstore = true;
                 }
             }
             if (isSupportedWebstore) {
                 go_to_webAdress_details(querystr);
             } else {
-                showCustomSlimToast(mActivity, "Unsupported Webstore\nRequest to add this Webstore in a future version", Toast.LENGTH_LONG);
+                showCustomSlimToast(mActivity, "Unsupported Webstore\nSend request to support this Webstore", Toast.LENGTH_LONG);
             }
         } else {
             performSearch(querystr);
@@ -280,7 +293,7 @@ public class SearchFragment extends Fragment {
             NetworkUtils.showCustomToast(mActivity, "Ongoing search...", R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_SHORT);
         } else {
             if (StringUtil.isBlank(searchString)) {
-                NetworkUtils.showCustomToast(mActivity, "Search product name or enter product URL", R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_SHORT);
+                NetworkUtils.showCustomToast(mActivity, "Search product name or enter product URL", R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_LONG);
             } else {
                 horizontalProgressBar.setVisibility(View.VISIBLE);
                 AsyncTask<String, Void, Boolean> internetAsyncTask = new checkInternetAsyncTask();

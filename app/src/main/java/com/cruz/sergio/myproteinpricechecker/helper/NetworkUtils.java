@@ -40,7 +40,7 @@ import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
 
 public class NetworkUtils {
     public static final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36";
-    private static final String PING_URL = "www.myprotein.com";
+    private static final String PING_URL = "www.google.com";
     public static BroadcastReceiver BCReceiver = null;
     public static Snackbar noNetworkSnackBar = null;
     static Snackbar.SnackbarLayout snack_layout;
