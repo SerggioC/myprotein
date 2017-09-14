@@ -77,14 +77,11 @@ public class SearchFragment extends Fragment {
     public int VOICE_REQUEST_CODE = 2;
     boolean btn_clear_visible = false;
     EditText searchTV;
-    String[] WEBSTORES = new String[]{
+    String[] SUPPORTED_WEBSTORES = new String[]{
             "myprotein",
             "prozis",
             "bulkpowders",
             "myvitamins"
-    };
-    String[] SUPPORTED_WEBSTORES = new String[]{
-            "myprotein"
     };
     String[] WEBSTORES_NAMES = new String[]{
             "Myprotein",
@@ -98,6 +95,8 @@ public class SearchFragment extends Fragment {
             true,
             true
     };
+    ArrayList<String> WebstoresToUse = new ArrayList();
+    int webStoreIndex = 0;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -107,6 +106,7 @@ public class SearchFragment extends Fragment {
         SharedPreferences sharedPref = mActivity.getPreferences(Context.MODE_PRIVATE);
         for (int i = 0; i < WEBSTORES_NAMES.length; i++) {
             which_webstores_checked[i] = sharedPref.getBoolean(WEBSTORES_NAMES[i], true);
+            WebstoresToUse.add(SUPPORTED_WEBSTORES[i]);
         }
 
     }
@@ -187,7 +187,7 @@ public class SearchFragment extends Fragment {
                 try {
                     startActivityForResult(intent, VOICE_REQUEST_CODE);
                 } catch (ActivityNotFoundException a) {
-                    NetworkUtils.showCustomToast(mActivity, "Oops! Your device doesn't support Speech Recognition", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
+                    NetworkUtils.showCustomToast(mActivity, "Your device doesn't support Speech Recognition", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
                 }
 
             }
@@ -203,7 +203,11 @@ public class SearchFragment extends Fragment {
         btn_options.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                AlertDialog.Builder builderDialog = new AlertDialog.Builder(getActivity());
+
+
+
+
+                final AlertDialog.Builder builderDialog = new AlertDialog.Builder(mActivity);
                 builderDialog.setTitle("Webstores to search from");
 
                 final boolean[] in_which = which_webstores_checked.clone();
@@ -211,18 +215,25 @@ public class SearchFragment extends Fragment {
                 // Creating multiple selection by using setMultiChoiceItem method
                 builderDialog.setMultiChoiceItems(WEBSTORES_NAMES, which_webstores_checked, new DialogInterface.OnMultiChoiceClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton, boolean isChecked) {
-
+                        AlertDialog adialog = (AlertDialog) dialog;
+                        ListView listView = adialog.getListView();
+                        if (listView.getCheckedItemCount() == 0) {
+                            listView.setItemChecked(whichButton, true);
+                        }
                     }
                 });
+
 
                 builderDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
+                        WebstoresToUse.clear();
                         for (int i = 0; i < which_webstores_checked.length; i++) {
                             SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
                             SharedPreferences.Editor editor = sharedPref.edit();
                             editor.putBoolean(WEBSTORES_NAMES[i], which_webstores_checked[i]);
                             editor.commit();
+                            WebstoresToUse.add(WEBSTORES_NAMES[i]);
                         }
                     }
                 });
@@ -532,7 +543,7 @@ public class SearchFragment extends Fragment {
                         }
                     }
 
-                    ProductCards productCard = new ProductCards(productID, productTitleStr, productHref, productPrice, imgURL, pptList_stringarray, pptList_SSB);
+                    ProductCards productCard = new ProductCards(productID, productTitleStr, productHref, productPrice, imgURL, pptList_stringarray, pptList_SSB, null);
                     arrayListProductCards.add(productCard);
 
                 }
@@ -554,6 +565,12 @@ public class SearchFragment extends Fragment {
                     queryStr = "";
                     pageNumber = 1;
 
+                    ProductCards productCard = new ProductCards(null, null, null, null, null, null, null, WebstoresToUse.get(webStoreIndex++));
+                    arrayListProductCards.add(productCard);
+
+
+                    ContinueSearch();
+
                     adapter = new ProductAdapter(mActivity, R.layout.product_card, arrayListProductCards);
                     resultsListView.setAdapter(adapter);
                     horizontalProgressBar.setVisibility(View.GONE);
@@ -561,6 +578,27 @@ public class SearchFragment extends Fragment {
                 }
             }
         }
+    }
+
+    private void ContinueSearch() {
+
+
+
+
+
+        AsyncTask<String, Void, Document> performSearch = new performSearch();
+        performSearch.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, queryStr);
+
+        ProductCards productCard = new ProductCards(null, null, null, null, null, null, null, WebstoresToUse.get(webStoreIndex++));
+        arrayListProductCards.add(productCard);
+
+        adapter = new ProductAdapter(mActivity, R.layout.product_card, arrayListProductCards);
+        resultsListView.setAdapter(adapter);
+        horizontalProgressBar.setVisibility(View.GONE);
+
+
+
+
     }
 
     public class ProductAdapter extends ArrayAdapter {
@@ -628,8 +666,9 @@ public class SearchFragment extends Fragment {
         String imgURL;
         ArrayList<String> pptList_stringarray;
         SpannableStringBuilder pptList_SSB;
+        String nextWebstore;
 
-        ProductCards(String productID, String productTitleStr, String productHref, String productPrice, String imgURL, ArrayList<String> pptList_stringarray, SpannableStringBuilder pptList_SSB) {
+        ProductCards(String productID, String productTitleStr, String productHref, String productPrice, String imgURL, ArrayList<String> pptList_stringarray, SpannableStringBuilder pptList_SSB, String nextWebstore) {
             this.productID = productID;
             this.productTitleStr = productTitleStr;
             this.productHref = productHref;
@@ -637,6 +676,7 @@ public class SearchFragment extends Fragment {
             this.imgURL = imgURL;
             this.pptList_stringarray = pptList_stringarray;
             this.pptList_SSB = pptList_SSB;
+            this.nextWebstore = nextWebstore;
         }
     }
 
