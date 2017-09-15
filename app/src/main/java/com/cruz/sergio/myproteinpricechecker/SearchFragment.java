@@ -71,32 +71,15 @@ public class SearchFragment extends Fragment {
     int pageNumber = 1;
     ListView resultsListView;
     ProgressBar horizontalProgressBar;
-    String queryStr = "";
     Boolean hasAsyncTaskRuning = false;
     public int SEARCH_REQUEST_CODE = 1;
     public int VOICE_REQUEST_CODE = 2;
     boolean btn_clear_visible = false;
     EditText searchTV;
-    String[] SUPPORTED_WEBSTORES = new String[]{
-            "myprotein",
-            "prozis",
-            "bulkpowders",
-            "myvitamins"
-    };
-    String[] WEBSTORES_NAMES = new String[]{
-            "Myprotein",
-            "Prozis",
-            "Bulk Powders",
-            "Myvitamins"
-    };
-    boolean[] which_webstores_checked = new boolean[]{
-            true,
-            true,
-            true,
-            true
-    };
-    ArrayList<String> WebstoresToUse = new ArrayList();
-    int webStoreIndex = 0;
+    String[] SUPPORTED_WEBSTORES = new String[]{"myprotein", "prozis", "bulkpowders", "myvitamins"};
+    String[] WEBSTORES_NAMES = new String[]{"Myprotein", "Prozis", "Bulk Powders", "Myvitamins"};
+    boolean[] which_webstores_checked = new boolean[]{true, true, true, true};
+    ArrayList<String> WebstoresToUse = new ArrayList(SUPPORTED_WEBSTORES.length);
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -106,7 +89,9 @@ public class SearchFragment extends Fragment {
         SharedPreferences sharedPref = mActivity.getPreferences(Context.MODE_PRIVATE);
         for (int i = 0; i < WEBSTORES_NAMES.length; i++) {
             which_webstores_checked[i] = sharedPref.getBoolean(WEBSTORES_NAMES[i], true);
-            WebstoresToUse.add(SUPPORTED_WEBSTORES[i]);
+            if (which_webstores_checked[i]) {
+                WebstoresToUse.add(SUPPORTED_WEBSTORES[i]);
+            }
         }
 
     }
@@ -204,17 +189,14 @@ public class SearchFragment extends Fragment {
             @Override
             public void onClick(View v) {
 
-
-
-
                 final AlertDialog.Builder builderDialog = new AlertDialog.Builder(mActivity);
                 builderDialog.setTitle("Webstores to search from");
 
                 final boolean[] in_which = which_webstores_checked.clone();
-
                 // Creating multiple selection by using setMultiChoiceItem method
                 builderDialog.setMultiChoiceItems(WEBSTORES_NAMES, which_webstores_checked, new DialogInterface.OnMultiChoiceClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton, boolean isChecked) {
+                        // Não permitir desmarcar todos os items
                         AlertDialog adialog = (AlertDialog) dialog;
                         ListView listView = adialog.getListView();
                         if (listView.getCheckedItemCount() == 0) {
@@ -222,7 +204,6 @@ public class SearchFragment extends Fragment {
                         }
                     }
                 });
-
 
                 builderDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     @Override
@@ -233,7 +214,9 @@ public class SearchFragment extends Fragment {
                             SharedPreferences.Editor editor = sharedPref.edit();
                             editor.putBoolean(WEBSTORES_NAMES[i], which_webstores_checked[i]);
                             editor.commit();
-                            WebstoresToUse.add(WEBSTORES_NAMES[i]);
+                            if (which_webstores_checked[i]) {
+                                WebstoresToUse.add(WEBSTORES_NAMES[i]);
+                            }
                         }
                     }
                 });
@@ -307,8 +290,10 @@ public class SearchFragment extends Fragment {
                 NetworkUtils.showCustomToast(mActivity, "Search product name or enter product URL", R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_LONG);
             } else {
                 horizontalProgressBar.setVisibility(View.VISIBLE);
+
                 AsyncTask<String, Void, Boolean> internetAsyncTask = new checkInternetAsyncTask();
                 internetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, searchString);
+
             }
         }
     }
@@ -346,23 +331,40 @@ public class SearchFragment extends Fragment {
             super.onPostExecute(hasInternet);
 
             if (hasInternet) {
-                searchString = URLEncoder.encode(searchString);
-                SharedPreferences prefManager = PreferenceManager.getDefaultSharedPreferences(mActivity);
-                String pref_MP_Domain = prefManager.getString("mp_website_location", "en-gb");
-                String shippingCountry = prefManager.getString("mp_shipping_location", "GB"); //"PT";
-                String currency = prefManager.getString("mp_currencies", "GBP"); //"EUR";
-                String MP_Domain = MyProteinDomain.getHref(pref_MP_Domain);
-                String URL_suffix = "&settingsSaved=Y&shippingcountry=" + shippingCountry + "&switchcurrency=" + currency + "&countrySelected=Y";
-                queryStr = MP_Domain + "elysium.search?search=" + searchString + URL_suffix;
-
-                Log.i("Sergio>>>", "performSearch: querystr=" + queryStr);
 
                 hasMorePages = true;
                 resultsListView.setAdapter(null);
                 arrayListProductCards.clear();
 
-                AsyncTask<String, Void, Document> performSearch = new performSearch();
-                performSearch.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, queryStr);
+
+                int numberOfWebstoresToUse = WebstoresToUse.size();
+                for (int webStoreIndex = 0; webStoreIndex < numberOfWebstoresToUse; webStoreIndex++) {
+
+                    switch (WebstoresToUse.get(webStoreIndex)) {
+                        case "myprotein": {
+                            AsyncTask<String, Void, Document> myproteinSearch = new MyproteinSearch(webStoreIndex, numberOfWebstoresToUse);
+                            myproteinSearch.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, searchString);
+                            break;
+                        }
+                        case "prozis": {
+                            AsyncTask<String, Void, Document> prozisSearch = new ProzisSearch(webStoreIndex, numberOfWebstoresToUse);
+                            prozisSearch.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, searchString);
+                            break;
+                        }
+                        case "bulkpowders": {
+                            AsyncTask<String, Void, Document> bulkpowdersSearch = new BulkpowdersSearch(webStoreIndex, numberOfWebstoresToUse);
+                            bulkpowdersSearch.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, searchString);
+                            break;
+                        }
+                        case "myvitamins": {
+                            AsyncTask<String, Void, Document> myvitaminsSearch = new MyvitaminsSearch(webStoreIndex, numberOfWebstoresToUse);
+                            myvitaminsSearch.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, searchString);
+                            break;
+                        }
+                    }
+
+                }
+
 
             } else {
                 if (horizontalProgressBar.getVisibility() == View.VISIBLE) {
@@ -434,7 +436,15 @@ public class SearchFragment extends Fragment {
     }
 
 
-    private class performSearch extends AsyncTask<String, Void, Document> {
+    private class MyproteinSearch extends AsyncTask<String, Void, Document> {
+        int webStoreIndex;
+        int numberOfWebstoresToUse;
+        String searchString;
+
+        protected MyproteinSearch(int webStoreIndex, int numberOfWebstoresToUse) {
+            this.webStoreIndex = webStoreIndex;
+            this.numberOfWebstoresToUse = numberOfWebstoresToUse;
+        }
 
         @Override
         protected void onPreExecute() {
@@ -446,7 +456,24 @@ public class SearchFragment extends Fragment {
         protected Document doInBackground(String... params) {
             Document resultDocument = null;
             try {
-                resultDocument = Jsoup.connect(params[0])
+
+                searchString = URLEncoder.encode(params[0]);
+
+                String nextPage = "";
+                if (params.length > 1) {
+                    nextPage = StringUtil.isBlank(params[1]) ? "" : params[1];
+                }
+                SharedPreferences prefManager = PreferenceManager.getDefaultSharedPreferences(mActivity);
+                String pref_MP_Domain = prefManager.getString("mp_website_location", "en-gb");
+                String shippingCountry = prefManager.getString("mp_shipping_location", "GB"); //"PT";
+                String currency = prefManager.getString("mp_currencies", "GBP"); //"EUR";
+                String MP_Domain = MyProteinDomain.getHref(pref_MP_Domain);
+                String URL_suffix = "&settingsSaved=Y&shippingcountry=" + shippingCountry + "&switchcurrency=" + currency + "&countrySelected=Y";
+                String queryStrURL = MP_Domain + "elysium.search?search=" + searchString + URL_suffix + nextPage;
+
+                Log.i("Sergio>>>", "MyproteinSearch: querystr=" + queryStrURL);
+
+                resultDocument = Jsoup.connect(queryStrURL)
                         .userAgent(userAgent)
                         .timeout(NET_TIMEOUT)
                         .maxBodySize(0) //sem limite de tamanho do doc recebido
@@ -480,7 +507,7 @@ public class SearchFragment extends Fragment {
             //Log.i("Sergio>>>", "onPostExecute: " + resultProductCards);
 
             int rpc_size = resultProductCards.size();
-            if (rpc_size == 0) {
+            if (rpc_size == 0 && arrayListProductCards.size() == 0) {
                 ArrayList item = new ArrayList();
                 item.add("No Results");
                 ArrayAdapter noAdapter = new ArrayAdapter(mActivity, android.R.layout.simple_list_item_1, item);
@@ -556,49 +583,28 @@ public class SearchFragment extends Fragment {
                 int numPages = Integer.parseInt(pages);
                 if (numPages > 1 && hasMorePages) {
                     pageNumber++;
-                    AsyncTask<String, Void, Document> performSearch = new performSearch();
-                    performSearch.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, queryStr + "&pageNumber=" + pageNumber);
+                    AsyncTask<String, Void, Document> performSearch = new MyproteinSearch(webStoreIndex, numberOfWebstoresToUse);
+                    //performSearch.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, queryStrURL + "&pageNumber=" + pageNumber);
+                    performSearch.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, searchString, "&pageNumber=" + pageNumber);
                 }
 
                 if (pageNumber == numPages) {
                     hasMorePages = false;
-                    queryStr = "";
                     pageNumber = 1;
 
-                    ProductCards productCard = new ProductCards(null, null, null, null, null, null, null, WebstoresToUse.get(webStoreIndex++));
-                    arrayListProductCards.add(productCard);
-
-
-                    ContinueSearch();
-
-                    adapter = new ProductAdapter(mActivity, R.layout.product_card, arrayListProductCards);
-                    resultsListView.setAdapter(adapter);
-                    horizontalProgressBar.setVisibility(View.GONE);
-                    hasAsyncTaskRuning = false;
+                    if (webStoreIndex + 1 == numberOfWebstoresToUse) {
+                        adapter = new ProductAdapter(mActivity, R.layout.product_card, arrayListProductCards);
+                        resultsListView.setAdapter(adapter);
+                        horizontalProgressBar.setVisibility(View.GONE);
+                        hasAsyncTaskRuning = false;
+                    } else {
+                        ProductCards productCard = new ProductCards(null, null, null, null, null, null, null, WebstoresToUse.get(webStoreIndex + 1));
+                        arrayListProductCards.add(productCard);
+                        // Continues Search in next Webstore...
+                    }
                 }
             }
         }
-    }
-
-    private void ContinueSearch() {
-
-
-
-
-
-        AsyncTask<String, Void, Document> performSearch = new performSearch();
-        performSearch.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, queryStr);
-
-        ProductCards productCard = new ProductCards(null, null, null, null, null, null, null, WebstoresToUse.get(webStoreIndex++));
-        arrayListProductCards.add(productCard);
-
-        adapter = new ProductAdapter(mActivity, R.layout.product_card, arrayListProductCards);
-        resultsListView.setAdapter(adapter);
-        horizontalProgressBar.setVisibility(View.GONE);
-
-
-
-
     }
 
     public class ProductAdapter extends ArrayAdapter {

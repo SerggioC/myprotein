@@ -240,6 +240,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         listViewItems.setAdapter(cursorDBAdapter);
 
         watchingSwipeRefreshLayout = (SwipeRefreshLayout) rootview.findViewById(R.id.watching_swiperefresh);
+
         watchingSwipeRefreshLayout.setOnRefreshListener(
                 new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
