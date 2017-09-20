@@ -28,12 +28,12 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
 import static android.content.res.Configuration.SCREENLAYOUT_SIZE_XLARGE;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.mNavigationView;
-
 
 /**
  * A {@link PreferenceActivity} that presents a set of application settings. On
@@ -49,34 +49,6 @@ import static com.cruz.sergio.myproteinpricechecker.MainActivity.mNavigationView
 public class SettingsActivity extends AppCompatPreferenceActivity {
 
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        //setupActionBar();
-        Locale local = getCurrentLocale();
-        Log.i("Sergio>", this + "onCreate: local= " + local);
-    }
-
-//    /*** Set up the {@link android.app.ActionBar}, if the API is available.     */
-//    private void setupActionBar() {
-//        ActionBar actionBar = getSupportActionBar();
-//        Log.i("Sergio>>>", "setupActionBar: actionbar= " + actionBar);
-//        if (actionBar != null) {
-//            // Show the Up button in the action bar.
-//            actionBar.setDisplayHomeAsUpEnabled(true);
-//        }
-//    }
-
-    @TargetApi(Build.VERSION_CODES.N)
-    public Locale getCurrentLocale() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            return getResources().getConfiguration().getLocales().get(0);
-        } else {
-            //noinspection deprecation
-            return getResources().getConfiguration().locale;
-        }
-    }
-
     /**
      * A preference value change listener that updates the preference's summary
      * to reflect its new value.
@@ -87,20 +59,134 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             String stringValue = value.toString();
 
             if (preference instanceof ListPreference) {
-                // For list preferences, look up the correct display value in
-                // the preference's 'entries' list.
+                // For list preferences, look up the correct display value in the preference's 'entries' list.
                 ListPreference listPreference = (ListPreference) preference;
                 int index = listPreference.findIndexOfValue(stringValue);
 
                 // Set the summary to reflect the new value.
-                preference.setSummary(
-                        index >= 0
-                                ? listPreference.getEntries()[index]
-                                : null);
+                preference.setSummary(index >= 0 ? listPreference.getEntries()[index] : null);
+
+                if (preference.getKey().equals("prz_website_location")) {
+                    ListPreference langpreference = (ListPreference) preference.getPreferenceManager().findPreference("prz_language");
+                    String[] lang_entries = new String[]{"English", "Français", "Español", "Português", "Italiano"};
+                    String[] lang_entryValues= new String[]{"en", "fr", "es", "pt", "it"};
+
+                    String[] ww = new String[]{"AL", "DZ", "AR", "AM", "AU", "BA", "BO", "BW", "CV", "CM", "CA", "ECT",
+                            "CL", "CO", "CU", "DO", "EC", "EG", "MK", "FO", "GP", "GT", "GG", "GF", "HT", "HK", "IN", "ID",
+                            "IM", "IL", "JM", "JP", "JE", "LB", "LI", "MO", "MY", "MQ", "UM", "MC", "ME", "MA", "MZ", "MX",
+                            "NZ", "NI", "NG", "NO", "PA", "PY", "PE", "PH", "PR", "RE", "BL", "SA", "RS", "SG", "SO", "ZA",
+                            "LK", "ST", "SN", "TW", "TH", "TL", "TN", "TR", "AE", "US", "UY", "VE"};
+                    List<String> ww_arr = Arrays.asList(ww);
+                    if (ww_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"English", "Français", "Español", "Português", "Italiano"};
+                        lang_entryValues = new String[]{"en", "fr", "es", "pt", "it"};
+                    }
+                    List<String> ao_arr = Arrays.asList(new String[]{"AO", "PT"});
+                    if (ao_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"Português", "English"};
+                        lang_entryValues = new String[]{"pt", "en"};
+                    }
+                    List<String> ru_arr = Arrays.asList(new String[]{"AZ", "BY", "GE", "KZ", "MD", "RU", "UA", "UZ"});
+                    if (ru_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"Русский", "English"};
+                        lang_entryValues = new String[]{"ru", "en"};
+                    }
+                    List<String> be_arr = Arrays.asList(new String[]{"BE"});
+                    if (be_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"Français", "Nederlands", "English"};
+                        lang_entryValues = new String[]{"fr", "nl", "en"};
+                    }
+                    List<String> br_arr = Arrays.asList(new String[]{"BR"});
+                    if (br_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"Português"};
+                        lang_entryValues = new String[]{"pt"};
+                    }
+                    List<String> eu_arr = Arrays.asList(new String[]{"BG", "CY", "CZ", "EE", "HR", "IS", "LV", "LT", "HU", "MT", "RO", "SI"});
+                    if (eu_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"English", "Français", "Español", "Português", "Italiano", "Ελληνικά"};
+                        lang_entryValues = new String[]{"en", "fr", "es", "pt", "it", "el"};
+                    }
+                    List<String> cn_arr = Arrays.asList(new String[]{"CN"});
+                    if (cn_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"Mandarin", "English"};
+                        lang_entryValues = new String[]{"zh", "en"};
+                    }
+                    List<String> dk_arr = Arrays.asList(new String[]{"DK"});
+                    if (dk_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"Dansk", "English"};
+                        lang_entryValues = new String[]{"da", "en"};
+                    }
+                    List<String> de_arr = Arrays.asList(new String[]{"DE", "AT"});
+                    if (de_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"Deutsch", "English"};
+                        lang_entryValues = new String[]{"de", "en"};
+                    }
+                    List<String> es_arr = Arrays.asList(new String[]{"ES"});
+                    if (es_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"Español", "English"};
+                        lang_entryValues = new String[]{"es", "en"};
+                    }
+                    List<String> fr_arr = Arrays.asList(new String[]{"FR"});
+                    if (fr_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"Français", "English"};
+                        lang_entryValues = new String[]{"fr", "en"};
+                    }
+                    List<String> gr_arr = Arrays.asList(new String[]{"GR"});
+                    if (gr_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"Ελληνικά", "English"};
+                        lang_entryValues = new String[]{"el", "en"};
+                    }
+                    List<String> ie_arr = Arrays.asList(new String[]{"IE", "GB"});
+                    if (ie_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"English"};
+                        lang_entryValues = new String[]{"en"};
+                    }
+                    List<String> it_arr = Arrays.asList(new String[]{"IT"});
+                    if (it_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"Italiano", "English"};
+                        lang_entryValues = new String[]{"it", "en"};
+                    }
+                    List<String> lu_arr = Arrays.asList(new String[]{"LU"});
+                    if (lu_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"Français", "Deutsch", "Português", "English"};
+                        lang_entryValues = new String[]{"fr", "de", "pt", "en"};
+                    }
+                    List<String> nl_arr = Arrays.asList(new String[]{"NL"});
+                    if (nl_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"Nederlands", "English"};
+                        lang_entryValues = new String[]{"nl", "en"};
+                    }
+                    List<String> pl_arr = Arrays.asList(new String[]{"PL"});
+                    if (pl_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"Polski", "English"};
+                        lang_entryValues = new String[]{"pl", "en"};
+                    }
+                    List<String> sk_arr = Arrays.asList(new String[]{"SK"});
+                    if (sk_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"Slovak", "English"};
+                        lang_entryValues = new String[]{"sk", "en"};
+                    }
+                    List<String> fi_se_arr = Arrays.asList(new String[]{"FI", "SE"});
+                    if (fi_se_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"Svenska", "English"};
+                        lang_entryValues = new String[]{"sv", "en"};
+                    }
+                    List<String> ch_arr = Arrays.asList(new String[]{"CH"});
+                    if (ch_arr.contains(stringValue)) {
+                        lang_entries = new String[]{"English", "Français", "Deutsch", "Italiano", "Português"};
+                        lang_entryValues = new String[]{"en", "fr", "de", "it", "pt"};
+                    }
+
+                    langpreference.setEntries(lang_entries);
+                    langpreference.setEntryValues(lang_entryValues);
+                    langpreference.setDefaultValue(lang_entryValues[0]);
+                    langpreference.setValueIndex(0);
+                    langpreference.setSummary(lang_entries[0]);
+                }
+
 
             } else if (preference instanceof RingtonePreference) {
-                // For ringtone preferences, look up the correct display value
-                // using RingtoneManager.
+                // For ringtone preferences, look up the correct display value using RingtoneManager.
                 if (TextUtils.isEmpty(stringValue)) {
                     // Empty values correspond to 'silent' (no ringtone).
                     preference.setSummary(R.string.pref_ringtone_silent);
@@ -113,21 +199,29 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                         // Clear the summary if there was a lookup error.
                         preference.setSummary(null);
                     } else {
-                        // Set the summary to reflect the new ringtone display
-                        // name.
+                        // Set the summary to reflect the new ringtone display name.
                         String name = ringtone.getTitle(preference.getContext());
                         preference.setSummary(name);
                     }
                 }
 
             } else {
-                // For all other preferences, set the summary to the value's
-                // simple string representation.
+                // For all other preferences, set the summary to the value's simple string representation.
                 preference.setSummary(stringValue);
             }
             return true;
         }
     };
+
+//    /*** Set up the {@link android.app.ActionBar}, if the API is available.     */
+//    private void setupActionBar() {
+//        ActionBar actionBar = getSupportActionBar();
+//        Log.i("Sergio>>>", "setupActionBar: actionbar= " + actionBar);
+//        if (actionBar != null) {
+//            // Show the Up button in the action bar.
+//            actionBar.setDisplayHomeAsUpEnabled(true);
+//        }
+//    }
 
     /**
      * MyHelper method to determine if the device has an extra-large screen. For
@@ -144,7 +238,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
      * preference title) is updated to reflect the value. The summary is also
      * immediately updated upon calling this method. The exact display format is
      * dependent on the type of preference.
-     *
      * @see #sBindPreferenceSummaryToValueListener
      */
     private static void bindPreferenceSummaryToValue(Preference preference) {
@@ -157,6 +250,24 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                 PreferenceManager
                         .getDefaultSharedPreferences(preference.getContext())
                         .getString(preference.getKey(), ""));
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        //setupActionBar();
+        Locale local = getCurrentLocale();
+        Log.i("Sergio>", this + "onCreate: local= " + local);
+    }
+
+    @TargetApi(Build.VERSION_CODES.N)
+    public Locale getCurrentLocale() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            return getResources().getConfiguration().getLocales().get(0);
+        } else {
+            //noinspection deprecation
+            return getResources().getConfiguration().locale;
+        }
     }
 
     @Override
@@ -238,6 +349,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             bindPreferenceSummaryToValue(findPreference("mp_website_location"));
             bindPreferenceSummaryToValue(findPreference("mp_shipping_location"));
             bindPreferenceSummaryToValue(findPreference("mp_currencies"));
+            bindPreferenceSummaryToValue(findPreference("prz_website_location"));
+            bindPreferenceSummaryToValue(findPreference("prz_language"));
             bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
             bindPreferenceSummaryToValue(findPreference("sync_frequency"));
 
@@ -283,12 +396,12 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
             // Bind the summaries of EditText/List/Dialog/Ringtone preferences
             // to their values. When their values change, their summaries are
-            // updated to reflect the new value, per the Android Design
-            // guidelines.
-
+            // updated to reflect the new value, per the Android Design guidelines.
             bindPreferenceSummaryToValue(findPreference("mp_website_location"));
             bindPreferenceSummaryToValue(findPreference("mp_shipping_location"));
             bindPreferenceSummaryToValue(findPreference("mp_currencies"));
+            bindPreferenceSummaryToValue(findPreference("prz_website_location"));
+            bindPreferenceSummaryToValue(findPreference("prz_language"));
             bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
             bindPreferenceSummaryToValue(findPreference("sync_frequency"));
         }

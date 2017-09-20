@@ -9,7 +9,10 @@ import org.jsoup.nodes.Document;
  */
 
 class MyvitaminsSearch extends AsyncTask<String, Void, Document> {
-    public MyvitaminsSearch(int webStoreIndex, int numberOfWebstoresToUse) {
+    int thisWebstoreIndex;
+
+    public MyvitaminsSearch(int thisWebstoreIndex) {
+        this.thisWebstoreIndex = thisWebstoreIndex;
     }
 
     /**

@@ -37,4 +37,81 @@
         android:title="@string/pref_title_mp_Currency"/>
 
 
+    <PreferenceCategory android:title="@string/pref_prz_header_general">
+        <ListPreference
+            android:defaultValue="ww"
+            android:entries="@array/pref_prz_country_titles"
+            android:entryValues="@array/pref_prz_country_values"
+            android:icon="@mipmap/ic_web_domain"
+            android:key="prz_website_location"
+            android:negativeButtonText="@null"
+            android:positiveButtonText="@null"
+            android:title="@string/pref_prz_country"/>
+
+        <ListPreference
+            android:defaultValue="en"
+            android:entries="@array/pref_prz_language_titles"
+            android:entryValues="@array/pref_prz_language_values"
+            android:icon="@mipmap/ic_shipping"
+            android:key="prz_language"
+            android:negativeButtonText="@null"
+            android:positiveButtonText="@null"
+            android:title="@string/pref_title_prz_language"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_header_notifications">
+        <SwitchPreference
+            android:defaultValue="true"
+            android:icon="@mipmap/ic_notification_bell"
+            android:key="notifications_new_message"
+            android:title="@string/pref_title_alert_notification"/>
+
+        <RingtonePreference
+            android:defaultValue="content://settings/system/notification_sound"
+            android:dependency="notifications_new_message"
+            android:icon="@mipmap/ic_ringtone"
+            android:key="notifications_new_message_ringtone"
+            android:ringtoneType="notification"
+            android:title="@string/pref_title_ringtone"/>
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:dependency="notifications_new_message"
+            android:icon="@mipmap/ic_vibration"
+            android:key="notifications_new_message_vibrate"
+            android:title="@string/pref_title_vibrate"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_header_data_sync">
+        <ListPreference
+            android:defaultValue="180"
+            android:entries="@array/pref_sync_frequency_titles"
+            android:entryValues="@array/pref_sync_frequency_values"
+            android:icon="@mipmap/ic_sync"
+            android:key="sync_frequency"
+            android:negativeButtonText="@null"
+            android:positiveButtonText="@null"
+            android:title="@string/pref_title_sync_frequency"/>
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/pref_header_advanced">
+        <SwitchPreference
+            android:defaultValue="false"
+            android:icon="@mipmap/ic_file_add"
+            android:key="cache_images"
+            android:title="@string/pref_title_cache"/>
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:icon="@mipmap/ic_poweron"
+            android:key="update_on_start"
+            android:title="@string/pref_update_on_start"/>
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:icon="@mipmap/ic_new_view"
+            android:key="getnews_on_start"
+            android:title="@string/pref_getnews_on_start"/>
+
+    </PreferenceCategory>
+
 </PreferenceScreen>

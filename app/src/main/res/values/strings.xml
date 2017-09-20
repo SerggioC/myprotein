@@ -6,7 +6,7 @@
 
     <!-- Strings related to Settings -->
 
-    <string name="pref_header_general">General</string>
+    <string name="pref_mp_header_general">Myprotein General</string>
     <string name="pref_header_data_sync">Data &amp; Sync</string>
     <string name="pref_header_notifications">Notifications</string>
     <string name="pref_title_alert_notification">Price alert notifications</string>
@@ -88,10 +88,10 @@
         <item>Sweden</item>
         <item>Switzerland</item>
         <item>Ukraine</item>
-        <item>United Arab Emirates</item> <!-- ++ -->
+        <item>United Arab Emirates</item>
         <item>United Kingdom</item>
         <item>United States</item>
-        <item>Viet Nam</item> <!-- ++ -->
+        <item>Viet Nam</item>
     </string-array>
     <string-array name="pref_mp_website_values">
         <item>de-at</item>
@@ -113,7 +113,7 @@
         <item>fr-fr</item>
         <item>el-gr</item>
         <item>en-hk</item>
-        <item>hu-hu</item> <!-- ++ -->
+        <item>hu-hu</item>
         <item>en-ie</item>
         <item>en-in</item>
         <item>it-it</item>
@@ -137,10 +137,10 @@
         <item>sv-se</item>
         <item>de-ch</item>
         <item>uk-ua</item>
-        <item>en-ae</item> <!-- ++ -->
+        <item>en-ae</item>
         <item>en-gb</item>
         <item>en-us</item>
-        <item>en-gb</item> <!-- no vietnamese redirect to .com -->
+        <item>en-vn</item>
     </string-array>
 
     <string name="pref_title_mp_shippingTo">Myprotein Shipping Country</string>
@@ -218,92 +218,92 @@
         <item>Switzerland</item>
         <item>Taiwan</item>
         <item>Ukraine</item>
-        <item>United Arab Emirates</item> <!-- ++ -->
+        <item>United Arab Emirates</item>
         <item>United Kingdom</item>
         <item>United States</item>
         <item>Viet Nam</item>
     </string-array>
     <string-array name="pref_mp_shippingTo_values">
-        <item>"DZ"</item>
-        <item>"AD"</item>
-        <item>"AU"</item>
-        <item>"AT"</item>
-        <item>"AZ"</item>
-        <item>"BS"</item>
-        <item>"BE"</item>
-        <item>"BA"</item>
-        <item>"BG"</item>
-        <item>"CA"</item>
-        <item>"CN"</item>
-        <item>"CO"</item>
-        <item>"HR"</item>
-        <item>"CY"</item>
-        <item>"CZ"</item>
-        <item>"DK"</item>
-        <item>"DO"</item>
-        <item>"EE"</item>
-        <item>"FI"</item>
-        <item>"FR"</item>
-        <item>"GE"</item>
-        <item>"DE"</item>
-        <item>"GI"</item>
-        <item>"GR"</item>
-        <item>"GP"</item>
-        <item>"GT"</item>
-        <item>"GG"</item>
-        <item>"HK"</item>
-        <item>"HU"</item>
-        <item>"IS"</item>
-        <item>"IN"</item>
-        <item>"ID"</item>
-        <item>"IE"</item>
-        <item>"IL"</item>
-        <item>"IT"</item>
-        <item>"JP"</item>
-        <item>"JE"</item>
-        <item>"KZ"</item>
-        <item>"KR"</item>
-        <item>"LV"</item>
-        <item>"LI"</item>
-        <item>"LT"</item>
-        <item>"LU"</item>
-        <item>"MO"</item>
-        <item>"MK"</item>
-        <item>"MY"</item>
-        <item>"MT"</item>
-        <item>"MQ"</item>
-        <item>"NL"</item>
-        <item>"NZ"</item>
-        <item>"NG"</item>
-        <item>"NO"</item>
-        <item>"PK"</item>
-        <item>"PE"</item>
-        <item>"PL"</item>
-        <item>"PH"</item>
-        <item>"PT"</item>
-        <item>"PR"</item>
-        <item>"RO"</item>
-        <item>"RU"</item>
-        <item>"RE"</item>
-        <item>"PM"</item>
-        <item>"SM"</item>
-        <item>"RS"</item>
-        <item>"SG"</item>
-        <item>"SK"</item>
-        <item>"SI"</item>
-        <item>"ZA"</item>
-        <item>"ES"</item>
-        <item>"SE"</item>
-        <item>"CH"</item>
-        <item>"TW"</item>
-        <item>"UA"</item>
-        <item>"AE"</item>
-        <item>"GB"</item>
-        <item>"US"</item>
-        <item>"VN"</item>
+        <item>DZ</item>
+        <item>AD</item>
+        <item>AU</item>
+        <item>AT</item>
+        <item>AZ</item>
+        <item>BS</item>
+        <item>BE</item>
+        <item>BA</item>
+        <item>BG</item>
+        <item>CA</item>
+        <item>CN</item>
+        <item>CO</item>
+        <item>HR</item>
+        <item>CY</item>
+        <item>CZ</item>
+        <item>DK</item>
+        <item>DO</item>
+        <item>EE</item>
+        <item>FI</item>
+        <item>FR</item>
+        <item>GE</item>
+        <item>DE</item>
+        <item>GI</item>
+        <item>GR</item>
+        <item>GP</item>
+        <item>GT</item>
+        <item>GG</item>
+        <item>HK</item>
+        <item>HU</item>
+        <item>IS</item>
+        <item>IN</item>
+        <item>ID</item>
+        <item>IE</item>
+        <item>IL</item>
+        <item>IT</item>
+        <item>JP</item>
+        <item>JE</item>
+        <item>KZ</item>
+        <item>KR</item>
+        <item>LV</item>
+        <item>LI</item>
+        <item>LT</item>
+        <item>LU</item>
+        <item>MO</item>
+        <item>MK</item>
+        <item>MY</item>
+        <item>MT</item>
+        <item>MQ</item>
+        <item>NL</item>
+        <item>NZ</item>
+        <item>NG</item>
+        <item>NO</item>
+        <item>PK</item>
+        <item>PE</item>
+        <item>PL</item>
+        <item>PH</item>
+        <item>PT</item>
+        <item>PR</item>
+        <item>RO</item>
+        <item>RU</item>
+        <item>RE</item>
+        <item>PM</item>
+        <item>SM</item>
+        <item>RS</item>
+        <item>SG</item>
+        <item>SK</item>
+        <item>SI</item>
+        <item>ZA</item>
+        <item>ES</item>
+        <item>SE</item>
+        <item>CH</item>
+        <item>TW</item>
+        <item>UA</item>
+        <item>AE</item>
+        <item>GB</item>
+        <item>US</item>
+        <item>VN</item>
     </string-array>
 
-    <string name="pref_title_mp_Currency">Currency</string>
+    <string name="pref_title_mp_Currency">Myprotein Currency</string>
     <string-array name="pref_mp_Currencies_titles">
         <item>£ GBP</item>
         <item>A$ AUD</item>
@@ -365,6 +365,373 @@
         <item>UAH</item>
         <item>KZT</item>
         <item>TWD</item>
+    </string-array>
+
+    <string name="pref_prz_header_general">Prozis General</string>
+    <string name="pref_prz_country">Prozis Website Location</string>
+    <string-array name="pref_prz_country_titles">
+        <item>Albania (AL)</item>
+        <item>Algeria (DZ)</item>
+        <item>Angola (AO)</item>
+        <item>Argentina (AR)</item>
+        <item>Armenia (AM)</item>
+        <item>Australia (AU)</item>
+        <item>Azerbaijan (AZ)</item>
+        <item>Belarus (BY)</item>
+        <item>Belgique (BE)</item>
+        <item>Bolivia (BO)</item>
+        <item>Bosna i Hercegovina (BA)</item>
+        <item>Botswana (BW)</item>
+        <item>Brasil (BR)</item>
+        <item>Bâlgariya (BG)</item>
+        <item>Cabo Verde (CV)</item>
+        <item>Cameroun (CM)</item>
+        <item>Canada (CA)</item>
+        <item>Ceuta (ECT)</item>
+        <item>Chile (CL)</item>
+        <item>China (CN)</item>
+        <item>Colombia (CO)</item>
+        <item>Cuba (CU)</item>
+        <item>Cyprus (CY)</item>
+        <item>Czech Republic (CZ)</item>
+        <item>Danmark (DK)</item>
+        <item>Deutschland (DE)</item>
+        <item>Dominican Republic (DO)</item>
+        <item>Ecuador (EC)</item>
+        <item>Eesti (EE)</item>
+        <item>Egypt (EG)</item>
+        <item>España (ES)</item>
+        <item>FYROM (MK)</item>
+        <item>Faroe Islands (FO)</item>
+        <item>France (FR)</item>
+        <item>Georgia (GE)</item>
+        <item>Greece (GR)</item>
+        <item>Guadeloupe (GP)</item>
+        <item>Guatemala (GT)</item>
+        <item>Guernsey (GG)</item>
+        <item>Guyane Française (GF)</item>
+        <item>Haiti (HT)</item>
+        <item>Hong Kong (HK)</item>
+        <item>Hrvatska (HR)</item>
+        <item>Iceland (IS)</item>
+        <item>India (IN)</item>
+        <item>Indonesia (ID)</item>
+        <item>Ireland (IE)</item>
+        <item>Isle of Man (IM)</item>
+        <item>Israel (IL)</item>
+        <item>Italia (IT)</item>
+        <item>Jamaica (JM)</item>
+        <item>Japan (JP)</item>
+        <item>Jersey (JE)</item>
+        <item>Kazakhstan (KZ)</item>
+        <item>Latvija (LV)</item>
+        <item>Lebanon (LB)</item>
+        <item>Liechtenstein (LI)</item>
+        <item>Lietuva (LT)</item>
+        <item>Lëtzebuerg (LU)</item>
+        <item>Macao (MO)</item>
+        <item>Magyarország (HU)</item>
+        <item>Malaysia (MY)</item>
+        <item>Malta (MT)</item>
+        <item>Martinique (MQ)</item>
+        <item>Mauritius (MU)</item>
+        <item>Monaco (MC)</item>
+        <item>Montenegro (ME)</item>
+        <item>Morocco (MA)</item>
+        <item>Moçambique (MZ)</item>
+        <item>México (MX)</item>
+        <item>Nederland (NL)</item>
+        <item>New Zealand (NZ)</item>
+        <item>Nicarágua (NI)</item>
+        <item>Nigeria (NG)</item>
+        <item>Norge (NO)</item>
+        <item>Panamá (PA)</item>
+        <item>Paraguay (PY)</item>
+        <item>Perú (PE)</item>
+        <item>Philippines (PH)</item>
+        <item>Polska (PL)</item>
+        <item>Portugal (PT)</item>
+        <item>Puerto Rico (PR)</item>
+        <item>Republicii Moldova (MD)</item>
+        <item>România (RO)</item>
+        <item>Russia (RU)</item>
+        <item>Réunion (RE)</item>
+        <item>Saint Barthelemy (BL)</item>
+        <item>Saudi Arabia (SA)</item>
+        <item>Serbia (RS)</item>
+        <item>Singapore (SG)</item>
+        <item>Slovenija (SI)</item>
+        <item>Slovensko (SK)</item>
+        <item>Somalia (SO)</item>
+        <item>South Africa (ZA)</item>
+        <item>Sri Lanka (LK)</item>
+        <item>Suomi (FI)</item>
+        <item>Sverige (SE)</item>
+        <item>Switzerland (CH)</item>
+        <item>São Tomé e Príncipe (ST)</item>
+        <item>Sénégal (SN)</item>
+        <item>Taiwan (TW)</item>
+        <item>Thailand (TH)</item>
+        <item>Timor Leste (TL)</item>
+        <item>Tunisia (TN)</item>
+        <item>Türkiye (TR)</item>
+        <item>UAE (AE)</item>
+        <item>USA (US)</item>
+        <item>Ukraine (UA)</item>
+        <item>United Kingdom (GB)</item>
+        <item>Uruguay (UY)</item>
+        <item>Uzbekistan (UZ)</item>
+        <item>Venezuela (VE)</item>
+        <item>Österreich (AT)</item>
+    </string-array>
+
+    <string-array name="pref_prz_country_values">
+        <item>AL</item>
+        <item>DZ</item>
+        <item>AO</item>
+        <item>AR</item>
+        <item>AM</item>
+        <item>AU</item>
+        <item>AZ</item>
+        <item>BY</item>
+        <item>BE</item>
+        <item>BO</item>
+        <item>BA</item>
+        <item>BW</item>
+        <item>BR</item>
+        <item>BG</item>
+        <item>CV</item>
+        <item>CM</item>
+        <item>CA</item>
+        <item>ECT</item>
+        <item>CL</item>
+        <item>CN</item>
+        <item>CO</item>
+        <item>CU</item>
+        <item>CY</item>
+        <item>CZ</item>
+        <item>DK</item>
+        <item>DE</item>
+        <item>DO</item>
+        <item>EC</item>
+        <item>EE</item>
+        <item>EG</item>
+        <item>ES</item>
+        <item>MK</item>
+        <item>FO</item>
+        <item>FR</item>
+        <item>GE</item>
+        <item>GR</item>
+        <item>GP</item>
+        <item>GT</item>
+        <item>GG</item>
+        <item>GF</item>
+        <item>HT</item>
+        <item>HK</item>
+        <item>HR</item>
+        <item>IS</item>
+        <item>IN</item>
+        <item>ID</item>
+        <item>IE</item>
+        <item>IM</item>
+        <item>IL</item>
+        <item>IT</item>
+        <item>JM</item>
+        <item>JP</item>
+        <item>JE</item>
+        <item>KZ</item>
+        <item>LV</item>
+        <item>LB</item>
+        <item>LI</item>
+        <item>LT</item>
+        <item>LU</item>
+        <item>MO</item>
+        <item>HU</item>
+        <item>MY</item>
+        <item>MT</item>
+        <item>MQ</item>
+        <item>MU</item>
+        <item>MC</item>
+        <item>ME</item>
+        <item>MA</item>
+        <item>MZ</item>
+        <item>MX</item>
+        <item>NL</item>
+        <item>NZ</item>
+        <item>NI</item>
+        <item>NG</item>
+        <item>NO</item>
+        <item>PA</item>
+        <item>PY</item>
+        <item>PE</item>
+        <item>PH</item>
+        <item>PL</item>
+        <item>PT</item>
+        <item>PR</item>
+        <item>MD</item>
+        <item>RO</item>
+        <item>RU</item>
+        <item>RE</item>
+        <item>BL</item>
+        <item>SA</item>
+        <item>RS</item>
+        <item>SG</item>
+        <item>SI</item>
+        <item>SK</item>
+        <item>SO</item>
+        <item>ZA</item>
+        <item>LK</item>
+        <item>FI</item>
+        <item>SE</item>
+        <item>CH</item>
+        <item>ST</item>
+        <item>SN</item>
+        <item>TW</item>
+        <item>TH</item>
+        <item>TL</item>
+        <item>TN</item>
+        <item>TR</item>
+        <item>AE</item>
+        <item>US</item>
+        <item>UA</item>
+        <item>GB</item>
+        <item>UY</item>
+        <item>UZ</item>
+        <item>VE</item>
+        <item>AT</item>
+    </string-array>
+
+    <string-array name="pref_prz_country_values2">
+        <item>ww</item>
+        <item>ww</item>
+        <item>ao</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ru</item>
+        <item>ru</item>
+        <item>be</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>br</item>
+        <item>eu</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>cn</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>eu</item>
+        <item>eu</item>
+        <item>dk</item>
+        <item>de</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>eu</item>
+        <item>ww</item>
+        <item>es</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>fr</item>
+        <item>ru</item>
+        <item>gr</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>eu</item>
+        <item>eu</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ie</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>it</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ru</item>
+        <item>eu</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>eu</item>
+        <item>lu</item>
+        <item>ww</item>
+        <item>eu</item>
+        <item>ww</item>
+        <item>eu</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>nl</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>pl</item>
+        <item>pt</item>
+        <item>ww</item>
+        <item>ru</item>
+        <item>eu</item>
+        <item>ru</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>eu</item>
+        <item>sk</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>fi</item>
+        <item>se</item>
+        <item>ch</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ww</item>
+        <item>ru</item>
+        <item>uk</item>
+        <item>ww</item>
+        <item>ru</item>
+        <item>ww</item>
+        <item>at</item>
+    </string-array>
+
+    <string name="pref_title_prz_language">Prozis Website Language</string>
+    <string-array name="pref_prz_language_titles">
+        <item>English</item>
+        <item>Français</item>
+        <item>Español</item>
+        <item>Português</item>
+        <item>Italiano</item>
+    </string-array>
+
+    <string-array name="pref_prz_language_values">
+        <item>en</item>
+        <item>fr</item>
+        <item>es</item>
+        <item>pt</item>
+        <item>it</item>
     </string-array>
 
 

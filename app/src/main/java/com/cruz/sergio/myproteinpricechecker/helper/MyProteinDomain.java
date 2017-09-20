@@ -35,6 +35,7 @@ public class MyProteinDomain {
             case "en-au":href = "http://au.myprotein.com/";break;       //voucher-codes.list
             case "en-ca":href = "http://ca.myprotein.com/";break;       //voucher-codes.list
             case "en-gb":href = "http://www.myprotein.com/";break;      //voucher-codes.list
+            case "en-vn":href = "http://www.myprotein.com/";break;      //voucher-codes.list
             case "en-hk":href = "http://www.myprotein.com.hk/";break;   //voucher-codes.list (vazio...)
             case "en-ie":href = "http://www.myprotein.ie/";break;       //voucher-codes.list
             case "en-in":href = "http://www.myprotein.co.in/";break;    //voucher-codes.list (zero...)

@@ -6,23 +6,28 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     app:cardBackgroundColor="@color/cardsColor"
+    android:layout_marginLeft="6dp"
+    android:layout_marginRight="6dp"
+    android:layout_marginTop="4dp"
+    android:layout_marginBottom="4dp"
     app:cardCornerRadius="@dimen/card_radius"
     app:cardElevation="@dimen/card_elevation"
     app:cardPreventCornerOverlap="true">
 
     <LinearLayout
-        android:id="@+id/root_ll_vertical"
+        android:id="@+id/root_ll_vertical_showMore"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@color/colorPrimaryLight"
         android:orientation="vertical"
-        android:paddingBottom="8dp"
+        android:gravity="center"
+        android:paddingBottom="10dp"
         android:paddingLeft="6dp"
         android:paddingRight="6dp"
-        android:background="@color/light_gray"
-        android:paddingTop="8dp">
+        android:paddingTop="10dp">
 
         <TextView
-            android:id="@+id/titleTextView"
+            android:id="@+id/showmore_TV"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:drawableRight="@drawable/arrow"
@@ -30,6 +35,13 @@
             android:text="Load More..."
             android:textAlignment="center"
             android:textSize="18sp"/>
+
+        <ProgressBar
+            android:id="@+id/progressBarShowMore"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"/>
 
     </LinearLayout>
 </android.support.v7.widget.CardView>

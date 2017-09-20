@@ -25,7 +25,6 @@ import android.text.TextWatcher;
 import android.text.style.ImageSpan;
 import android.util.Log;
 import android.util.Patterns;
-import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -64,22 +63,32 @@ import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCust
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
 
 public class SearchFragment extends Fragment {
+    public static SearchCompleteListener searchCompleteListener;
+    public static UpdateGraphForNewProduct updateGraphListener;
+    public static AddedNewProductListener addedNewProductListener;
+    public int SEARCH_REQUEST_CODE = 1;
+    public int VOICE_REQUEST_CODE = 2;
     Activity mActivity;
     ArrayAdapter adapter;
-    ArrayList<ProductCards> arrayListProductCards = new ArrayList<>();
+    ArrayList<ProductCards> fullListProductCards = new ArrayList<>();
+    ArrayList<ProductCards> myproteinProductCards = new ArrayList<>();
+    ArrayList<ProductCards> prozisProductCards = new ArrayList<>();
+    ArrayList<ProductCards> bulkpowdersProductCards = new ArrayList<>();
+    ArrayList<ProductCards> myvitaminsProductCards = new ArrayList<>();
     Boolean hasMorePages = true;
     int pageNumber = 1;
     ListView resultsListView;
     ProgressBar horizontalProgressBar;
     Boolean hasAsyncTaskRuning = false;
-    public int SEARCH_REQUEST_CODE = 1;
-    public int VOICE_REQUEST_CODE = 2;
     boolean btn_clear_visible = false;
     EditText searchTV;
     String[] SUPPORTED_WEBSTORES = new String[]{"myprotein", "prozis", "bulkpowders", "myvitamins"};
     String[] WEBSTORES_NAMES = new String[]{"Myprotein", "Prozis", "Bulk Powders", "Myvitamins"};
     boolean[] which_webstores_checked = new boolean[]{true, true, true, true};
-    ArrayList<String> WebstoresToUse = new ArrayList(SUPPORTED_WEBSTORES.length);
+    ArrayList<String> webstoresToUse = new ArrayList(SUPPORTED_WEBSTORES.length);
+    ArrayList<String> webstoreNamesToUse = new ArrayList(WEBSTORES_NAMES.length);
+    int webStoreIndex = 0;
+    int numberOfWebstoresToUse;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -88,12 +97,39 @@ public class SearchFragment extends Fragment {
 
         SharedPreferences sharedPref = mActivity.getPreferences(Context.MODE_PRIVATE);
         for (int i = 0; i < WEBSTORES_NAMES.length; i++) {
-            which_webstores_checked[i] = sharedPref.getBoolean(WEBSTORES_NAMES[i], true);
+            which_webstores_checked[i] = sharedPref.getBoolean(SUPPORTED_WEBSTORES[i], true);
             if (which_webstores_checked[i]) {
-                WebstoresToUse.add(SUPPORTED_WEBSTORES[i]);
+                webstoresToUse.add(SUPPORTED_WEBSTORES[i]);
+                webstoreNamesToUse.add(WEBSTORES_NAMES[i]);
             }
         }
+        numberOfWebstoresToUse = webstoresToUse.size();
 
+        searchCompleteListener = new SearchCompleteListener() {
+            @Override
+            public void onSearchComplete(Boolean isComplete, int thisWebstoreIndex, ArrayList<ProductCards> listProductCards) {
+                fullListProductCards.addAll(listProductCards);
+
+                webStoreIndex++;
+                if (webStoreIndex < numberOfWebstoresToUse){
+                    // Adicionar ao ultimo elemento para fazer "carregar resultados da próxima loja"
+                    fullListProductCards.add(new ProductCards(true));
+                } else if (webStoreIndex == numberOfWebstoresToUse) {
+                    horizontalProgressBar.setVisibility(View.GONE);
+                    hasAsyncTaskRuning = false;
+                    webStoreIndex = 0;
+                }
+
+                if (adapter == null) {
+                    adapter = new ProductAdapter(mActivity, R.layout.product_card, fullListProductCards);
+                    resultsListView.setAdapter(adapter);
+                    adapter.setNotifyOnChange(true);
+                } else {
+                    adapter.notifyDataSetChanged();
+                }
+
+            }
+        };
     }
 
     @Nullable
@@ -208,16 +244,18 @@ public class SearchFragment extends Fragment {
                 builderDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        WebstoresToUse.clear();
+                        webstoresToUse.clear();
                         for (int i = 0; i < which_webstores_checked.length; i++) {
                             SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
                             SharedPreferences.Editor editor = sharedPref.edit();
-                            editor.putBoolean(WEBSTORES_NAMES[i], which_webstores_checked[i]);
+                            editor.putBoolean(SUPPORTED_WEBSTORES[i], which_webstores_checked[i]);
                             editor.commit();
                             if (which_webstores_checked[i]) {
-                                WebstoresToUse.add(WEBSTORES_NAMES[i]);
+                                webstoresToUse.add(SUPPORTED_WEBSTORES[i]);
+                                webstoreNamesToUse.add(WEBSTORES_NAMES[i]);
                             }
                         }
+                        numberOfWebstoresToUse = webstoresToUse.size();
                     }
                 });
 
@@ -284,7 +322,7 @@ public class SearchFragment extends Fragment {
     public void performSearch(String searchString) {
         hideKeyBoard();
         if (hasAsyncTaskRuning) {
-            NetworkUtils.showCustomToast(mActivity, "Ongoing search...", R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_SHORT);
+            NetworkUtils.showCustomToast(mActivity, "Search in progress...", R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_SHORT);
         } else {
             if (StringUtil.isBlank(searchString)) {
                 NetworkUtils.showCustomToast(mActivity, "Search product name or enter product URL", R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_LONG);
@@ -310,98 +348,13 @@ public class SearchFragment extends Fragment {
         super.onDestroy();
     }
 
-    public class checkInternetAsyncTask extends AsyncTask<String, Void, Boolean> {
-        String searchString;
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            hasAsyncTaskRuning = true;
-        }
-
-        @Override
-        protected Boolean doInBackground(String... params) {
-            this.searchString = params[0];
-            //Importante porque ao executar o ping bloqueia o interface
-            return NetworkUtils.hasActiveNetworkConnection(mActivity);
-        }
-
-        @Override
-        protected void onPostExecute(Boolean hasInternet) {
-            super.onPostExecute(hasInternet);
-
-            if (hasInternet) {
-
-                hasMorePages = true;
-                resultsListView.setAdapter(null);
-                arrayListProductCards.clear();
-
-
-                int numberOfWebstoresToUse = WebstoresToUse.size();
-                for (int webStoreIndex = 0; webStoreIndex < numberOfWebstoresToUse; webStoreIndex++) {
-
-                    switch (WebstoresToUse.get(webStoreIndex)) {
-                        case "myprotein": {
-                            AsyncTask<String, Void, Document> myproteinSearch = new MyproteinSearch(webStoreIndex, numberOfWebstoresToUse);
-                            myproteinSearch.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, searchString);
-                            break;
-                        }
-                        case "prozis": {
-                            AsyncTask<String, Void, Document> prozisSearch = new ProzisSearch(webStoreIndex, numberOfWebstoresToUse);
-                            prozisSearch.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, searchString);
-                            break;
-                        }
-                        case "bulkpowders": {
-                            AsyncTask<String, Void, Document> bulkpowdersSearch = new BulkpowdersSearch(webStoreIndex, numberOfWebstoresToUse);
-                            bulkpowdersSearch.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, searchString);
-                            break;
-                        }
-                        case "myvitamins": {
-                            AsyncTask<String, Void, Document> myvitaminsSearch = new MyvitaminsSearch(webStoreIndex, numberOfWebstoresToUse);
-                            myvitaminsSearch.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, searchString);
-                            break;
-                        }
-                    }
-
-                }
-
-
-            } else {
-                if (horizontalProgressBar.getVisibility() == View.VISIBLE) {
-                    horizontalProgressBar.setVisibility(View.GONE);
-                }
-                if (noNetworkSnackBar != null && !noNetworkSnackBar.isShown()) {
-                    noNetworkSnackBar.show();
-                } else {
-                    makeNoNetworkSnackBar(mActivity);
-                }
-                hasAsyncTaskRuning = false;
-            }
-        }
-    }
-
-
-    public static UpdateGraphForNewProduct updateGraphListener;
-
-    interface UpdateGraphForNewProduct {
-        void onProductAdded(Boolean addedNew);
-    }
-
     public void setUpdateGraphListener(UpdateGraphForNewProduct listener) {
         this.updateGraphListener = listener;
-    }
-
-
-    public static AddedNewProductListener addedNewProductListener;
-
-    interface AddedNewProductListener {
-        void onProductAdded(Boolean addedNew);
     }
 
     public void setNewProductListener(AddedNewProductListener listener) {
         this.addedNewProductListener = listener;
     }
-
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -436,14 +389,85 @@ public class SearchFragment extends Fragment {
     }
 
 
-    private class MyproteinSearch extends AsyncTask<String, Void, Document> {
-        int webStoreIndex;
-        int numberOfWebstoresToUse;
+    public interface SearchCompleteListener {
+        void onSearchComplete(Boolean isComplete, int thisWebstoreIndex, ArrayList<ProductCards> listProductCards);
+    }
+
+    interface UpdateGraphForNewProduct {
+        void onProductAdded(Boolean addedNew);
+    }
+
+    interface AddedNewProductListener {
+        void onProductAdded(Boolean addedNew);
+    }
+
+    public class checkInternetAsyncTask extends AsyncTask<String, Void, Boolean> {
         String searchString;
 
-        protected MyproteinSearch(int webStoreIndex, int numberOfWebstoresToUse) {
-            this.webStoreIndex = webStoreIndex;
-            this.numberOfWebstoresToUse = numberOfWebstoresToUse;
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            hasAsyncTaskRuning = true;
+        }
+
+        @Override
+        protected Boolean doInBackground(String... params) {
+            this.searchString = params[0];
+            //Importante porque ao executar o ping bloqueia o interface
+            return NetworkUtils.hasActiveNetworkConnection(mActivity);
+        }
+
+        @Override
+        protected void onPostExecute(Boolean hasInternet) {
+            super.onPostExecute(hasInternet);
+
+            if (hasInternet) {
+                hasMorePages = true;
+                resultsListView.setAdapter(null);
+                fullListProductCards.clear();
+                myproteinProductCards.clear();
+                prozisProductCards.clear();
+                bulkpowdersProductCards.clear();
+                myvitaminsProductCards.clear();
+                int storeIndex = 0;
+
+                if (webstoresToUse.contains("myprotein")) {
+                    AsyncTask<String, Void, Document> myproteinSearch = new MyproteinSearch(storeIndex++);
+                    myproteinSearch.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, URLEncoder.encode(searchString));
+                }
+                if (webstoresToUse.contains("prozis")) {
+                    AsyncTask<String, Void, Document> prozisSearch = new ProzisSearch(storeIndex++);
+                    prozisSearch.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, URLEncoder.encode(searchString));
+                }
+                if (webstoresToUse.contains("bulkpowders")) {
+                    AsyncTask<String, Void, Document> bulkpowdersSearch = new BulkpowdersSearch(storeIndex++);
+                    bulkpowdersSearch.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, URLEncoder.encode(searchString));
+                }
+                if (webstoresToUse.contains("myvitamins")) {
+                    AsyncTask<String, Void, Document> myvitaminsSearch = new MyvitaminsSearch(storeIndex++);
+                    myvitaminsSearch.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, URLEncoder.encode(searchString));
+                }
+
+            } else {
+                if (horizontalProgressBar.getVisibility() == View.VISIBLE) {
+                    horizontalProgressBar.setVisibility(View.GONE);
+                }
+                if (noNetworkSnackBar != null && !noNetworkSnackBar.isShown()) {
+                    noNetworkSnackBar.show();
+                } else {
+                    makeNoNetworkSnackBar(mActivity);
+                }
+                hasAsyncTaskRuning = false;
+            }
+        }
+    }
+
+    private class MyproteinSearch extends AsyncTask<String, Void, Document> {
+        String searchString;
+        int thisWebstoreIndex;
+
+        MyproteinSearch(int thisWebstoreIndex) {
+            this.thisWebstoreIndex = thisWebstoreIndex;
         }
 
         @Override
@@ -456,9 +480,7 @@ public class SearchFragment extends Fragment {
         protected Document doInBackground(String... params) {
             Document resultDocument = null;
             try {
-
-                searchString = URLEncoder.encode(params[0]);
-
+                searchString = params[0];
                 String nextPage = "";
                 if (params.length > 1) {
                     nextPage = StringUtil.isBlank(params[1]) ? "" : params[1];
@@ -493,7 +515,6 @@ public class SearchFragment extends Fragment {
         @Override
         protected void onPostExecute(Document resultDocument) {
             super.onPostExecute(resultDocument);
-
             Elements resultProductCards = new Elements(0);
 
             if (resultDocument != null) {
@@ -507,16 +528,17 @@ public class SearchFragment extends Fragment {
             //Log.i("Sergio>>>", "onPostExecute: " + resultProductCards);
 
             int rpc_size = resultProductCards.size();
-            if (rpc_size == 0 && arrayListProductCards.size() == 0) {
-                ArrayList item = new ArrayList();
-                item.add("No Results");
-                ArrayAdapter noAdapter = new ArrayAdapter(mActivity, android.R.layout.simple_list_item_1, item);
-                resultsListView.setAdapter(noAdapter);
-                horizontalProgressBar.setVisibility(View.GONE);
-                hasAsyncTaskRuning = false;
+            if (rpc_size == 0 && myproteinProductCards != null) {
+                if (myproteinProductCards.size() > 0) {
+                    // no caso de dar erro ao obter resultados de páginas seguintes
+                    searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, myproteinProductCards);
+
+                } else if (myproteinProductCards.size() == 0) {
+                    // Não obteve resultados
+                    myproteinProductCards.add(new ProductCards(true, webstoreNamesToUse.get(thisWebstoreIndex)));
+                }
+
             } else if (rpc_size > 0) {
-                //for (Element singleProductCard : resultProductCards) { // Selecionar um único "Card" Produto
-                //Log.d("Sergio>>>", "Product Card= "+ singleProductCard);
                 for (int i = 0; i < rpc_size; i++) {
                     Element singleProductCard = resultProductCards.get(i);
                     Element productTitle = singleProductCard.getElementsByClass("product-title").first();
@@ -525,7 +547,6 @@ public class SearchFragment extends Fragment {
                     if (productTitle != null) {
                         productTitleStr = productTitle.text();
                         productHref = productTitle.attr("href");
-                        //Log.d("Sergio>>>", "productTitleStr= " + productTitleStr + "\nhref= " + productHref);
                     } else {
                         //failed getting product title
                         productTitleStr = "(No info)";
@@ -533,13 +554,8 @@ public class SearchFragment extends Fragment {
                     }
 
                     String productPrice = singleProductCard.select(".price").first().ownText(); // .removeClass("from-text")
-                    //Log.i("Sergio>>>", "productPrice= " + productPrice);
-
                     String productID = singleProductCard.child(0).attr("data-product-id");
-                    //Log.i("Sergio>>>", "productID= " + productID);
-                    String productID2 = singleProductCard.select("span").first().attr("data-product-id");
-                    //Log.i("Sergio>>>", "productID= " + productID2);
-
+                    //String productID2 = singleProductCard.select("span").first().attr("data-product-id");
                     Element productImage = singleProductCard.select("img").first();
                     String imgURL = null;
                     if (productImage != null) {
@@ -548,7 +564,6 @@ public class SearchFragment extends Fragment {
                             imgURL = null;
                         }
                     }
-
                     Drawable drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.tick, null);
                     SpannableStringBuilder pptList_SSB = new SpannableStringBuilder();
                     drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
@@ -570,42 +585,78 @@ public class SearchFragment extends Fragment {
                         }
                     }
 
-                    ProductCards productCard = new ProductCards(productID, productTitleStr, productHref, productPrice, imgURL, pptList_stringarray, pptList_SSB, null);
-                    arrayListProductCards.add(productCard);
-
+                    ProductCards productCard = new ProductCards(productID, productTitleStr, productHref, productPrice, imgURL, pptList_stringarray, pptList_SSB);
+                    myproteinProductCards.add(productCard);
                 }
+
 
                 Element pagination = resultDocument.getElementsByClass("pagination").get(0);
                 String pages = pagination.child(0).attr("data-total-pages");
-                if (pages == null || pages.equals("")) {
+                if (StringUtil.isBlank(pages)) {
                     pages = "1";
                 }
                 int numPages = Integer.parseInt(pages);
                 if (numPages > 1 && hasMorePages) {
                     pageNumber++;
-                    AsyncTask<String, Void, Document> performSearch = new MyproteinSearch(webStoreIndex, numberOfWebstoresToUse);
-                    //performSearch.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, queryStrURL + "&pageNumber=" + pageNumber);
-                    performSearch.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, searchString, "&pageNumber=" + pageNumber);
+                    AsyncTask<String, Void, Document> performSearch = new MyproteinSearch(thisWebstoreIndex);
+                    performSearch.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, searchString, "&pageNumber=" + pageNumber);
                 }
-
                 if (pageNumber == numPages) {
                     hasMorePages = false;
                     pageNumber = 1;
-
-                    if (webStoreIndex + 1 == numberOfWebstoresToUse) {
-                        adapter = new ProductAdapter(mActivity, R.layout.product_card, arrayListProductCards);
-                        resultsListView.setAdapter(adapter);
-                        horizontalProgressBar.setVisibility(View.GONE);
-                        hasAsyncTaskRuning = false;
-                    } else {
-                        ProductCards productCard = new ProductCards(null, null, null, null, null, null, null, WebstoresToUse.get(webStoreIndex + 1));
-                        arrayListProductCards.add(productCard);
-                        // Continues Search in next Webstore...
-                    }
+                    searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, myproteinProductCards);
                 }
             }
         }
     }
+
+    class ProzisSearch extends AsyncTask<String, Void, Document> {
+        String searchString;
+        int thisWebstoreIndex;
+
+        public ProzisSearch(int thisWebstoreIndex) {
+            this.thisWebstoreIndex = thisWebstoreIndex;
+        }
+
+        @Override
+        protected Document doInBackground(String... params) {
+            Document resultDocument;
+            try {
+                searchString = URLEncoder.encode(params[0]);
+
+                SharedPreferences prefManager = PreferenceManager.getDefaultSharedPreferences(mActivity);
+                String pref_PRZ_Domain = prefManager.getString("mp_website_location", "www");
+                String shippingCountry = prefManager.getString("mp_shipping_location", "GB"); //"PT";
+                String currency = prefManager.getString("mp_currencies", "GBP"); //"EUR";
+                String PRZ_Domain = MyProteinDomain.getHref(pref_PRZ_Domain);
+                String URL_suffix = "&settingsSaved=Y&shippingcountry=" + shippingCountry + "&switchcurrency=" + currency + "&countrySelected=Y";
+                String queryStrURL = PRZ_Domain + "elysium.search?search=" + searchString + URL_suffix;
+
+                Log.i("Sergio>>>", "MyproteinSearch: querystr=" + queryStrURL);
+
+                resultDocument = Jsoup.connect(queryStrURL)
+                        .userAgent(userAgent)
+                        .timeout(NET_TIMEOUT)
+                        .maxBodySize(0) //sem limite de tamanho do doc recebido
+                        .get();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                return null;
+            }
+            return resultDocument;
+        }
+
+        @Override
+        protected void onPostExecute(Document document) {
+            super.onPostExecute(document);
+            ProductCards productCard = new ProductCards("prozis", "prozis", "prozis", "prozis", "prozis", null, null);
+            prozisProductCards.add(productCard);
+            searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, prozisProductCards);
+
+        }
+    }
+
 
     public class ProductAdapter extends ArrayAdapter {
         ArrayList<ProductCards> products;
@@ -623,42 +674,61 @@ public class SearchFragment extends Fragment {
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             final ProductCards product = products.get(position);
-
-            //get the inflater and inflate the XML layout for each item
+            View view;
             LayoutInflater inflater = (LayoutInflater) context.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
-            View view = inflater.inflate(R.layout.product_card, null);
 
-            ImageView productImageView = (ImageView) view.findViewById(R.id.product_image);
-            String imgURL = product.imgURL;
-            if (imgURL != null) {
-                Glide.with(mActivity).load(imgURL).into(productImageView);
+            if (product.hasNoResults != null) {
+                view = inflater.inflate(android.R.layout.simple_list_item_1, null);
+                ((TextView) view.findViewById(android.R.id.text1)).setText("No results from " + product.webstoreName);
+
+            } else if (product.hasNextWebstore != null) {
+                view = inflater.inflate(R.layout.showmore, null);
+                ((TextView) view.findViewById(R.id.showmore_TV)).setText("Load more results...");
+
+                view.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        ((ProgressBar) v.findViewById(R.id.progressBarShowMore)).setVisibility(View.VISIBLE);
+                        adapter.notifyDataSetChanged();
+                    }
+                });
+
             } else {
-                Glide.with(mActivity).load(R.drawable.noimage).into(productImageView);
-            }
+                //get the inflater and inflate the XML layout for each item
+                view = inflater.inflate(R.layout.product_card, null);
 
-            view.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-
-                    Intent intent = new Intent(mActivity, DetailsActivity.class);
-                    intent.putExtra("url", product.productHref);
-                    intent.putStringArrayListExtra("description", product.pptList_stringarray);
-                    intent.putExtra("productID", product.productID);
-                    intent.putExtra("image_url", product.imgURL);
-                    intent.putExtra("is_web_address", false);
-
-                    //startActivity(intent);
-                    Bundle bundle = ActivityOptionsCompat.makeCustomAnimation(
-                            mActivity,
-                            android.R.anim.fade_in,
-                            android.R.anim.fade_out).toBundle();
-                    startActivityForResult(intent, SEARCH_REQUEST_CODE, bundle);
-
+                ImageView productImageView = (ImageView) view.findViewById(R.id.product_image);
+                String imgURL = product.imgURL;
+                if (imgURL != null) {
+                    Glide.with(mActivity).load(imgURL).into(productImageView);
+                } else {
+                    Glide.with(mActivity).load(R.drawable.noimage).into(productImageView);
                 }
-            });
-            ((TextView) view.findViewById(R.id.titleTextView)).setText(product.productTitleStr);
-            ((TextView) view.findViewById(R.id.product_description)).setText(product.pptList_SSB);
-            ((TextView) view.findViewById(R.id.price_textView)).setText(product.productPrice);
+
+                view.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+
+                        Intent intent = new Intent(mActivity, DetailsActivity.class);
+                        intent.putExtra("url", product.productHref);
+                        intent.putStringArrayListExtra("description", product.pptList_stringarray);
+                        intent.putExtra("productID", product.productID);
+                        intent.putExtra("image_url", product.imgURL);
+                        intent.putExtra("is_web_address", false);
+
+                        //startActivity(intent);
+                        Bundle bundle = ActivityOptionsCompat.makeCustomAnimation(
+                                mActivity,
+                                android.R.anim.fade_in,
+                                android.R.anim.fade_out).toBundle();
+                        startActivityForResult(intent, SEARCH_REQUEST_CODE, bundle);
+
+                    }
+                });
+                ((TextView) view.findViewById(R.id.titleTextView)).setText(product.productTitleStr);
+                ((TextView) view.findViewById(R.id.product_description)).setText(product.pptList_SSB);
+                ((TextView) view.findViewById(R.id.price_textView)).setText(product.productPrice);
+            }
 
             return view;
         }
@@ -672,9 +742,11 @@ public class SearchFragment extends Fragment {
         String imgURL;
         ArrayList<String> pptList_stringarray;
         SpannableStringBuilder pptList_SSB;
-        String nextWebstore;
+        Boolean hasNextWebstore;
+        Boolean hasNoResults;
+        String webstoreName;
 
-        ProductCards(String productID, String productTitleStr, String productHref, String productPrice, String imgURL, ArrayList<String> pptList_stringarray, SpannableStringBuilder pptList_SSB, String nextWebstore) {
+        ProductCards(String productID, String productTitleStr, String productHref, String productPrice, String imgURL, ArrayList<String> pptList_stringarray, SpannableStringBuilder pptList_SSB) {
             this.productID = productID;
             this.productTitleStr = productTitleStr;
             this.productHref = productHref;
@@ -682,62 +754,18 @@ public class SearchFragment extends Fragment {
             this.imgURL = imgURL;
             this.pptList_stringarray = pptList_stringarray;
             this.pptList_SSB = pptList_SSB;
-            this.nextWebstore = nextWebstore;
+        }
+
+        ProductCards(Boolean hasNextWebstore) {
+            this.hasNextWebstore = hasNextWebstore;
+        }
+
+        ProductCards(Boolean hasNoResults, String webstoreName) {
+            this.hasNoResults = hasNoResults;
+            this.webstoreName = webstoreName;
         }
     }
 
-    class getPrice extends AsyncTask<String, Void, String> {
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-        }
-
-        /**
-         * Override this method to perform a computation on a background thread. The
-         * specified parameters are the parameters passed to {@link #execute}
-         * by the caller of this task.
-         * <p>
-         * This method can call {@link #publishProgress} to publish updates
-         * on the UI thread.
-         *
-         * @param params The parameters of the task.
-         * @return A result, defined by the subclass of this task.
-         * @see #onPreExecute()
-         * @see #onPostExecute
-         * @see #publishProgress
-         */
-        @Override
-        protected String doInBackground(String... params) {
-
-            String price = null;
-            try {
-                Document doc = Jsoup.connect(params[0])
-                        .userAgent(userAgent)
-                        .timeout(NET_TIMEOUT)
-                        .get();
-                price = doc.getElementsByClass("priceBlock_current_price").text();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            return price;
-        }
-
-        @Override
-        protected void onProgressUpdate(Void... values) {
-            super.onProgressUpdate(values);
-        }
-
-        @Override
-        protected void onPostExecute(String price) {
-            super.onPostExecute(price);
-
-            Toast theToast = Toast.makeText(getContext(), "Price = " + price, Toast.LENGTH_SHORT);
-            theToast.setGravity(Gravity.CENTER, 0, 0);
-            theToast.show();
-        }
-
-    }
 
 }
 

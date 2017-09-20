@@ -207,7 +207,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 timer.purge();
                 timer = new Timer();
                 TabLayout.Tab tab = tabLayout.getTabAt(MainActivity.TAB_IDS.WATCHING);
-                tabLayout.setScrollPosition(1, 0f, true);
+                tabLayout.setScrollPosition(MainActivity.TAB_IDS.WATCHING, 0f, true);
                 tab.select();
                 getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
                 addedNewProduct = addedNew;

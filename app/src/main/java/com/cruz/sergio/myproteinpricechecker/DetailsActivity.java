@@ -700,7 +700,7 @@ public class DetailsActivity extends AppCompatActivity {
             }
         }
 
-        if (JSON_ArrayArray_Images.length() > 0) {
+        if (JSON_ArrayArray_Images != null) {
             return true;
         } else {
             return false;

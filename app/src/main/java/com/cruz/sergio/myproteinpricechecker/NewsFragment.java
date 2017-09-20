@@ -12,6 +12,7 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -111,6 +112,10 @@ public class NewsFragment extends Fragment {
         if (GETNEWS_ONSTART) {
             refreshNewsLayout.setRefreshing(true);
             getNews();
+        } else {
+            list_NewsContent.clear();
+            list_NewsContent.add("header");
+            newsListView.setAdapter(new RecyclerViewAdapter(list_NewsContent));
         }
     }
 
@@ -255,15 +260,14 @@ public class NewsFragment extends Fragment {
                 Elements newsElements = document.getElementsByClass("carouselMain__slide");
 
                 if (newsElements != null && newsElements.size() != 0) {
-                    String replace = "<a href=\"/";
+                    String replace = "href=\"/";
                     for (int i = 0; i < newsElements.size(); i++) {
                         Element element = newsElements.get(i);
                         String newsText = element.html();
                         int indexOfHref = newsText.indexOf(replace);
                         if (indexOfHref > 0) {
-                            newsText = newsText.replaceAll(replace, "<a href=" + url);
+                            newsText = newsText.replaceAll(replace, "href=\"" + url);
                         }
-
                         list_NewsContent.add(getCSS_Styling_MP(newsText));
 
                         //set_webView(newsText, 0);
