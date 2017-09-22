@@ -2,13 +2,11 @@ package com.cruz.sergio.myproteinpricechecker;
 
 import android.os.AsyncTask;
 
-import org.jsoup.nodes.Document;
-
 /**
  * Created by Sergio on 15/09/2017.
  */
 
-class MyvitaminsSearch extends AsyncTask<String, Void, Document> {
+class MyvitaminsSearch extends AsyncTask<String, Void, SearchFragment.ConnectionObject> {
     int thisWebstoreIndex;
 
     public MyvitaminsSearch(int thisWebstoreIndex) {
@@ -30,7 +28,7 @@ class MyvitaminsSearch extends AsyncTask<String, Void, Document> {
      * @see #publishProgress
      */
     @Override
-    protected Document doInBackground(String... params) {
+    protected SearchFragment.ConnectionObject doInBackground(String... params) {
         return null;
     }
 }

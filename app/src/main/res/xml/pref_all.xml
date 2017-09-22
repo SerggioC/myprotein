@@ -8,7 +8,6 @@
     <!---->
     <PreferenceCategory android:title="@string/pref_mp_header_general">
         <ListPreference
-            android:defaultValue="en-gb"
             android:entries="@array/pref_mp_website_titles"
             android:entryValues="@array/pref_mp_website_values"
             android:icon="@mipmap/ic_web_domain"
@@ -18,7 +17,6 @@
             android:title="@string/pref_title_mp_website"/>
 
         <ListPreference
-            android:defaultValue="GB"
             android:entries="@array/pref_mp_shippingTo_titles"
             android:entryValues="@array/pref_mp_shippingTo_values"
             android:icon="@mipmap/ic_shipping"
@@ -28,7 +26,6 @@
             android:title="@string/pref_title_mp_shippingTo"/>
 
         <ListPreference
-            android:defaultValue="GBP"
             android:entries="@array/pref_mp_Currencies_titles"
             android:entryValues="@array/pref_mp_Currencies_values"
             android:icon="@mipmap/ic_coins"
@@ -41,7 +38,6 @@
 
     <PreferenceCategory android:title="@string/pref_prz_header_general">
         <ListPreference
-            android:defaultValue="ww"
             android:entries="@array/pref_prz_country_titles"
             android:entryValues="@array/pref_prz_country_values"
             android:icon="@mipmap/ic_web_domain"
@@ -51,7 +47,6 @@
             android:title="@string/pref_prz_country"/>
 
         <ListPreference
-            android:defaultValue="en"
             android:entries="@array/pref_prz_language_titles"
             android:entryValues="@array/pref_prz_language_values"
             android:icon="@drawable/ic_language"

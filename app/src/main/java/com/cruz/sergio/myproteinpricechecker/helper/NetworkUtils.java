@@ -26,6 +26,7 @@ import android.widget.Toast;
 import com.cruz.sergio.myproteinpricechecker.R;
 
 import java.io.IOException;
+import java.net.InetAddress;
 
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.BC_Registered;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
@@ -43,8 +44,13 @@ public class NetworkUtils {
     private static final String PING_URL = "www.google.com";
     public static BroadcastReceiver BCReceiver = null;
     public static Snackbar noNetworkSnackBar = null;
+    public static int NET_TIMEOUT = 10000; // milliseconds (10 seconds)
+    public static int STATUS_OK = 0;
+    public static int TIMEOUT = 1;
+    public static int MALFORMED_URL = 2;
+    public static int STATUS_NOT_OK = 3;
+    public static int IOEXCEPTION = 4;
     static Snackbar.SnackbarLayout snack_layout;
-    public static int NET_TIMEOUT = 30000; // milliseconds (30 seconds)
 
     public static final void UnregisterBroadcastReceiver(Activity mActivity) {
         if (BCReceiver != null) {
@@ -90,11 +96,11 @@ public class NetworkUtils {
         View layout = inflater.inflate(R.layout.slim_toast, (LinearLayout) cActivity.findViewById(R.id.slim_toast_root));
         TextView text = (TextView) layout.findViewById(R.id.slimtoast);
         text.setText(toastText);
-        Toast theCustomToast = new Toast(cActivity);
-        theCustomToast.setGravity(Gravity.CENTER, 0, 0);
-        theCustomToast.setDuration(duration);
-        theCustomToast.setView(layout);
-        theCustomToast.show();
+        Toast customToast = new Toast(cActivity);
+        customToast.setGravity(Gravity.CENTER, 0, 0);
+        customToast.setDuration(duration);
+        customToast.setView(layout);
+        customToast.show();
     }
 
     public static void showCustomToast(Activity cActivity, String toastText, int icon_RID, int text_color_RID, int duration) {
@@ -144,23 +150,39 @@ public class NetworkUtils {
         boolean isConnected = activeNetwork != null && activeNetwork.isConnected() && activeNetwork.isAvailable();
         if (isConnected) {
             if (noNetworkSnackBar != null && noNetworkSnackBar.isShownOrQueued()) noNetworkSnackBar.dismiss(); // Tem network connection
-            try {
-                if (ping()) {
-                    return true;
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                return false;
-            } catch (IOException e) {
-                e.printStackTrace();
-                return false;
-            }
+            return true;
+//            try {
+//                InetAddress inet = InetAddress.getByName(PING_URL);
+//                Boolean isOnline = inet.isReachable(3000); // Timeout 5000 ms
+//                return isOnline;
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//                return false;
+//            }
         }
         return false;
     }
 
     public static boolean ping() throws InterruptedException, IOException {
-        String command = "ping -c 1 " + PING_URL;
-        return (Runtime.getRuntime().exec(command).waitFor() == 0);
+//        String command = "ping -c 1 " + PING_URL;
+//        int ping = Runtime.getRuntime().exec(command).waitFor();
+//        Log.i("Sergio>", " ping = " + ping);
+//        return (ping == 0);
+
+        Boolean isOnline;
+
+        try {
+            InetAddress inet = InetAddress.getByName(PING_URL);
+            isOnline = inet.isReachable(5000); // Timeout 5000 ms
+            Log.i("Sergio>", " ping\nisOnline= " + isOnline);
+        } catch (IOException e) {
+            e.printStackTrace();
+            isOnline = false;
+        }
+
+        return isOnline;
+
     }
+
+
 }
