@@ -21,7 +21,7 @@ import com.firebase.jobdispatcher.Trigger;
 
 public class StartFirebase {
     public static final int MINIMUM_DELTA_INTERVAL = 6 * 60 * 60; // 6hr em segundos
-    public static final String JOB_BUNDLE = "delta_interval";
+    public static final String JOB_DELTA_INTERVAL_BUNDLE = "delta_interval";
 
     // Só repete os jobs com o aparelho em carga ou com o modo de economia de energia desativado
     public static void createJobDispatcher(Context context) {
@@ -32,7 +32,7 @@ public class StartFirebase {
         DELTA_INTERVAL = Integer.parseInt(sharedPrefs.getString("sync_frequency", String.valueOf(MINIMUM_DELTA_INTERVAL)));
         if (DELTA_INTERVAL < MINIMUM_DELTA_INTERVAL || DELTA_INTERVAL < 0) DELTA_INTERVAL = MINIMUM_DELTA_INTERVAL;
         Bundle bundle = new Bundle(1);
-        bundle.putInt(JOB_BUNDLE, DELTA_INTERVAL);
+        bundle.putInt(JOB_DELTA_INTERVAL_BUNDLE, DELTA_INTERVAL);
 
         // Create a new dispatcher using the Google Play driver.
         FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(context));

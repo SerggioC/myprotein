@@ -44,7 +44,7 @@ public class NetworkUtils {
     private static final String PING_URL = "www.google.com";
     public static BroadcastReceiver BCReceiver = null;
     public static Snackbar noNetworkSnackBar = null;
-    public static int NET_TIMEOUT = 10000; // milliseconds (10 seconds)
+    public static int NET_TIMEOUT = 11000; // milliseconds (11 seconds)
     public static int STATUS_OK = 0;
     public static int TIMEOUT = 1;
     public static int MALFORMED_URL = 2;
@@ -52,7 +52,7 @@ public class NetworkUtils {
     public static int IOEXCEPTION = 4;
     static Snackbar.SnackbarLayout snack_layout;
 
-    public static final void UnregisterBroadcastReceiver(Activity mActivity) {
+    public static void UnregisterBroadcastReceiver(Activity mActivity) {
         if (BCReceiver != null) {
             LocalBroadcastManager.getInstance(mActivity).unregisterReceiver(BCReceiver);
             BCReceiver = null;
@@ -150,7 +150,6 @@ public class NetworkUtils {
         boolean isConnected = activeNetwork != null && activeNetwork.isConnected() && activeNetwork.isAvailable();
         if (isConnected) {
             if (noNetworkSnackBar != null && noNetworkSnackBar.isShownOrQueued()) noNetworkSnackBar.dismiss(); // Tem network connection
-            return true;
 //            try {
 //                InetAddress inet = InetAddress.getByName(PING_URL);
 //                Boolean isOnline = inet.isReachable(3000); // Timeout 5000 ms
@@ -160,9 +159,10 @@ public class NetworkUtils {
 //                return false;
 //            }
         }
-        return false;
+        return isConnected;
     }
 
+    // unreliable ping methods on android...
     public static boolean ping() throws InterruptedException, IOException {
 //        String command = "ping -c 1 " + PING_URL;
 //        int ping = Runtime.getRuntime().exec(command).waitFor();

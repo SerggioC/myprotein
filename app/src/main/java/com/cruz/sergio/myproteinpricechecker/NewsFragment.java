@@ -12,7 +12,6 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -188,10 +187,6 @@ public class NewsFragment extends Fragment {
     }
 
     public void getNews() {
-//        int childCount = ll_news_vertical.getChildCount();
-//        if (childCount > 1) {
-//            ll_news_vertical.removeViews(1, childCount - 1);
-//        }
         AsyncTask<Void, Void, Boolean> internetAsyncTask = new checkInternetAsyncTask();
         internetAsyncTask.execute();
     }
@@ -200,7 +195,6 @@ public class NewsFragment extends Fragment {
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            //Importante porque ao executar o ping bloqueia o interface7
             return NetworkUtils.hasActiveNetworkConnection(mActivity);
         }
 
@@ -212,12 +206,12 @@ public class NewsFragment extends Fragment {
                 SharedPreferences prefManager = PreferenceManager.getDefaultSharedPreferences(mActivity);
                 String pref_MP_Domain = prefManager.getString("mp_website_location", "en-gb");
                 String MP_Domain = MyProteinDomain.getHref(pref_MP_Domain);
-
                 AsyncTask<String, Void, Document> getMPNewsAsync = new GetMPNewsAsync();
                 getMPNewsAsync.executeOnExecutor(THREAD_POOL_EXECUTOR, MP_Domain);
 
-                String PRZ_Domain = "https://www.prozis.com/pt/pt/";
-
+                String prz_country = prefManager.getString("prz_website_location", "pt").toLowerCase();
+                String prz_language = prefManager.getString("prz_language", "pt");
+                String PRZ_Domain = "https://www.prozis.com" + "/" + prz_country + "/" + prz_language + "/";
                 AsyncTask<String, Void, Document> getPRZNewsAsync = new GetPRZNewsAsync();
                 getPRZNewsAsync.executeOnExecutor(THREAD_POOL_EXECUTOR, PRZ_Domain);
 
@@ -313,7 +307,7 @@ public class NewsFragment extends Fragment {
                 if (newsElements != null && newsElements.size() != 0) {
                     String replace1 = "href=\"/";
                     String replace2 = "src=\"//";
-                    for (int i = 1; i < newsElements.size(); i++) {
+                    for (int i = 0; i < newsElements.size(); i++) {
                         String newsText = newsElements.get(i).html();
 
                         int indexofHref = newsText.indexOf(replace1);

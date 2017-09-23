@@ -7,6 +7,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -47,6 +48,7 @@ import android.widget.ImageSwitcher;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewSwitcher;
@@ -89,6 +91,7 @@ import static com.cruz.sergio.myproteinpricechecker.MainActivity.density;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
 import static com.cruz.sergio.myproteinpricechecker.R.id.main_cardview;
 import static com.cruz.sergio.myproteinpricechecker.TabFragment.tabLayout;
+import static com.cruz.sergio.myproteinpricechecker.helper.FirebaseJobservice.LAST_DB_UPDATE_PREF_KEY;
 import static com.cruz.sergio.myproteinpricechecker.helper.FirebaseJobservice.updatePricesOnStart;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomSlimToast;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomToast;
@@ -102,158 +105,19 @@ import static java.text.DateFormat.getTimeInstance;
 public class WatchingFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
     public static final int LOADER_ID = 0;
     public static final int IMAGE_PERIOD = 5400;
-    Activity mActivity;
-    SwipeRefreshLayout watchingSwipeRefreshLayout;
-    static cursorDBAdapter cursorDBAdapter;
+    public static DeletedProductListener delete_listener;
+    cursorDBAdapter cursorDBAdapter;
     static ListView listViewItems;
     static Loader<Cursor> loaderManager;
     static String[] imageSizesToUse;
+    Activity mActivity;
+    SwipeRefreshLayout watchingSwipeRefreshLayout;
     Timer timer = new Timer();
     Boolean[] isExpandedArray = null;
     Boolean addedNewProduct = false;
 
-    public static class ViewHolder {
-        public final TextView titleView; // ou Product Name
-        public final TextView highestPriceView;
-        public final TextView lowestPriceView;
-        public final TextView currentPriceView;
-        public final TextView highestPriceDate;
-        public final TextView lowestPriceDate;
-        public final TextView info_top;
-        public final TextView currentInfo;
-        public final TextView undercard_tv_desc;
-        public final ImageSwitcher imageSwitcher;
-        public final LinearLayout ll_current_price;
-        public final ImageView up_down_icon;
-        public final CardView main_cardView;
-        public final CardView under_view;
-
-        public ViewHolder(View view) {
-            titleView = (TextView) view.findViewById(R.id.item_title_textview);
-            highestPriceView = (TextView) view.findViewById(R.id.item_highest_price_textview);
-            lowestPriceView = (TextView) view.findViewById(R.id.item_lowest_price_textview);
-            currentPriceView = (TextView) view.findViewById(R.id.item_current_price_textview);
-            highestPriceDate = (TextView) view.findViewById(R.id.item_highest_price_date);
-            lowestPriceDate = (TextView) view.findViewById(R.id.item_lowest_price_date);
-            info_top = (TextView) view.findViewById(R.id.info_top);
-            currentInfo = (TextView) view.findViewById(R.id.current_info);
-            ll_current_price = (LinearLayout) view.findViewById(R.id.ll_current_price);
-            imageSwitcher = (ImageSwitcher) view.findViewById(R.id.image_switcher);
-            up_down_icon = (ImageView) view.findViewById(R.id.up_down_arrow);
-            under_view = (CardView) view.findViewById(R.id.under_cardview);
-            main_cardView = (CardView) view.findViewById(main_cardview);
-            undercard_tv_desc = (TextView) view.findViewById(R.id.description_undercard);
-        }
-    }
-
     public WatchingFragment() {
         //required empty constructor?
-    }
-
-    public static DeletedProductListener delete_listener;
-
-    interface DeletedProductListener {
-        void onProductDeleted(Boolean deleted);
-    }
-
-    public void setDeleteProductlistener(DeletedProductListener listener) {
-        this.delete_listener = listener;
-    }
-
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        mActivity = getActivity();
-        super.onCreate(savedInstanceState);
-
-        if (density <= DENSITY_LOW) {
-            imageSizesToUse = new String[]{"50x50", "60x60", "70x70"};
-        } else if (density > DENSITY_LOW && density <= DENSITY_MEDIUM) {
-            imageSizesToUse = new String[]{"60x60", "70x70"};
-        } else if (density > DENSITY_MEDIUM && density <= DENSITY_HIGH) {
-            imageSizesToUse = new String[]{"70x70", "100x100"};
-        } else if (density > DENSITY_HIGH && density <= DENSITY_XHIGH) {
-            imageSizesToUse = new String[]{"100x100", "130x130", "180x180"};
-        } else if (density > DENSITY_XHIGH && density <= DENSITY_XXHIGH) { //galaxy S5: 480dpi scale = 3x; (70x70)*3 = 210x210;
-            imageSizesToUse = new String[]{"180x180", "200x200", "270x270"};
-        } else {
-            imageSizesToUse = new String[]{"270x270", "300x300", "350x350"};
-        }
-
-        FirebaseJobservice jobservice = new FirebaseJobservice();
-        jobservice.setUpdateCompleteListener(new FirebaseJobservice.UpdateCompleteListener() {
-            @Override
-            public void onUpdateReady(Boolean isReady) {
-                Log.w("Sergio>", this + "\n" + "onUpdateReady= " + isReady);
-                if (WatchingFragment.this.isAdded()) {
-                    if (isReady) {
-                        timer.cancel();
-                        timer.purge();
-                        timer = new Timer();
-                        getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
-                    }
-                    if (watchingSwipeRefreshLayout != null) {
-                        watchingSwipeRefreshLayout.setRefreshing(false);
-                    }
-                }
-            }
-        });
-
-        SearchFragment sf = new SearchFragment();
-        sf.setNewProductListener(new SearchFragment.AddedNewProductListener() {
-            @Override
-            public void onProductAdded(Boolean addedNew) {
-                Log.w("Sergio>", this + "\n" + "addedNewProduct= " + addedNew);
-                timer.cancel();
-                timer.purge();
-                timer = new Timer();
-                TabLayout.Tab tab = tabLayout.getTabAt(MainActivity.TAB_IDS.WATCHING);
-                tabLayout.setScrollPosition(MainActivity.TAB_IDS.WATCHING, 0f, true);
-                tab.select();
-                getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
-                addedNewProduct = addedNew;
-            }
-        });
-
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        if (UPDATE_ONSTART) {
-            FirebaseJobservice.updatePricesOnStart(mActivity, false);
-        }
-    }
-
-    @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View rootview = inflater.inflate(R.layout.watching_fragment, null);
-        loaderManager = getLoaderManager().initLoader(LOADER_ID, null, this);
-
-        cursorDBAdapter = new cursorDBAdapter(mActivity, null, 0);
-        listViewItems = (ListView) rootview.findViewById(R.id.watching_listview);
-        listViewItems.addHeaderView(View.inflate(mActivity, R.layout.watch_list_header_view, null));
-        listViewItems.setAdapter(cursorDBAdapter);
-
-        watchingSwipeRefreshLayout = (SwipeRefreshLayout) rootview.findViewById(R.id.watching_swiperefresh);
-
-        watchingSwipeRefreshLayout.setOnRefreshListener(
-                new SwipeRefreshLayout.OnRefreshListener() {
-                    @Override
-                    public void onRefresh() {
-                        timer.cancel();
-                        timer.purge();
-                        timer = new Timer();
-                        updatePricesOnStart(mActivity, false);
-                    }
-                }
-        );
-
-        return rootview;
     }
 
     public static void expandIt(final View view, Boolean isLastItem) {
@@ -319,6 +183,107 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         view.startAnimation(animation);
     }
 
+    public void setDeleteProductlistener(DeletedProductListener listener) {
+        this.delete_listener = listener;
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        mActivity = getActivity();
+        super.onCreate(savedInstanceState);
+
+        if (density <= DENSITY_LOW) {
+            imageSizesToUse = new String[]{"50x50", "60x60", "70x70"};
+        } else if (density > DENSITY_LOW && density <= DENSITY_MEDIUM) {
+            imageSizesToUse = new String[]{"60x60", "70x70"};
+        } else if (density > DENSITY_MEDIUM && density <= DENSITY_HIGH) {
+            imageSizesToUse = new String[]{"70x70", "100x100"};
+        } else if (density > DENSITY_HIGH && density <= DENSITY_XHIGH) {
+            imageSizesToUse = new String[]{"100x100", "130x130", "180x180"};
+        } else if (density > DENSITY_XHIGH && density <= DENSITY_XXHIGH) { //galaxy S5: 480dpi scale = 3x; (70x70)*3 = 210x210;
+            imageSizesToUse = new String[]{"180x180", "200x200", "270x270"};
+        } else {
+            imageSizesToUse = new String[]{"270x270", "300x300", "350x350"};
+        }
+
+        FirebaseJobservice jobservice = new FirebaseJobservice();
+        jobservice.setUpdateCompleteListener(new FirebaseJobservice.UpdateCompleteListener() {
+            @Override
+            public void onUpdateReady(Boolean isReady, Boolean isSingleLine) {
+                Log.w("Sergio>", this + "\n" + "onUpdateReady= " + isReady);
+                if (WatchingFragment.this.isAdded()) {
+                    if (watchingSwipeRefreshLayout != null && !isSingleLine) {
+                        watchingSwipeRefreshLayout.setRefreshing(false);
+                    }
+                    if (isReady || isSingleLine) {
+                        //TODO TCHARAM ACABOU DE ATUALIZAR UMA LINHA!!!!
+                        timer.cancel();
+                        timer.purge();
+                        timer = new Timer();
+                        getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
+                    }
+                }
+            }
+        });
+
+        SearchFragment sf = new SearchFragment();
+        sf.setNewProductListener(new SearchFragment.AddedNewProductListener() {
+            @Override
+            public void onProductAdded(Boolean addedNew) {
+                Log.w("Sergio>", this + "\n" + "addedNewProduct= " + addedNew);
+                timer.cancel();
+                timer.purge();
+                timer = new Timer();
+                TabLayout.Tab tab = tabLayout.getTabAt(MainActivity.TAB_IDS.WATCHING);
+                tabLayout.setScrollPosition(MainActivity.TAB_IDS.WATCHING, 0f, true);
+                if (tab != null) tab.select();
+                getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
+                addedNewProduct = addedNew;
+            }
+        });
+
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (UPDATE_ONSTART) {
+            FirebaseJobservice.updatePricesOnStart(mActivity, false, false, null);
+        }
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View rootview = inflater.inflate(R.layout.watching_fragment, null);
+        loaderManager = getLoaderManager().initLoader(LOADER_ID, null, this);
+
+        cursorDBAdapter = new cursorDBAdapter(mActivity, null, 0);
+        listViewItems = (ListView) rootview.findViewById(R.id.watching_listview);
+        listViewItems.addHeaderView(View.inflate(mActivity, R.layout.watch_list_header_view, null));
+        listViewItems.setAdapter(cursorDBAdapter);
+
+        watchingSwipeRefreshLayout = (SwipeRefreshLayout) rootview.findViewById(R.id.watching_swiperefresh);
+
+        watchingSwipeRefreshLayout.setOnRefreshListener(
+                new SwipeRefreshLayout.OnRefreshListener() {
+                    @Override
+                    public void onRefresh() {
+                        timer.cancel();
+                        timer.purge();
+                        timer = new Timer();
+                        updatePricesOnStart(mActivity, false, false, null);
+                    }
+                }
+        );
+
+        return rootview;
+    }
+
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
@@ -343,19 +308,17 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 "uri= " + uri);
 
         //String selection = "WHERE '" + ProductsContract.ProductsEntry.TABLE_NAME + "' = 'qualquercoisa'";
-        CursorLoader cursor_loader = new CursorLoader(
+        return new CursorLoader(
                 mActivity,
                 uri,
                 ALL_PRODUCT_COLUMNS_PROJECTION,
                 null,
                 null,
                 ProductsContract.ProductsEntry._ID + " ASC ");
-        return cursor_loader;
     }
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-
 //        dump_BIGdata_toLog(dumpCursorToString(data));
         if (data.getCount() == 0) {
             showCustomToast(mActivity, "Empty DataBase.\n" +
@@ -395,12 +358,235 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         cursorDBAdapter.swapCursor(null);
     }
 
+    private void animateRemoving(CardView mainCardView, CardView under_view, final String prod_name) {
+
+        AnimatorSet animSet = new AnimatorSet();
+        ObjectAnimator alphaAnim = ObjectAnimator.ofFloat(mainCardView, "alpha", 1f, 0f);
+        ObjectAnimator transAnim = ObjectAnimator.ofFloat(mainCardView, "translationX", mainCardView.getWidth());
+        ObjectAnimator alphaAnim2 = ObjectAnimator.ofFloat(under_view, "alpha", 1f, 0f);
+        ObjectAnimator transAnim2 = ObjectAnimator.ofFloat(under_view, "translationX", under_view.getWidth());
+        animSet.playTogether(transAnim, alphaAnim, alphaAnim2, transAnim2);
+        animSet.setDuration(250);
+        animSet.start();
+        animSet.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+//                if (has_deleted) {
+//                    showCustomToast(mActivity, prod_name + " " + "deleted from database.",
+//                            R.mipmap.ic_ok2, R.color.green, Toast.LENGTH_LONG);
+//                } else {
+//                    showCustomToast(mActivity, "Database updated.\nSome image files could not deleted.",
+//                            R.mipmap.ic_warning, R.color.f_color4, Toast.LENGTH_LONG);
+//                }
+
+                showCustomToast(mActivity, prod_name + " " + "deleted from database.",
+                        R.mipmap.ic_ok2, R.color.green, Toast.LENGTH_LONG);
+
+                // Redraw listView
+                timer.cancel();
+                timer.purge();
+                timer = new Timer();
+                getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
+
+                // Reload/Redraw the graph
+                delete_listener.onProductDeleted(true);
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+
+            }
+        });
+
+//        mainCardView.animate().translationX(mainCardView.getWidth()).alpha(0).setDuration(200).setListener(new Animator.AnimatorListener() {
+//            @Override
+//            public void onAnimationStart(Animator animation) {
+//            }
+//
+//            @Override
+//            public void onAnimationEnd(Animator animation) {
+//                // Redraw listView
+//                timer.cancel();
+//                timer.purge();
+//                timer = new Timer();
+//                getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
+//            }
+//
+//            @Override
+//            public void onAnimationCancel(Animator animation) {
+//            }
+//
+//            @Override
+//            public void onAnimationRepeat(Animator animation) {
+//            }
+//        });
+    }
+
+    private boolean deleteImageFiles(String string_array_images) {
+        boolean hasDeleted = false;
+        JSONArray jsonArray_imgs = null;
+        if (string_array_images != null) {
+            try {
+                jsonArray_imgs = new JSONArray(string_array_images);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+        if (jsonArray_imgs != null) {
+            if (jsonArray_imgs.length() > 0) {
+                for (int i = 0; i < jsonArray_imgs.length(); i++) {
+                    JSONArray json_array_i = jsonArray_imgs.optJSONArray(i);
+                    for (int j = 0; j < json_array_i.length(); j++) {
+                        try {
+                            JSONObject obj_ij = (JSONObject) json_array_i.get(j);
+                            if (obj_ij.has("file")) {
+                                String file_uri = ((String) obj_ij.get("file"));
+                                if (file_uri != null) {
+                                    File fdelete = new File(mActivity.getFilesDir(), file_uri);
+                                    if (fdelete.exists()) {
+                                        hasDeleted = fdelete.delete();
+                                    }
+                                }
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }
+        return hasDeleted;
+    }
+
+    public String getMillisecondsToDate(long milliseconds) {
+        long timeDif = System.currentTimeMillis() - milliseconds;
+
+        if (timeDif < 60_000) { // há menos de 60 segundos atrás
+            return "Now";
+        } else if (timeDif >= 60_000 && timeDif <= 3_600_000) { // uma hora atrás
+            return TimeUnit.MILLISECONDS.toMinutes(timeDif) + " " + "Minutes ago";
+
+        } else if (timeDif > 3_600_000 && timeDif < 7_200_000) { // Dentro de 1h - 2hr
+            return TimeUnit.MILLISECONDS.toHours(timeDif) + " " + "Hour ago";
+
+        } else if (timeDif >= 7_200_000 && timeDif <= 86_400_000) { // Dentro do dia de hoje até 24h atrás
+            return TimeUnit.MILLISECONDS.toHours(timeDif) + " " + "Hours ago";
+
+        } else if (timeDif > 86_400_000 && timeDif <= 172_800_000) { // Ontem 24 a 48h
+            DateFormat df = getTimeInstance(SHORT);
+            Date resultDate = new Date(milliseconds);
+            return "Yesterday" + " " + df.format(resultDate);
+
+        } else {
+            String pattern;
+            if (timeDif < TimeUnit.DAYS.toMillis(365L)) {
+                pattern = "dd MMM kk:mm";
+            } else {
+                pattern = "dd MMM yy kk:mm";
+            }
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(pattern); // dia Mês 14:55 p.ex.
+            DateFormat dateFormat = getDateTimeInstance(SHORT, SHORT);
+            Date resultdate = new Date(milliseconds);
+            return sdf.format(resultdate);
+        }
+
+    }
+
+    private void saveImagesWithGlide(String imageURL, final String filename) {
+        Glide.with(mActivity)
+                .load(imageURL)
+                .asBitmap()
+                .toBytes(Bitmap.CompressFormat.JPEG, 100)
+                .asIs()
+                .format(PREFER_ARGB_8888)
+                .dontTransform()
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .skipMemoryCache(true)
+                .into(new SimpleTarget<byte[]>() {
+                    @Override
+                    public void onResourceReady(final byte[] resource, GlideAnimation<? super byte[]> glideAnimation) {
+                        new AsyncTask<Void, Void, Void>() {
+                            @Override
+                            protected Void doInBackground(Void... params) {
+                                FileOutputStream outputStream;
+                                try {
+                                    outputStream = mActivity.openFileOutput(filename, Context.MODE_PRIVATE);
+                                    outputStream.write(resource);
+                                    outputStream.flush();
+                                    outputStream.close();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                                return null;
+                            }
+                        }.execute();
+                    }
+                });
+    }
+
+    interface DeletedProductListener {
+        void onProductDeleted(Boolean deleted);
+    }
+
+    public static class ViewHolder {
+        public final TextView titleView; // ou Product Name
+        public final TextView highestPriceView;
+        public final TextView lowestPriceView;
+        public final TextView currentPriceView;
+        public final TextView highestPriceDate;
+        public final TextView lowestPriceDate;
+        public final TextView info_top;
+        public final TextView currentInfo;
+        public final TextView undercard_tv_desc;
+        public final ImageSwitcher imageSwitcher;
+        public final LinearLayout ll_current_price;
+        public final ImageView up_down_icon;
+        public final CardView main_cardView;
+        public final CardView under_view;
+        public final TextView undercard_last_updated;
+        public final ProgressBar small_pb_undercard;
+
+        public ViewHolder(View view) {
+            titleView = (TextView) view.findViewById(R.id.item_title_textview);
+            highestPriceView = (TextView) view.findViewById(R.id.item_highest_price_textview);
+            lowestPriceView = (TextView) view.findViewById(R.id.item_lowest_price_textview);
+            currentPriceView = (TextView) view.findViewById(R.id.item_current_price_textview);
+            highestPriceDate = (TextView) view.findViewById(R.id.item_highest_price_date);
+            lowestPriceDate = (TextView) view.findViewById(R.id.item_lowest_price_date);
+            info_top = (TextView) view.findViewById(R.id.info_top);
+            currentInfo = (TextView) view.findViewById(R.id.current_info);
+            ll_current_price = (LinearLayout) view.findViewById(R.id.ll_current_price);
+            imageSwitcher = (ImageSwitcher) view.findViewById(R.id.image_switcher);
+            up_down_icon = (ImageView) view.findViewById(R.id.up_down_arrow);
+            under_view = (CardView) view.findViewById(R.id.under_cardview);
+            main_cardView = (CardView) view.findViewById(main_cardview);
+            undercard_tv_desc = (TextView) view.findViewById(R.id.description_undercard);
+            undercard_last_updated = (TextView) view.findViewById(R.id.last_updated_undercard);
+            small_pb_undercard = (ProgressBar) view.findViewById(R.id.pbar_undercard);
+        }
+    }
+
     public class cursorDBAdapter extends CursorAdapter {
         private LayoutInflater cursorItemInflater;
 
         public cursorDBAdapter(Context context, Cursor c, int flags) {
             super(context, c, flags);
             cursorItemInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        }
+
+        @Override
+        public int getCount() {
+            return super.getCount();
         }
 
         @Override
@@ -446,7 +632,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         // such as setting the text on a TextView.
         @Override
         public void bindView(final View view, Context context, final Cursor cursor) {
-            ViewHolder viewHolder = (ViewHolder) view.getTag(R.id.viewholder);
+            final ViewHolder viewHolder = (ViewHolder) view.getTag(R.id.viewholder);
 
             final int this_position = view.getTag(R.id.view_position) == null ? -1 : (int) view.getTag(R.id.view_position);
             final int this_product_id = cursor.getInt(cursor.getColumnIndex(ProductsContract.ProductsEntry._ID));
@@ -455,7 +641,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             final String string_array_images = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGES));
 
             final CardView mainCardView = (CardView) view.findViewById(R.id.main_cardview);
-
             mainCardView.findViewById(R.id.open_web).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -463,14 +648,12 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                     startActivity(browser);
                 }
             });
-
             mainCardView.findViewById(R.id.add_to_cart).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     showCustomSlimToast(mActivity, "Add product to virtual cart", Toast.LENGTH_SHORT);
                 }
             });
-
             mainCardView.findViewById(R.id.notify).setTag(false);
             mainCardView.findViewById(R.id.notify).setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -484,12 +667,21 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                     }
                 }
             });
-
             mainCardView.findViewById(R.id.expand_underview_tv).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if (mCursor != null) {
                         final CardView under_view = (CardView) view.findViewById(R.id.under_cardview);
+
+                        under_view.findViewById(R.id.update_this_entry).setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                //UPDATE THIS ITEM ONLY
+                                updatePricesOnStart(mActivity, false, true, String.valueOf(this_product_id));
+                                v.setVisibility(View.GONE);
+                                viewHolder.small_pb_undercard.setVisibility(View.VISIBLE);
+                            }
+                        });
 
                         under_view.findViewById(R.id.delete_entry).setOnClickListener(new View.OnClickListener() {
                             @Override
@@ -526,8 +718,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
                                 AlertDialog alertDialog = alertDialogBuilder.create();
                                 alertDialog.show();
-
-
 //                                final Dialog dialogBuilder = new Dialog(mActivity);
 //
 //                                dialogBuilder.setContentView(R.layout.alert_dialog_layout);
@@ -558,7 +748,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 //                                });
 //
 //                                dialogBuilder.show();
-
                             }
                         });
 
@@ -645,9 +834,10 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 pptList_SSB.append(" " + prod_description_array[pdal]);
 
             }
-
             viewHolder.undercard_tv_desc.setText(pptList_SSB);
-
+            SpannableStringBuilder ssbp = new SpannableStringBuilder(getMillisecondsToDate(actualPriceDate));
+            ssbp.setSpan(new ForegroundColorSpan(ContextCompat.getColor(mActivity, R.color.dark_green)), 0, ssbp.length(), SPAN_EXCLUSIVE_EXCLUSIVE);
+            viewHolder.undercard_last_updated.append(ssbp);
 
             Boolean gotPictures = null;
             if (string_array_images != null && CACHE_IMAGES) {
@@ -673,7 +863,12 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             viewHolder.currentPriceView.setText(current_price_string);
             viewHolder.highestPriceDate.setText(getMillisecondsToDate(maxPriceDate));
             viewHolder.lowestPriceDate.setText(getMillisecondsToDate(minPriceDate));
-            ((TextView) mActivity.findViewById(R.id.updated_tv)).setText(getMillisecondsToDate(actualPriceDate));
+
+            if (this_position == 0) {
+                SharedPreferences sharedPref = mActivity.getPreferences(Context.MODE_PRIVATE);
+                long last_saved_date = sharedPref.getLong(LAST_DB_UPDATE_PREF_KEY, System.currentTimeMillis());
+                ((TextView) mActivity.findViewById(R.id.updated_tv)).setText(getMillisecondsToDate(last_saved_date));
+            }
 
             // pode dar erro ao atualizar o preço, ou o produto/opção não estar disponível
             // guardo o preço = 0 nesta situação
@@ -1004,6 +1199,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
         }
 
+
         @NonNull
         private View getNewImageView(int pixels_widthHeight) {
             ImageView imageView = new ImageView(mActivity);
@@ -1015,182 +1211,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             return imageView;
         }
 
-    }
-
-    private void animateRemoving(CardView mainCardView, CardView under_view, final String prod_name) {
-
-        AnimatorSet animSet = new AnimatorSet();
-        ObjectAnimator alphaAnim = ObjectAnimator.ofFloat(mainCardView, "alpha", 1f, 0f);
-        ObjectAnimator transAnim = ObjectAnimator.ofFloat(mainCardView, "translationX", mainCardView.getWidth());
-        ObjectAnimator alphaAnim2 = ObjectAnimator.ofFloat(under_view, "alpha", 1f, 0f);
-        ObjectAnimator transAnim2 = ObjectAnimator.ofFloat(under_view, "translationX", under_view.getWidth());
-        animSet.playTogether(transAnim, alphaAnim, alphaAnim2, transAnim2);
-        animSet.setDuration(250);
-        animSet.start();
-        animSet.addListener(new Animator.AnimatorListener() {
-            @Override
-            public void onAnimationStart(Animator animation) {
-
-            }
-
-            @Override
-            public void onAnimationEnd(Animator animation) {
-//                if (has_deleted) {
-//                    showCustomToast(mActivity, prod_name + " " + "deleted from database.",
-//                            R.mipmap.ic_ok2, R.color.green, Toast.LENGTH_LONG);
-//                } else {
-//                    showCustomToast(mActivity, "Database updated.\nSome image files could not deleted.",
-//                            R.mipmap.ic_warning, R.color.f_color4, Toast.LENGTH_LONG);
-//                }
-
-                showCustomToast(mActivity, prod_name + " " + "deleted from database.",
-                        R.mipmap.ic_ok2, R.color.green, Toast.LENGTH_LONG);
-
-                // Redraw listView
-                timer.cancel();
-                timer.purge();
-                timer = new Timer();
-                getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
-
-                // Reload/Redraw the graph
-                delete_listener.onProductDeleted(true);
-            }
-
-            @Override
-            public void onAnimationCancel(Animator animation) {
-
-            }
-
-            @Override
-            public void onAnimationRepeat(Animator animation) {
-
-            }
-        });
-
-//        mainCardView.animate().translationX(mainCardView.getWidth()).alpha(0).setDuration(200).setListener(new Animator.AnimatorListener() {
-//            @Override
-//            public void onAnimationStart(Animator animation) {
-//            }
-//
-//            @Override
-//            public void onAnimationEnd(Animator animation) {
-//                // Redraw listView
-//                timer.cancel();
-//                timer.purge();
-//                timer = new Timer();
-//                getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
-//            }
-//
-//            @Override
-//            public void onAnimationCancel(Animator animation) {
-//            }
-//
-//            @Override
-//            public void onAnimationRepeat(Animator animation) {
-//            }
-//        });
-    }
-
-    private boolean deleteImageFiles(String string_array_images) {
-        boolean hasDeleted = false;
-        JSONArray jsonArray_imgs = null;
-        if (string_array_images != null) {
-            try {
-                jsonArray_imgs = new JSONArray(string_array_images);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-        }
-        if (jsonArray_imgs != null) {
-            if (jsonArray_imgs.length() > 0) {
-                for (int i = 0; i < jsonArray_imgs.length(); i++) {
-                    JSONArray json_array_i = jsonArray_imgs.optJSONArray(i);
-                    for (int j = 0; j < json_array_i.length(); j++) {
-                        try {
-                            JSONObject obj_ij = (JSONObject) json_array_i.get(j);
-                            if (obj_ij.has("file")) {
-                                String file_uri = ((String) obj_ij.get("file"));
-                                if (file_uri != null) {
-                                    File fdelete = new File(mActivity.getFilesDir(), file_uri);
-                                    if (fdelete.exists()) {
-                                        hasDeleted = fdelete.delete();
-                                    }
-                                }
-                            }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            }
-        }
-        return hasDeleted;
-    }
-
-    public String getMillisecondsToDate(long milliseconds) {
-        long timeDif = System.currentTimeMillis() - milliseconds;
-
-        if (timeDif < 60_000) { // há menos de 60 segundos atrás
-            return "Now";
-        } else if (timeDif >= 60_000 && timeDif <= 3_600_000) { // uma hora atrás
-            return TimeUnit.MILLISECONDS.toMinutes(timeDif) + " " + "Minutes ago";
-
-        } else if (timeDif > 3_600_000 && timeDif < 7_200_000) { // Dentro de 1h - 2hr
-            return TimeUnit.MILLISECONDS.toHours(timeDif) + " " + "Hour ago";
-
-        } else if (timeDif >= 7_200_000 && timeDif <= 86_400_000) { // Dentro do dia de hoje até 24h atrás
-            return TimeUnit.MILLISECONDS.toHours(timeDif) + " " + "Hours ago";
-
-        } else if (timeDif > 86_400_000 && timeDif <= 172_800_000) { // Ontem 24 a 48h
-            DateFormat df = getTimeInstance(SHORT);
-            Date resultDate = new Date(milliseconds);
-            return "Yesterday" + " " + df.format(resultDate);
-
-        } else {
-            String pattern;
-            if (timeDif < TimeUnit.DAYS.toMillis(365L)) {
-                pattern = "dd MMM kk:mm";
-            } else {
-                pattern = "dd MMM yy kk:mm";
-            }
-            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(pattern); // dia Mês 14:55 p.ex.
-            DateFormat dateFormat = getDateTimeInstance(SHORT, SHORT);
-            Date resultdate = new Date(milliseconds);
-            return sdf.format(resultdate);
-        }
-
-    }
-
-    private void saveImagesWithGlide(String imageURL, final String filename) {
-        Glide.with(mActivity)
-                .load(imageURL)
-                .asBitmap()
-                .toBytes(Bitmap.CompressFormat.JPEG, 100)
-                .asIs()
-                .format(PREFER_ARGB_8888)
-                .dontTransform()
-                .diskCacheStrategy(DiskCacheStrategy.NONE)
-                .skipMemoryCache(true)
-                .into(new SimpleTarget<byte[]>() {
-                    @Override
-                    public void onResourceReady(final byte[] resource, GlideAnimation<? super byte[]> glideAnimation) {
-                        new AsyncTask<Void, Void, Void>() {
-                            @Override
-                            protected Void doInBackground(Void... params) {
-                                FileOutputStream outputStream;
-                                try {
-                                    outputStream = mActivity.openFileOutput(filename, Context.MODE_PRIVATE);
-                                    outputStream.write(resource);
-                                    outputStream.flush();
-                                    outputStream.close();
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                                return null;
-                            }
-                        }.execute();
-                    }
-                });
     }
 
 

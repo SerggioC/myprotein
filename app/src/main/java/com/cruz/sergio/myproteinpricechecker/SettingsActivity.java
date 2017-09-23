@@ -71,7 +71,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                 if (preference.getKey().equals("prz_website_location")) {
                     ListPreference langpreference = (ListPreference) preference.getPreferenceManager().findPreference("prz_language");
                     String[] lang_entries = new String[]{"English", "Français", "Español", "Português", "Italiano"};
-                    String[] lang_entryValues= new String[]{"en", "fr", "es", "pt", "it"};
+                    String[] lang_entryValues = new String[]{"en", "fr", "es", "pt", "it"};
 
                     List<String> ww_arr = Arrays.asList("AL", "DZ", "AR", "AM", "AU", "BA", "BO", "BW", "CV", "CM", "CA", "ECT",
                             "CL", "CO", "CU", "DO", "EC", "EG", "MK", "FO", "GP", "GT", "GG", "GF", "HT", "HK", "IN", "ID",
@@ -226,29 +226,37 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
      * preference title) is updated to reflect the value. The summary is also
      * immediately updated upon calling this method. The exact display format is
      * dependent on the type of preference.
+     *
      * @see #sBindPreferenceSummaryToValueListener
      */
     private static void bindPreferenceSummaryToValue(Preference preference) {
 
-        if (preference.getKey().equals("mp_website_location")) {
-            preference.setDefaultValue(deviceLanguage);
-            ((ListPreference) preference).setValue(deviceLanguage);
-        }
-        if (preference.getKey().equals("mp_shipping_location")) {
-            preference.setDefaultValue(deviceCountry);
-            ((ListPreference) preference).setValue(deviceCountry);
-        }
-        if (preference.getKey().equals("mp_currencies")) {
-            preference.setDefaultValue(deviceCurrency);
-            ((ListPreference) preference).setValue(deviceCurrency);
-        }
-        if (preference.getKey().equals("prz_website_location")) {
-            preference.setDefaultValue(deviceCountry);
-            ((ListPreference) preference).setValue(deviceCountry);
-        }
-        if (preference.getKey().equals("prz_language")) {
-            preference.setDefaultValue(deviceCountry.toLowerCase());
-            ((ListPreference) preference).setValue(deviceCountry.toLowerCase());
+        switch (preference.getKey()) {
+            case "mp_website_location": {
+                preference.setDefaultValue(deviceLanguage);
+                ((ListPreference) preference).setValue(deviceLanguage);
+                break;
+            }
+            case "mp_shipping_location": {
+                preference.setDefaultValue(deviceCountry);
+                ((ListPreference) preference).setValue(deviceCountry);
+                break;
+            }
+            case "mp_currencies": {
+                preference.setDefaultValue(deviceCurrency);
+                ((ListPreference) preference).setValue(deviceCurrency);
+                break;
+            }
+            case "prz_website_location": {
+                preference.setDefaultValue(deviceCountry);
+                ((ListPreference) preference).setValue(deviceCountry);
+                break;
+            }
+            case "prz_language": {
+                preference.setDefaultValue(deviceCountry.toLowerCase());
+                ((ListPreference) preference).setValue(deviceCountry.toLowerCase());
+                break;
+            }
         }
 
         // Set the listener to watch for value changes.
@@ -266,7 +274,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         Locale local = getCurrentLocale();
         Log.i("Sergio>", this + "onCreate: local= " + local + " country= " + local.getCountry());
         deviceCountry = local.getCountry(); // PT
-        deviceLanguage = local.toString().toLowerCase().replace("_","-"); // pt_PT -> pt-pt
+        deviceLanguage = local.toString().toLowerCase().replace("_", "-"); // pt_PT -> pt-pt
         deviceCurrency = Currency.getInstance(local).toString();
 
         Log.i("Sergio>", this + " onCreate\ndeviceCountry= " + deviceCountry + " deviceLanguage= " + deviceLanguage + " deviceCurrency= " + deviceCurrency);

@@ -18,7 +18,7 @@
         android:id="@+id/root_ll_vertical_showMore"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/colorPrimary"
+        android:background="@color/f_color1"
         android:orientation="vertical"
         android:gravity="center"
         android:paddingBottom="10dp"
@@ -32,7 +32,7 @@
             android:layout_height="wrap_content"
             android:drawableRight="@drawable/arrow"
             android:gravity="start"
-            android:text="Results..."
+            android:text="Results from..."
             android:textAlignment="center"
             android:textSize="18sp"/>
 

@@ -4,7 +4,6 @@ import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.net.Uri;
 import android.provider.BaseColumns;
-import android.text.format.Time;
 
 /**
  * Created by Sergio on 12/03/2017.
@@ -31,17 +30,6 @@ public class ProductsContract {
     public static final String PATH_PRICES = "prices";
     public static final String PATH_VOUCHERS = "vouchers";
     public static final String PATH_CARTS = "carts";
-
-    // To make it easy to query for the exact date, we normalize all dates that go into
-    // the database to the start of the the Julian day at UTC.
-    public static long normalizeDate(long startDate) {
-        // normalize the start date to the beginning of the (UTC) day
-        Time time = new Time();
-        time.set(startDate);
-        int julianDay = Time.getJulianDay(startDate, time.gmtoff);
-
-        return time.setJulianDay(julianDay);
-    }
 
     public static final class ProductsEntry implements BaseColumns {
 
