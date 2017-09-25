@@ -50,6 +50,7 @@ public class NetworkUtils {
     public static int MALFORMED_URL = 2;
     public static int STATUS_NOT_OK = 3;
     public static int IOEXCEPTION = 4;
+    public static int UNSUPPORTED_MIME_TYPE = 5;
     static Snackbar.SnackbarLayout snack_layout;
 
     public static void UnregisterBroadcastReceiver(Activity mActivity) {

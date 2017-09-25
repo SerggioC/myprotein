@@ -45,6 +45,7 @@ import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
 
 import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
+import org.jsoup.UnsupportedMimeTypeException;
 import org.jsoup.helper.StringUtil;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -63,6 +64,7 @@ import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIME
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.STATUS_NOT_OK;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.STATUS_OK;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.TIMEOUT;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.UNSUPPORTED_MIME_TYPE;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomSlimToast;
@@ -85,7 +87,8 @@ public class SearchFragment extends Fragment {
     ArrayList<ProductCards> bulkpowdersProductCards = new ArrayList<>();
     ArrayList<ProductCards> myvitaminsProductCards = new ArrayList<>();
     Boolean hasMorePages = true;
-    int pageNumber = 1;
+    int pageNumber_MP = 1;
+    int pageNumber_PRZ = 1;
     ListView resultsListView;
     ProgressBar horizontalProgressBar;
     Boolean hasAsyncTaskRuning = false;
@@ -251,6 +254,7 @@ public class SearchFragment extends Fragment {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         webstoresToUse.clear();
+                        webstoreNamesToUse.clear();
                         SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
                         SharedPreferences.Editor editor = sharedPref.edit();
                         for (int i = 0; i < which_webstores_checked.length; i++) {
@@ -514,14 +518,14 @@ public class SearchFragment extends Fragment {
                         .timeout(NET_TIMEOUT)
                         .maxBodySize(0) //sem limite de tamanho do doc recebido
                         .get();
-
                 resultStatus = STATUS_OK;
-
-            } catch (java.net.MalformedURLException e1) {
+            } catch (UnsupportedMimeTypeException e1) {
+                resultStatus = UNSUPPORTED_MIME_TYPE;
+            } catch (java.net.MalformedURLException e2) {
                 resultStatus = MALFORMED_URL;
-            } catch (java.net.SocketTimeoutException e2) {
+            } catch (java.net.SocketTimeoutException e3) {
                 resultStatus = TIMEOUT;
-            } catch (HttpStatusException e3) {
+            } catch (HttpStatusException e4) {
                 resultStatus = STATUS_NOT_OK;
             } catch (IOException e4) {
                 resultStatus = IOEXCEPTION;
@@ -541,10 +545,14 @@ public class SearchFragment extends Fragment {
             int resultStatus = resultObject.resultStatus;
 
             Elements resultProductCards = new Elements(0);
-            if (resultStatus == STATUS_NOT_OK || resultStatus == IOEXCEPTION || resultStatus == MALFORMED_URL) {
-                NetworkUtils.showCustomSlimToast(mActivity, "Error connecting to " + webstoreNamesToUse.get(thisWebstoreIndex) + " website\nStatus = " + resultStatus, Toast.LENGTH_LONG);
+            if (resultStatus == STATUS_NOT_OK || resultStatus == IOEXCEPTION || resultStatus == MALFORMED_URL || resultStatus == UNSUPPORTED_MIME_TYPE) {
+                NetworkUtils.showCustomSlimToast(mActivity, "Error connecting to " + webstoreNamesToUse.get(thisWebstoreIndex) + " website\nException Code = " + resultStatus, Toast.LENGTH_LONG);
+                myproteinProductCards.add(new ProductCards(NO_RESULTS, webstoreNamesToUse.get(thisWebstoreIndex)));
+                searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, myproteinProductCards);
             } else if (resultStatus == TIMEOUT) {
                 NetworkUtils.showCustomSlimToast(mActivity, webstoreNamesToUse.get(thisWebstoreIndex) + " website not responding", Toast.LENGTH_LONG);
+                myproteinProductCards.add(new ProductCards(NO_RESULTS, webstoreNamesToUse.get(thisWebstoreIndex)));
+                searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, myproteinProductCards);
             } else {
                 Element divSearchResults = resultDocument.getElementById("divSearchResults");
                 if (divSearchResults != null) {
@@ -563,7 +571,7 @@ public class SearchFragment extends Fragment {
                 searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, myproteinProductCards);
 
             } else if (rpc_size > 0) {
-                if (pageNumber == 1) {
+                if (pageNumber_MP == 1) {
                     myproteinProductCards.add(new ProductCards(FIRST_ELEMENT, webstoreNamesToUse.get(thisWebstoreIndex)));
                 }
                 for (int i = 0; i < rpc_size; i++) {
@@ -612,7 +620,7 @@ public class SearchFragment extends Fragment {
                         }
                     }
 
-                    ProductCards productCard = new ProductCards(productID, productTitleStr, productHref, productPrice, imgURL, pptList_stringarray, pptList_SSB, CARD_INFO);
+                    ProductCards productCard = new ProductCards(webstoreNamesToUse.get(thisWebstoreIndex), webstoreNamesToUse.get(thisWebstoreIndex), productID, productTitleStr, productHref, productPrice, imgURL, pptList_stringarray, pptList_SSB, CARD_INFO);
                     myproteinProductCards.add(productCard);
                 }
 
@@ -623,13 +631,13 @@ public class SearchFragment extends Fragment {
                 }
                 int numPages = Integer.parseInt(pages);
                 if (numPages > 1 && hasMorePages) {
-                    pageNumber++;
+                    pageNumber_MP++;
                     AsyncTask<String, Void, ConnectionObject> performSearch = new MyproteinSearch(thisWebstoreIndex);
-                    performSearch.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, searchString, "&pageNumber=" + pageNumber);
+                    performSearch.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, searchString, "&pageNumber_MP=" + pageNumber_MP);
                 }
-                if (pageNumber == numPages) {
+                if (pageNumber_MP == numPages) {
                     hasMorePages = false;
-                    pageNumber = 1;
+                    pageNumber_MP = 1;
                     searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, myproteinProductCards);
                 }
             }
@@ -641,6 +649,7 @@ public class SearchFragment extends Fragment {
         String searchString;
         int thisWebstoreIndex;
         int searchTypeURL = 1;
+        int pagesToSearchPRZ = 2;
 
         public ProzisSearch(int thisWebstoreIndex) {
             this.thisWebstoreIndex = thisWebstoreIndex;
@@ -659,16 +668,22 @@ public class SearchFragment extends Fragment {
 
             try {
                 searchString = params[0];
-
+                if (params.length > 1) {
+                    pageNumber_PRZ = Integer.parseInt(params[1]);
+                }
                 SharedPreferences prefManager = PreferenceManager.getDefaultSharedPreferences(mActivity);
                 String prz_country = prefManager.getString("prz_website_location", "pt").toLowerCase();
                 String prz_language = prefManager.getString("prz_language", "pt");
-                String queryStrURL = PRZ_Domain + "/" + prz_country + "/" + prz_language + "/" + "search/q/page/1/text/" + searchString;
+                //String queryStrURL = PRZ_Domain + "/" + prz_country + "/" + prz_language + "/" + "search/q/page/" + pageNumber_PRZ + "/text/" + searchString;
+                String queryStrURL = PRZ_Domain + "/" + prz_country + "/" + prz_language + "/" + "search/q/ctype/inline/page/" + pageNumber_PRZ + "/text/" + searchString;
                 Log.i("Sergio>>>", "ProzisSearch: queryStrURL=" + queryStrURL);
-//              https://www.prozis.com/pt/pt/search/q/text/whey
-//              https://www.prozis.com/pt/pt/search?text=whey
-//              https://www.prozis.com/pt/pt/catalog/search-suggestions?text=whey
-//              https://www.prozis.com/pt/pt/search/q/page/1/text/whey?jsonpCallback=jsonpCallback
+
+//1              https://www.prozis.com/pt/pt/search/q/text/whey
+//2              https://www.prozis.com/pt/pt/search?text=whey
+//3              https://www.prozis.com/pt/pt/catalog/search-suggestions?text=whey
+//4              https://www.prozis.com/pt/pt/search/q/page/1/text/whey?jsonpCallback=jsonpCallback
+//5              https://www.prozis.com/pt/pt/search/q/ctype/inline/page/1/text/whey
+                searchTypeURL = 5;
 
                 resultDocument = Jsoup.connect(queryStrURL)
                         .userAgent(userAgent)
@@ -677,12 +692,13 @@ public class SearchFragment extends Fragment {
                         .maxBodySize(0) //sem limite de tamanho do doc recebido
                         .get();
                 resultStatus = STATUS_OK;
-
-            } catch (java.net.MalformedURLException e1) {
+            } catch (UnsupportedMimeTypeException e1) {
+                resultStatus = UNSUPPORTED_MIME_TYPE;
+            } catch (java.net.MalformedURLException e2) {
                 resultStatus = MALFORMED_URL;
-            } catch (java.net.SocketTimeoutException e2) {
+            } catch (java.net.SocketTimeoutException e3) {
                 resultStatus = TIMEOUT;
-            } catch (HttpStatusException e3) {
+            } catch (HttpStatusException e4) {
                 resultStatus = STATUS_NOT_OK;
             } catch (IOException e4) {
                 resultStatus = IOEXCEPTION;
@@ -696,15 +712,64 @@ public class SearchFragment extends Fragment {
             Document resultDocument = resultObject.resultDocument;
             int resultStatus = resultObject.resultStatus;
 
-            if (resultStatus == STATUS_NOT_OK || resultStatus == IOEXCEPTION || resultStatus == MALFORMED_URL) {
-                NetworkUtils.showCustomSlimToast(mActivity, "Error connecting to " + webstoreNamesToUse.get(thisWebstoreIndex) + " website\n Status = " + resultStatus, Toast.LENGTH_LONG);
+            if (resultStatus == STATUS_NOT_OK || resultStatus == IOEXCEPTION || resultStatus == MALFORMED_URL || resultStatus == UNSUPPORTED_MIME_TYPE) {
+                NetworkUtils.showCustomSlimToast(mActivity, "Error connecting to " + webstoreNamesToUse.get(thisWebstoreIndex) + " website\nException Code = " + resultStatus, Toast.LENGTH_LONG);
+                prozisProductCards.add(new ProductCards(NO_RESULTS, webstoreNamesToUse.get(thisWebstoreIndex)));
+                searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, prozisProductCards);
             } else if (resultStatus == TIMEOUT) {
                 NetworkUtils.showCustomSlimToast(mActivity, webstoreNamesToUse.get(thisWebstoreIndex) + " website not responding", Toast.LENGTH_LONG);
+                prozisProductCards.add(new ProductCards(NO_RESULTS, webstoreNamesToUse.get(thisWebstoreIndex)));
+                searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, prozisProductCards);
             } else {
                 // ASSERT resultDocument != null
                 Elements resultProductCards = new Elements(0);
 
-                if (searchTypeURL == 1) {
+                if (searchTypeURL == 5) {
+
+
+                    Element div_Products_list = resultDocument.getElementById("products_list");
+                    if (div_Products_list != null) {
+                        resultProductCards = div_Products_list.getElementsByClass("product_row"); //Todos os resultados em "cards"
+                    }
+
+                    int rpc_size = resultProductCards.size();
+                    if (rpc_size == 0) {
+                        prozisProductCards.add(new ProductCards(NO_RESULTS, webstoreNamesToUse.get(thisWebstoreIndex)));
+                        searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, prozisProductCards);
+                        Log.w("Sergio>", this + "onPostExecute: \n" + "no prozis results search type " + searchTypeURL);
+                    } else {
+                        if (pageNumber_PRZ == 1) {
+                            prozisProductCards.add(new ProductCards(FIRST_ELEMENT, webstoreNamesToUse.get(thisWebstoreIndex)));
+                        }
+                        for (int i = 0; i < rpc_size; i++) {
+                            Element singleResult = resultProductCards.get(i);
+                            String productURL = PRZ_Domain + singleResult.getElementsByClass("product_imge").attr("href");
+                            String imgURL = "https:" + singleResult.getElementsByClass("product_imge").first().child(0).attr("src");
+                            String productName = singleResult.getElementsByClass("product_name").text();
+                            String productPrice = singleResult.getElementsByClass("product-page-price").text();
+                            String brand = singleResult.getElementsByClass("product_brand").text();
+                            String productID = singleResult.getElementsByClass("tipsy-add-to-favorites").attr("data-osit-id");
+                            String productDescription = singleResult.getElementsByClass("product_description").text();
+
+                            //<a data-osit-lists="" data-osit-id="NUT00/1330530003" href="#" onclick="return false;" class="tipsy-add-to-favorites"><i class="icon-star"></i></a>
+
+                            ProductCards productCard = new ProductCards(webstoreNamesToUse.get(thisWebstoreIndex), brand, productID, productName, productURL, productPrice, imgURL, new ArrayList<String>(), new SpannableStringBuilder(productDescription), CARD_INFO);
+                            prozisProductCards.add(productCard);
+                        }
+
+                        if (pageNumber_PRZ == pagesToSearchPRZ) {
+                            searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, prozisProductCards);
+                            pageNumber_PRZ = 1;
+                        } else {
+                            pageNumber_PRZ++;
+                            AsyncTask<String, Void, ConnectionObject> prozisSearch = new ProzisSearch(thisWebstoreIndex);
+                            prozisSearch.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, searchString, String.valueOf(pageNumber_PRZ));
+                        }
+
+                    }
+
+
+                } else if (searchTypeURL == 1) {
 
                     Element div_Products_list = resultDocument.getElementById("products_list");
                     if (div_Products_list != null) {
@@ -717,17 +782,33 @@ public class SearchFragment extends Fragment {
                         searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, prozisProductCards);
                         Log.w("Sergio>", this + "onPostExecute: \n" + "no prozis results search type 1");
                     } else {
-                        prozisProductCards.add(new ProductCards(FIRST_ELEMENT, webstoreNamesToUse.get(thisWebstoreIndex)));
+                        if (pageNumber_PRZ == 1) {
+                            prozisProductCards.add(new ProductCards(FIRST_ELEMENT, webstoreNamesToUse.get(thisWebstoreIndex)));
+                        }
                         for (int i = 0; i < rpc_size; i++) {
                             Element singleResult = resultProductCards.get(i);
                             String productURL = PRZ_Domain + singleResult.getElementsByClass("product_imge").attr("href");
                             String imgURL = "https:" + singleResult.getElementsByClass("product_imge").first().child(0).attr("src");
                             String productName = singleResult.getElementsByClass("product_name").text();
                             String productPrice = singleResult.getElementsByClass("product_price_info").text();
-                            ProductCards productCard = new ProductCards("prozis", productName, productURL, productPrice, imgURL, new ArrayList<String>(), null, CARD_INFO);
+                            String brand = singleResult.getElementsByClass("product_brand").text();
+                            String productID = singleResult.getElementsByClass("tipsy-add-to-favorites").attr("data-osit-id");
+
+                            //<a data-osit-lists="" data-osit-id="NUT00/1330530003" href="#" onclick="return false;" class="tipsy-add-to-favorites"><i class="icon-star"></i></a>
+
+                            ProductCards productCard = new ProductCards(webstoreNamesToUse.get(thisWebstoreIndex), brand, productID, productName, productURL, productPrice, imgURL, new ArrayList<String>(), null, CARD_INFO);
                             prozisProductCards.add(productCard);
                         }
-                        searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, prozisProductCards);
+
+                        if (pageNumber_PRZ == pagesToSearchPRZ) {
+                            searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, prozisProductCards);
+                            pageNumber_PRZ = 1;
+                        } else {
+                            pageNumber_PRZ++;
+                            AsyncTask<String, Void, ConnectionObject> prozisSearch = new ProzisSearch(thisWebstoreIndex);
+                            prozisSearch.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, searchString, String.valueOf(pageNumber_PRZ));
+                        }
+
                     }
 
 
@@ -739,17 +820,27 @@ public class SearchFragment extends Fragment {
                         searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, prozisProductCards);
                         Log.w("Sergio>", this + "onPostExecute: \n" + "no results search type 3");
                     } else {
-                        prozisProductCards.add(new ProductCards(FIRST_ELEMENT, webstoreNamesToUse.get(thisWebstoreIndex)));
+                        if (pageNumber_PRZ == 1) {
+                            prozisProductCards.add(new ProductCards(FIRST_ELEMENT, webstoreNamesToUse.get(thisWebstoreIndex)));
+                        }
                         for (int i = 0; i < rpc_size; i++) {
                             Element singleResult = resultProductCards.get(i);
                             String productURL = PRZ_Domain + singleResult.getElementsByClass("product_imge").attr("href");
                             String imgURL = "https:" + singleResult.getElementsByClass("product_imge").first().child(0).attr("src");
                             String productName = singleResult.getElementsByClass("product_name").text();
                             String productPrice = singleResult.getElementsByClass("product_price_info").text();
-                            ProductCards productCard = new ProductCards("prozis", productName, productURL, productPrice, imgURL, new ArrayList<String>(), null, CARD_INFO);
+                            String brand = singleResult.getElementsByClass("product_brand").text();
+                            ProductCards productCard = new ProductCards(webstoreNamesToUse.get(thisWebstoreIndex), brand, "TODO", productName, productURL, productPrice, imgURL, new ArrayList<String>(), null, CARD_INFO);
                             prozisProductCards.add(productCard);
                         }
-                        searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, prozisProductCards);
+                        if (pageNumber_PRZ == pagesToSearchPRZ) {
+                            searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, prozisProductCards);
+                            pageNumber_PRZ = 1;
+                        } else {
+                            pageNumber_PRZ++;
+                            AsyncTask<String, Void, ConnectionObject> prozisSearch = new ProzisSearch(thisWebstoreIndex);
+                            prozisSearch.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, searchString, String.valueOf(pageNumber_PRZ));
+                        }
                     }
                 }
 
@@ -828,6 +919,7 @@ public class SearchFragment extends Fragment {
     }
 
     class ProductCards {
+        String productBrand;
         String productID;
         String productTitleStr;
         String productHref;
@@ -838,7 +930,9 @@ public class SearchFragment extends Fragment {
         String webstoreName;
         int cardPosition;
 
-        ProductCards(String productID, String productTitleStr, String productHref, String productPrice, String imgURL, ArrayList<String> pptList_stringarray, SpannableStringBuilder pptList_SSB, int cardPosition) {
+        ProductCards(String webstoreName, String productBrand, String productID, String productTitleStr, String productHref, String productPrice, String imgURL, ArrayList<String> pptList_stringarray, SpannableStringBuilder pptList_SSB, int cardPosition) {
+            this.productBrand = productBrand;
+            this.webstoreName = webstoreName;
             this.productID = productID;
             this.productTitleStr = productTitleStr;
             this.productHref = productHref;
