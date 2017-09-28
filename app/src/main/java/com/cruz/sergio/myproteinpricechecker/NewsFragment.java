@@ -7,6 +7,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.CardView;
@@ -32,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.GETNEWS_ONSTART;
+import static com.cruz.sergio.myproteinpricechecker.TabFragment.tabLayout;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetworkSnackBar;
@@ -115,6 +117,9 @@ public class NewsFragment extends Fragment {
             list_NewsContent.clear();
             list_NewsContent.add("header");
             newsListView.setAdapter(new RecyclerViewAdapter(list_NewsContent));
+            TabLayout.Tab tab = tabLayout.getTabAt(MainActivity.TAB_IDS.WATCHING);
+            tabLayout.setScrollPosition(MainActivity.TAB_IDS.WATCHING, 0f, true);
+            if (tab != null) tab.select();
         }
     }
 

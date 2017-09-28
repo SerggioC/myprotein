@@ -105,7 +105,7 @@ public class VoucherFragment extends Fragment {
 
             if (hasInternet) {
                 SharedPreferences prefManager = PreferenceManager.getDefaultSharedPreferences(mActivity);
-                String pref_MP_Domain = prefManager.getString("mp_website_location", "en-gb");
+                String pref_MP_Domain = prefManager.getString("mp_website_location", "pt-pt");
                 MP_Domain = MyProteinDomain.getHref(pref_MP_Domain);
 
                 String voucher_url_sufix;

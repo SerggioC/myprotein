@@ -65,7 +65,22 @@
         </activity>
 
         <activity
-            android:name=".DetailsActivity"
+            android:name=".DetailsActivityMyprotein"
+            android:label="@string/title_activity_details"
+            android:parentActivityName=".MainActivity">
+        </activity>
+        <activity
+            android:name=".DetailsActivityProzis"
+            android:label="@string/title_activity_details"
+            android:parentActivityName=".MainActivity">
+        </activity>
+        <activity
+            android:name=".DetailsActivityBulkPowders"
+            android:label="@string/title_activity_details"
+            android:parentActivityName=".MainActivity">
+        </activity>
+        <activity
+            android:name=".DetailsActivityMyvitamins"
             android:label="@string/title_activity_details"
             android:parentActivityName=".MainActivity">
         </activity>

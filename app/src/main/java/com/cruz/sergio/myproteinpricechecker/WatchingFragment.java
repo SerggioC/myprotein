@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -30,6 +31,7 @@ import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.widget.CursorAdapter;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.AppCompatRadioButton;
 import android.support.v7.widget.CardView;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
@@ -49,6 +51,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewSwitcher;
@@ -78,6 +81,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
+import static android.content.Context.MODE_PRIVATE;
 import static android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE;
 import static android.util.DisplayMetrics.DENSITY_HIGH;
 import static android.util.DisplayMetrics.DENSITY_LOW;
@@ -86,6 +90,7 @@ import static android.util.DisplayMetrics.DENSITY_XHIGH;
 import static android.util.DisplayMetrics.DENSITY_XXHIGH;
 import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.CACHE_IMAGES;
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.UPDATE_ONSTART;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.density;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
@@ -106,10 +111,10 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     public static final int LOADER_ID = 0;
     public static final int IMAGE_PERIOD = 5400;
     public static DeletedProductListener delete_listener;
-    cursorDBAdapter cursorDBAdapter;
     static ListView listViewItems;
     static Loader<Cursor> loaderManager;
     static String[] imageSizesToUse;
+    cursorDBAdapter cursorDBAdapter;
     Activity mActivity;
     SwipeRefreshLayout watchingSwipeRefreshLayout;
     Timer timer = new Timer();
@@ -520,7 +525,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                             protected Void doInBackground(Void... params) {
                                 FileOutputStream outputStream;
                                 try {
-                                    outputStream = mActivity.openFileOutput(filename, Context.MODE_PRIVATE);
+                                    outputStream = mActivity.openFileOutput(filename, MODE_PRIVATE);
                                     outputStream.write(resource);
                                     outputStream.flush();
                                     outputStream.close();
@@ -555,6 +560,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         public final CardView under_view;
         public final TextView undercard_last_updated;
         public final ProgressBar small_pb_undercard;
+        public final TextView product_brand;
+        public final ImageView notify_icon;
+
 
         public ViewHolder(View view) {
             titleView = (TextView) view.findViewById(R.id.item_title_textview);
@@ -573,6 +581,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             undercard_tv_desc = (TextView) view.findViewById(R.id.description_undercard);
             undercard_last_updated = (TextView) view.findViewById(R.id.last_updated_undercard);
             small_pb_undercard = (ProgressBar) view.findViewById(R.id.pbar_undercard);
+            product_brand = (TextView) view.findViewById(R.id.product_brand);
+            notify_icon = (ImageView) view.findViewById(R.id.notify);
         }
     }
 
@@ -639,6 +649,10 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             final String prod_name = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME));
             final String url = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL));
             final String string_array_images = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGES));
+            final String productBrand = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BRAND));
+            final Boolean[] show_notifications = {cursor.getInt(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS)) == 1 ? true : false};
+            final double notify_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_NOTIFY_VALUE));
+
 
             final CardView mainCardView = (CardView) view.findViewById(R.id.main_cardview);
             mainCardView.findViewById(R.id.open_web).setOnClickListener(new View.OnClickListener() {
@@ -654,19 +668,137 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                     showCustomSlimToast(mActivity, "Add product to virtual cart", Toast.LENGTH_SHORT);
                 }
             });
-            mainCardView.findViewById(R.id.notify).setTag(false);
-            mainCardView.findViewById(R.id.notify).setOnClickListener(new View.OnClickListener() {
+
+
+            if (show_notifications[0]) {
+                viewHolder.notify_icon.setImageResource(R.drawable.ic_notifications);
+            } else {
+                viewHolder.notify_icon.setImageResource(R.drawable.ic_notifications_none);
+            }
+            final android.support.v7.widget.SwitchCompat[] alertSwitch = new android.support.v7.widget.SwitchCompat[1];
+            final RadioGroup[] radioGroup = new RadioGroup[1];
+            final android.support.v7.widget.AppCompatRadioButton[] radio_every = new AppCompatRadioButton[1];
+            final android.support.v7.widget.AppCompatRadioButton[] radio_target = new AppCompatRadioButton[1];
+            final android.support.design.widget.TextInputEditText[] alertTextView = new android.support.design.widget.TextInputEditText[1];
+
+            viewHolder.notify_icon.setOnClickListener(new View.OnClickListener() {
                 @Override
-                public void onClick(View v) {
-                    if ((Boolean) v.getTag()) {
-                        ((ImageView) v).setImageResource(R.drawable.ic_notifications_none);
-                        v.setTag(false);
-                    } else {
-                        ((ImageView) v).setImageResource(R.drawable.ic_notifications);
-                        v.setTag(true);
-                    }
+                public void onClick(final View notifyIconView) {
+                    AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(mActivity);
+
+                    LayoutInflater inflater = mActivity.getLayoutInflater();
+                    View dialogView = inflater.inflate(R.layout.notifications_alert_dialog, null);
+                    alertDialogBuilder.setView(dialogView);
+                    alertSwitch[0] = (android.support.v7.widget.SwitchCompat) dialogView.findViewById(R.id.switch_notify);
+                    alertTextView[0] = (android.support.design.widget.TextInputEditText) dialogView.findViewById(R.id.tv_alert_value);
+                    radio_every[0] = (android.support.v7.widget.AppCompatRadioButton) dialogView.findViewById(R.id.radioButton_every);
+                    radio_target[0] = (android.support.v7.widget.AppCompatRadioButton) dialogView.findViewById(R.id.radioButton_target);
+                    radioGroup[0] = (RadioGroup) dialogView.findViewById(R.id.radioGroup_notify);
+
+                    alertSwitch[0].setChecked(show_notifications[0]);
+                    radioGroup[0].setEnabled(show_notifications[0]);
+
+                    radio_every[0].setEnabled(show_notifications[0]);
+                    radio_every[0].setChecked(notify_value == 0 ? true : false);
+
+                    radio_target[0].setEnabled(show_notifications[0]);
+                    radio_target[0].setChecked(show_notifications[0] && notify_value > 0 ? true : false);
+
+                    alertTextView[0].setEnabled(show_notifications[0] && notify_value > 0);
+                    alertTextView[0].setActivated(show_notifications[0] && notify_value > 0);
+                    alertTextView[0].setText(show_notifications[0] && notify_value > 0 ? String.valueOf(notify_value) : "");
+
+                    alertSwitch[0].setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            radioGroup[0].setEnabled(alertSwitch[0].isChecked());
+                            radio_every[0].setEnabled(alertSwitch[0].isChecked());
+                            radio_target[0].setEnabled(alertSwitch[0].isChecked());
+                            alertTextView[0].setEnabled(alertSwitch[0].isChecked() && radio_target[0].isChecked());
+                            alertTextView[0].setActivated(alertSwitch[0].isChecked() && radio_target[0].isChecked());
+                            alertTextView[0].setText(alertSwitch[0].isChecked() ? String.valueOf(notify_value) : "");
+                        }
+                    });
+
+                    radio_target[0].setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            alertTextView[0].setEnabled(radio_target[0].isChecked());
+                            alertTextView[0].setActivated(radio_target[0].isChecked());
+                            alertTextView[0].setText(radio_target[0].isChecked() ? String.valueOf(notify_value) : "");
+                        }
+                    });
+
+                    radio_every[0].setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            alertTextView[0].setEnabled(radio_target[0].isChecked());
+                            alertTextView[0].setActivated(radio_target[0].isChecked());
+                            alertTextView[0].setText(radio_target[0].isChecked() ? String.valueOf(notify_value) : "");
+                        }
+                    });
+
+                    alertDialogBuilder.setTitle("Notifications");
+                    alertDialogBuilder.setIcon(R.mipmap.ic_notification_bell);
+                    alertDialogBuilder
+                            .setMessage("Edit notification settings for this item.")
+                            .setCancelable(true)
+                            .setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int id) {
+                                    DBHelper dbHelper = new DBHelper(mActivity);
+                                    SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+                                    double target_val;
+                                    String target_val_str = alertTextView[0].getText().toString();
+                                    if (StringUtil.isBlank(target_val_str)) {
+                                        target_val = 0;
+                                    } else {
+                                        try {
+                                            target_val = Double.parseDouble(target_val_str);
+                                        } catch (NumberFormatException e) {
+                                            e.printStackTrace();
+                                            target_val = 0;
+                                        } catch (NullPointerException e) {
+                                            e.printStackTrace();
+                                            target_val = 0;
+                                        }
+                                    } // Overkilling error catching lol
+
+                                    ContentValues contentValues = new ContentValues(2);
+                                    contentValues.put(ProductsContract.ProductsEntry.COLUMN_NOTIFY_VALUE, target_val);
+                                    contentValues.put(ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS, alertSwitch[0].isChecked());
+
+                                    int update_result = db.update(ProductsContract.ProductsEntry.TABLE_NAME, contentValues, "_ID=" + "'" + this_product_id + "'", null);
+
+                                    if (update_result == 1) {
+                                        timer.cancel();
+                                        timer.purge();
+                                        timer = new Timer();
+                                        getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
+                                        showCustomToast(mActivity, "Updated notifications for " + prod_name + "\n" +
+                                                        (alertSwitch[0].isChecked() && radio_target[0].isChecked() ? "Alert when price reaches " + String.valueOf(target_val) :
+                                                                (alertSwitch[0].isChecked() && radio_every[0].isChecked()) ? "Alert every time price drops." : "Do not notify"),
+                                                R.mipmap.ic_info, R.color.f_color1, Toast.LENGTH_SHORT);
+                                    } else {
+                                        showCustomToast(mActivity, "Error updating notifications!",
+                                                R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
+                                    }
+
+
+                                }
+                            })
+                            .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int id) {
+                                    dialog.cancel();
+                                }
+                            });
+
+                    AlertDialog alertDialog = alertDialogBuilder.create();
+                    alertDialog.show();
                 }
             });
+
+
             mainCardView.findViewById(R.id.expand_underview_tv).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -858,6 +990,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
             String str_title = prod_name + " " + options_sabor + " " + options_caixa + " " + options_quant;
             viewHolder.titleView.setText(str_title);
+            viewHolder.product_brand.setText(productBrand);
             viewHolder.highestPriceView.setText(max_price_string);
             viewHolder.lowestPriceView.setText(min_price_string);
             viewHolder.currentPriceView.setText(current_price_string);
@@ -865,9 +998,14 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             viewHolder.lowestPriceDate.setText(getMillisecondsToDate(minPriceDate));
 
             if (this_position == 0) {
-                SharedPreferences sharedPref = mActivity.getPreferences(Context.MODE_PRIVATE);
-                long last_saved_date = sharedPref.getLong(LAST_DB_UPDATE_PREF_KEY, System.currentTimeMillis());
-                ((TextView) mActivity.findViewById(R.id.updated_tv)).setText(getMillisecondsToDate(last_saved_date));
+                if (getCount() == 1) {
+                    ((TextView) mActivity.findViewById(R.id.updated_tv)).setText(getMillisecondsToDate(actualPriceDate));
+                } else {
+                    SharedPreferences sharedPref = mActivity.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE);
+                    long last_saved_date = sharedPref.getLong(LAST_DB_UPDATE_PREF_KEY, 0);
+                    ((TextView) mActivity.findViewById(R.id.updated_tv)).setText(last_saved_date == 0 ? "Never" : getMillisecondsToDate(last_saved_date));
+
+                }
             }
 
             // pode dar erro ao atualizar o preço, ou o produto/opção não estar disponível

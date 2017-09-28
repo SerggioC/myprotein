@@ -55,6 +55,7 @@ public class ProductsContract {
         public static final String COLUMN_PRODUCT_NAME = "product_name";
         public static final String COLUMN_PRODUCT_SUBTITLE = "product_subtitle";
         public static final String COLUMN_PRODUCT_DESCRIPTION = "product_description";
+        public static final String COLUMN_PRODUCT_BRAND = "product_brand";
         public static final String COLUMN_WEBSTORE_NAME = "webstore_name";
         public static final String COLUMN_PRODUCT_BASE_URL = "product_base_url";
         public static final String COLUMN_MP_WEBSTORE_DOMAIN_URL = "mp_webstore_domain"; // from shared prefs
@@ -89,6 +90,7 @@ public class ProductsContract {
         public static final String COLUMN_CUSTOM_PRODUCT_ID = "mp_custom_product_id";
         public static final String COLUMN_ARRAYLIST_IMAGES = "mp_array_images";
         public static final String COLUMN_NOTIFICATIONS = "notifications";
+        public static final String COLUMN_NOTIFY_VALUE = "notify_value";
         public static final String COLUMN_IS_IN_CART = "is_in_cart";
         public static final String COLUMN_CART_ID = "cart_id";
 
@@ -99,6 +101,7 @@ public class ProductsContract {
                 ProductsEntry.COLUMN_PRODUCT_NAME,
                 ProductsEntry.COLUMN_PRODUCT_SUBTITLE,
                 ProductsEntry.COLUMN_PRODUCT_DESCRIPTION,
+                ProductsEntry.COLUMN_PRODUCT_BRAND,
                 ProductsEntry.COLUMN_WEBSTORE_NAME,
                 ProductsEntry.COLUMN_PRODUCT_BASE_URL,
                 ProductsEntry.COLUMN_MP_WEBSTORE_DOMAIN_URL,
@@ -133,6 +136,7 @@ public class ProductsContract {
                 ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID,
                 ProductsEntry.COLUMN_ARRAYLIST_IMAGES,
                 ProductsEntry.COLUMN_NOTIFICATIONS,
+                ProductsEntry.COLUMN_NOTIFY_VALUE,
                 ProductsEntry.COLUMN_IS_IN_CART,
                 ProductsEntry.COLUMN_CART_ID
         };

@@ -1,6 +1,5 @@
 package com.cruz.sergio.myproteinpricechecker.helper;
 
-import android.app.Activity;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.ContentValues;
@@ -34,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
 import static com.cruz.sergio.myproteinpricechecker.helper.StartFirebase.JOB_DELTA_INTERVAL_BUNDLE;
@@ -55,6 +55,7 @@ public class FirebaseJobservice extends JobService {
     static int job_delta_time = 0;
     private static int cursorSize;
     private static int currentCursor;
+    static SharedPreferences sharedPref;
 
     public static void updatePricesOnStart(Context context, Boolean isJob, Boolean isSingleLine, String singleLineID) {
         FirebaseJobservice.isJob = isJob;
@@ -77,8 +78,9 @@ public class FirebaseJobservice extends JobService {
 //            last_saved_date = cursor.getLong(cursor.getColumnIndex(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_DATE));
 //        }
 
+
         // Parâmetro único centralizado para última atualização da Database, mais eficiente que o anterior.
-        SharedPreferences sharedPref = ((Activity) context).getPreferences(Context.MODE_PRIVATE);
+        sharedPref = context.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE);
         long now = System.currentTimeMillis();
         long last_saved_date = sharedPref.getLong(LAST_DB_UPDATE_PREF_KEY, now);
         long calculated_delta_t = TimeUnit.MILLISECONDS.toSeconds(now - last_saved_date);
@@ -240,7 +242,7 @@ public class FirebaseJobservice extends JobService {
         if (currentCursor == cursorSize) {
             if (!isSingleLine) {
                 // Guardar ultimo update à DB nas SharedPreferences
-                SharedPreferences sharedPref = ((Activity) context).getPreferences(Context.MODE_PRIVATE);
+                //SharedPreferences sharedPref = ((Activity) context).getPreferences(Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = sharedPref.edit();
                 editor.putLong(LAST_DB_UPDATE_PREF_KEY, System.currentTimeMillis());
                 editor.commit();
@@ -288,7 +290,7 @@ public class FirebaseJobservice extends JobService {
             job_delta_time = MINIMUM_DELTA_INTERVAL;
         }
 
-        updatePricesOnStart(this, true, false, null);
+        updatePricesOnStart(this.getApplicationContext(), true, false, null);
         return false; // Answers the question: "Is there still work going on?"
     }
 

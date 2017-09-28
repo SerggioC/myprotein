@@ -18,6 +18,7 @@ import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.AppCompatCheckedTextView;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -56,8 +57,10 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 
 import static android.app.Activity.RESULT_OK;
-import static com.cruz.sergio.myproteinpricechecker.DetailsActivity.ADDED_NEW_PROD_REF;
-import static com.cruz.sergio.myproteinpricechecker.DetailsActivity.HAD_INTERNET_OFF_REF;
+import static android.content.Context.MODE_PRIVATE;
+import static com.cruz.sergio.myproteinpricechecker.DetailsActivityMyprotein.ADDED_NEW_PROD_REF;
+import static com.cruz.sergio.myproteinpricechecker.DetailsActivityMyprotein.HAD_INTERNET_OFF_REF;
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.IOEXCEPTION;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.MALFORMED_URL;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
@@ -94,9 +97,9 @@ public class SearchFragment extends Fragment {
     Boolean hasAsyncTaskRuning = false;
     boolean btn_clear_visible = false;
     EditText searchTV;
-    String[] SUPPORTED_WEBSTORES = new String[]{"myprotein", "prozis", "bulkpowders", "myvitamins"};
-    String[] WEBSTORES_NAMES = new String[]{"Myprotein", "Prozis", "Bulk Powders", "Myvitamins"};
-    boolean[] which_webstores_checked = new boolean[]{true, true, true, true};
+    String[] SUPPORTED_WEBSTORES = new String[]{"myprotein", "prozis", "bulkpowders", "myvitamins"}; // simple name
+    String[] WEBSTORES_NAMES = new String[]{"Myprotein", "Prozis", "Bulk Powders", "Myvitamins"}; // Display name
+    boolean[] which_webstores_checked = new boolean[]{true, true, false, false};
     ArrayList<String> webstoresToUse = new ArrayList(SUPPORTED_WEBSTORES.length);
     ArrayList<String> webstoreNamesToUse = new ArrayList(WEBSTORES_NAMES.length);
     int webStoreIndex = 0;
@@ -107,9 +110,10 @@ public class SearchFragment extends Fragment {
         super.onCreate(savedInstanceState);
         mActivity = getActivity();
 
-        SharedPreferences sharedPref = mActivity.getPreferences(Context.MODE_PRIVATE);
+//        SharedPreferences sharedPref = mActivity.getPreferences(MODE_PRIVATE);
+        SharedPreferences sharedPref = mActivity.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE);
         for (int i = 0; i < WEBSTORES_NAMES.length; i++) {
-            which_webstores_checked[i] = sharedPref.getBoolean(SUPPORTED_WEBSTORES[i], true);
+            which_webstores_checked[i] = sharedPref.getBoolean(SUPPORTED_WEBSTORES[i], which_webstores_checked[i]);
             if (which_webstores_checked[i]) {
                 webstoresToUse.add(SUPPORTED_WEBSTORES[i]);
                 webstoreNamesToUse.add(WEBSTORES_NAMES[i]);
@@ -244,8 +248,25 @@ public class SearchFragment extends Fragment {
                         // Não permitir desmarcar todos os items
                         AlertDialog adialog = (AlertDialog) dialog;
                         ListView listView = adialog.getListView();
+                        listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+
                         if (listView.getCheckedItemCount() == 0) {
                             listView.setItemChecked(whichButton, true);
+                            which_webstores_checked[whichButton] = true;
+                        }
+                        // disallow last 2 webstores
+                        if (listView.isItemChecked(2)) {
+                            ((AppCompatCheckedTextView) listView.getChildAt(2)).setChecked(false);
+                            which_webstores_checked[2] = false;
+                        }
+                        if (listView.isItemChecked(3)) {
+                            ((AppCompatCheckedTextView) listView.getChildAt(3)).setChecked(false);
+                            which_webstores_checked[3] = false;
+                        }
+                        if (listView.getCheckedItemCount() == 0) {
+                            ((AppCompatCheckedTextView) listView.getChildAt(0)).setChecked(false);
+                            listView.setItemChecked(0, true);
+                            which_webstores_checked[0] = true;
                         }
                     }
                 });
@@ -255,7 +276,7 @@ public class SearchFragment extends Fragment {
                     public void onClick(DialogInterface dialog, int which) {
                         webstoresToUse.clear();
                         webstoreNamesToUse.clear();
-                        SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
+                        SharedPreferences sharedPref = mActivity.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE);
                         SharedPreferences.Editor editor = sharedPref.edit();
                         for (int i = 0; i < which_webstores_checked.length; i++) {
                             editor.putBoolean(SUPPORTED_WEBSTORES[i], which_webstores_checked[i]);
@@ -310,7 +331,7 @@ public class SearchFragment extends Fragment {
     }
 
     private void go_to_webAdress_details(String url_from_querystr) {
-        Intent intent = new Intent(mActivity, DetailsActivity.class);
+        Intent intent = new Intent(mActivity, DetailsActivityMyprotein.class);
         intent.putExtra("url", url_from_querystr);
         intent.putExtra("is_web_address", true);
         Bundle bundle = ActivityOptionsCompat.makeCustomAnimation(
@@ -473,6 +494,7 @@ public class SearchFragment extends Fragment {
     class ConnectionObject {
         Document resultDocument;
         int resultStatus;
+
         ConnectionObject(Document resultDocument, int resultStatus) {
             this.resultDocument = resultDocument;
             this.resultStatus = resultStatus;
@@ -567,7 +589,9 @@ public class SearchFragment extends Fragment {
 //                } else if (myproteinProductCards.size() == 0) {
 //                    // Não obteve resultados
 //                }
-                myproteinProductCards.add(new ProductCards(NO_RESULTS, webstoreNamesToUse.get(thisWebstoreIndex)));
+                if (pageNumber_MP == 1) {
+                    myproteinProductCards.add(new ProductCards(NO_RESULTS, webstoreNamesToUse.get(thisWebstoreIndex)));
+                }
                 searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, myproteinProductCards);
 
             } else if (rpc_size > 0) {
@@ -734,7 +758,9 @@ public class SearchFragment extends Fragment {
 
                     int rpc_size = resultProductCards.size();
                     if (rpc_size == 0) {
-                        prozisProductCards.add(new ProductCards(NO_RESULTS, webstoreNamesToUse.get(thisWebstoreIndex)));
+                        if (pageNumber_PRZ == 1) {
+                            prozisProductCards.add(new ProductCards(NO_RESULTS, webstoreNamesToUse.get(thisWebstoreIndex)));
+                        }
                         searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, prozisProductCards);
                         Log.w("Sergio>", this + "onPostExecute: \n" + "no prozis results search type " + searchTypeURL);
                     } else {
@@ -893,25 +919,46 @@ public class SearchFragment extends Fragment {
                     @Override
                     public void onClick(View v) {
 
-                        Intent intent = new Intent(mActivity, DetailsActivity.class);
-                        intent.putExtra("url", product.productHref);
-                        intent.putStringArrayListExtra("description", product.pptList_stringarray);
+                        Intent intent = new Intent();
+                        switch (product.webstoreName) {
+                            case "Myprotein": {
+                                intent = new Intent(mActivity, DetailsActivityMyprotein.class);
+                                break;
+                            }
+                            case "Prozis": {
+                                intent = new Intent(mActivity, DetailsActivityProzis.class);
+                                break;
+                            }
+                            case "Bulk Powders": {
+                                intent = new Intent(mActivity, DetailsActivityBulkPowders.class);
+                                break;
+                            }
+                            case "Myvitamins": {
+                                intent = new Intent(mActivity, DetailsActivityMyvitamins.class);
+                                break;
+                            }
+                        }
+
                         intent.putExtra("productID", product.productID);
+                        intent.putExtra("productBrand", product.productBrand);
+                        intent.putExtra("productTitleStr", product.productTitleStr);
+                        intent.putExtra("webstoreName", product.webstoreName);
+                        intent.putExtra("url", product.productHref);
                         intent.putExtra("image_url", product.imgURL);
                         intent.putExtra("is_web_address", false);
-
+                        intent.putStringArrayListExtra("description", product.pptList_stringarray);
                         //startActivity(intent);
                         Bundle bundle = ActivityOptionsCompat.makeCustomAnimation(
                                 mActivity,
                                 android.R.anim.fade_in,
                                 android.R.anim.fade_out).toBundle();
                         startActivityForResult(intent, SEARCH_REQUEST_CODE, bundle);
-
                     }
                 });
                 ((TextView) view.findViewById(R.id.titleTextView)).setText(product.productTitleStr);
                 ((TextView) view.findViewById(R.id.product_description)).setText(product.pptList_SSB);
                 ((TextView) view.findViewById(R.id.price_textView)).setText(product.productPrice);
+                ((TextView) view.findViewById(R.id.product_brand_pc)).setText(product.productBrand);
             }
 
             return view;

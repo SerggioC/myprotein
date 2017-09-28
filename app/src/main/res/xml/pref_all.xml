@@ -104,7 +104,7 @@
             android:title="@string/pref_update_on_start"/>
 
         <SwitchPreference
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:icon="@mipmap/ic_new_view"
             android:key="getnews_on_start"
             android:title="@string/pref_getnews_on_start"/>

@@ -28,6 +28,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME + " TEXT NOT NULL, " +
                 ProductsContract.ProductsEntry.COLUMN_PRODUCT_SUBTITLE + " TEXT NOT NULL, " +
                 ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_PRODUCT_BRAND + " TEXT NOT NULL, " +
                 ProductsContract.ProductsEntry.COLUMN_WEBSTORE_NAME + " TEXT NOT NULL, " +
                 ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL + " TEXT NOT NULL, " +
                 ProductsContract.ProductsEntry.COLUMN_MP_WEBSTORE_DOMAIN_URL + " TEXT NOT NULL, " +
@@ -61,7 +62,8 @@ public class DBHelper extends SQLiteOpenHelper {
                 ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME3 + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID + " TEXT NOT NULL, " +
                 ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGES + " TEXT, " +
-                ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS + " TEXT, " +
+                ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS + " INTEGER NOT NULL, " +
+                ProductsContract.ProductsEntry.COLUMN_NOTIFY_VALUE + "  REAL, " +
                 ProductsContract.ProductsEntry.COLUMN_IS_IN_CART + " TEXT, " +
                 ProductsContract.ProductsEntry.COLUMN_CART_ID + " TEXT " +
                 " );";

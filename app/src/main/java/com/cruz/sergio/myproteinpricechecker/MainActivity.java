@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     public static float scale;
     public static int density;
     public static boolean detailsActivityIsActive;
+    public static final String PREFERENCE_FILE_NAME = "wpt_preferences_file";
 
     public static class TAB_IDS {
         public static final int NEWS = 0;
@@ -142,9 +143,10 @@ public class MainActivity extends AppCompatActivity {
         mActivity = this;
 
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
+
         CACHE_IMAGES = sharedPrefs.getBoolean("cache_images", false);
         UPDATE_ONSTART = sharedPrefs.getBoolean("update_on_start", false);
-        GETNEWS_ONSTART = sharedPrefs.getBoolean("getnews_on_start", false);
+        GETNEWS_ONSTART = sharedPrefs.getBoolean("getnews_on_start", true);
 
         StartFirebase.createJobDispatcher(this);
 

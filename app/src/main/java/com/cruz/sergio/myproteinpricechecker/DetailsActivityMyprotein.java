@@ -86,7 +86,7 @@ import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetwor
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomToast;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
 
-public class DetailsActivity extends AppCompatActivity {
+public class DetailsActivityMyprotein extends AppCompatActivity {
     public static final String ADDED_NEW_PROD_REF = "addedNewProduct";
     public static final String HAD_INTERNET_OFF_REF = "had_internet_off";
     Activity mActivity;
@@ -97,6 +97,8 @@ public class DetailsActivity extends AppCompatActivity {
     String MP_Domain;
     String pref_MP_Locale;
     String productID;
+    String productName;
+    String webstoreName;
     String url;
     String URL_suffix;
     TextView priceTV;
@@ -218,7 +220,6 @@ public class DetailsActivity extends AppCompatActivity {
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
         CACHE_IMAGES = sharedPrefs.getBoolean("cache_images", false);
 
-
         ll_variations = (LinearLayout) mActivity.findViewById(R.id.ll_variations);
         linearLayoutSpiners = (LinearLayout) mActivity.findViewById(R.id.spiners);
         productImageView = (ImageView) mActivity.findViewById(R.id.p_details_image);
@@ -240,9 +241,9 @@ public class DetailsActivity extends AppCompatActivity {
             is_web_address = extras.getBoolean("is_web_address");
 
             if (!is_web_address) {
-                pref_MP_Locale = sharedPrefs.getString("mp_website_location", "en-gb"); // pt-pt
-                String shippingCountry = sharedPrefs.getString("mp_shipping_location", "GB"); //"PT";
-                String currency = sharedPrefs.getString("mp_currencies", "GBP"); //"EUR";
+                pref_MP_Locale = sharedPrefs.getString("mp_website_location", "pt-pt"); // pt-pt
+                String shippingCountry = sharedPrefs.getString("mp_shipping_location", "PT"); //"PT";
+                String currency = sharedPrefs.getString("mp_currencies", "EUR"); //"EUR";
 
                 MP_Domain = MyProteinDomain.getHref(pref_MP_Locale);
                 URL_suffix = "settingsSaved=Y&shippingcountry=" + shippingCountry + "&switchcurrency=" + currency + "&countrySelected=Y";
@@ -252,19 +253,20 @@ public class DetailsActivity extends AppCompatActivity {
                 List<String> texts = java.util.Arrays.asList(getResources().getStringArray(R.array.pref_mp_website_titles));
                 List<String> values = java.util.Arrays.asList(getResources().getStringArray(R.array.pref_mp_website_values));
                 String country_name = texts.get(values.indexOf(pref_MP_Locale));
+                webstoreName = extras.getString("webstoreName");
+                productID = extras.getString("productID");
+                description = extras.getStringArrayList("description");
+                String imgURL = extras.getString("image_url");
+                productName = extras.getString("productTitleStr");
+                customProductID = "loc" + pref_MP_Locale + "pid" + productID;
 
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_WEBSTORE_DOMAIN_URL, MP_Domain);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_LOCALE, pref_MP_Locale);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_SHIPPING_LOCATION, shippingCountry);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY, currency);
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_WEBSTORE_NAME, "MyProtein" + " " + country_name);
-
-                productID = extras.getString("productID");
-                description = extras.getStringArrayList("description");
-                String imgURL = extras.getString("image_url");
-                customProductID = "loc" + pref_MP_Locale + "pid" + productID;
-
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_WEBSTORE_NAME, webstoreName + " " + country_name);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID, customProductID);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME, productName);
 
                 Drawable drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.tick, null);
                 SpannableStringBuilder pptList_SSB = new SpannableStringBuilder();
@@ -281,6 +283,7 @@ public class DetailsActivity extends AppCompatActivity {
                     description_DB = description_DB.substring(0, description_DB.length() - 1); //Remover ultimo caractere \n
                 }
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION, description_DB);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BRAND, webstoreName);
 
                 //Lista da descrição enviado da activity anterior (SearchFragment.java) com imagens à esquerda
                 ((TextView) mActivity.findViewById(R.id.p_description)).setText(pptList_SSB);
@@ -348,6 +351,7 @@ public class DetailsActivity extends AppCompatActivity {
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE, price_value);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE, timeMillis);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE, 0);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS, 1); // TODO get info from layout
 
                 if (JSON_ArrayArray_Images != null) { // Imagens do JSON (Mais completo)
                     ArrayList<ArrayList<String>> arrayListArrayListImageURIs = new ArrayList<>();
@@ -587,10 +591,10 @@ public class DetailsActivity extends AppCompatActivity {
 
             if (detailsActivityIsActive) {
                 if (resultDocument != null) {
-                    Element titleElem = resultDocument.getElementsByClass("product-title").first();  // Titulo ou nome do produto
-                    String title = titleElem != null ? titleElem.text() : "N/A";
-                    ((TextView) mActivity.findViewById(R.id.title_tv)).append(title);
-                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME, title);
+//                    Element titleElem = resultDocument.getElementsByClass("product-title").first();  // Titulo ou nome do produto
+//                    String titlee = titleElem != null ? titleElem.text() : "N/A";
+
+                    ((TextView) mActivity.findViewById(R.id.title_tv)).append(productName);
 
                     Elements subtitle_element = resultDocument.getElementsByClass("product-sub-name");
                     String subtitle = subtitle_element != null ? subtitle_element.text() : "N/A";
@@ -757,7 +761,7 @@ public class DetailsActivity extends AppCompatActivity {
                     MP_Domain = "https://" + theSite + "/";
 
                     productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_WEBSTORE_DOMAIN_URL, MP_Domain);
-                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_WEBSTORE_NAME, "MyProtein" + " " + country_name);
+                    productContentValues.put(ProductsContract.ProductsEntry.COLUMN_WEBSTORE_NAME, webstoreName + " " + country_name);
 
                     Element titleElem = resultDocument.getElementsByClass("product-title").first();  // Titulo ou nome do produto
                     String title = titleElem != null ? titleElem.text() : "N/A";
@@ -928,7 +932,6 @@ public class DetailsActivity extends AppCompatActivity {
                                 @Override
                                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                                     gotImages = false;
-                                    addedNewProduct = false;
                                     getPriceMethod(arrayArray_opt_ids, variation_ids);
                                 }
 
@@ -955,7 +958,6 @@ public class DetailsActivity extends AppCompatActivity {
 
             } else {
                 NetworkUtils.showCustomSlimToast(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT);
-//                Toast.makeText(mActivity, "Details Fragment Terminated", Toast.LENGTH_SHORT).show();
             }
 
         }
