@@ -3,6 +3,8 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="@layout/details_activity_layout"
     android:orientation="vertical"
     android:padding="16dp">
 
@@ -10,9 +12,10 @@
         android:id="@+id/switch_notify"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:checked="true"
         android:hint="Notifies every price drop"
         android:text="Notifications"
-        android:layout_marginLeft="5dp"
         android:textOff="OFF"
         android:textOn="ON"
         android:textSize="14sp"/>
@@ -30,6 +33,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:checked="true"
             android:text="Notify every price drop"/>
 
         <android.support.v7.widget.AppCompatRadioButton
@@ -51,8 +55,8 @@
             android:id="@+id/tv_alert1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:layout_marginLeft="5dp"
+            android:layout_weight="1"
             android:text="Set target price: "
             android:textSize="14sp"/>
 

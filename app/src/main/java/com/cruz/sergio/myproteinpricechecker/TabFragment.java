@@ -22,6 +22,7 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.GETNEWS_ONSTART;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.TheMenuItem.lastMenuItem;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.mNavigationView;
 
@@ -118,6 +119,13 @@ public class TabFragment extends Fragment {
                     int index = extras.getInt("index");
                     viewPager.setCurrentItem(index);
                 }
+
+                if (!GETNEWS_ONSTART) {
+                    TabLayout.Tab tab = TabFragment.tabLayout.getTabAt(MainActivity.TAB_IDS.WATCHING);
+                    TabFragment.tabLayout.setScrollPosition(MainActivity.TAB_IDS.WATCHING, 0f, true);
+                    if (tab != null) tab.select();
+                }
+
             }
         });
 
@@ -166,6 +174,8 @@ public class TabFragment extends Fragment {
         });
         return tabLayout;
     }
+
+
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {

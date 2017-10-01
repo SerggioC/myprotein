@@ -253,6 +253,8 @@
                 android:layout_gravity="center_horizontal"
                 android:visibility="gone"/>
 
+            <include layout="@layout/notifications_alert_dialog"/>
+
             <RelativeLayout
                 android:id="@+id/llh_buttons"
                 android:layout_width="match_parent"

@@ -4,10 +4,10 @@ import android.app.Activity;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
-import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.CardView;
@@ -28,30 +28,32 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.net.ssl.HttpsURLConnection;
+
+import info.guardianproject.netcipher.NetCipher;
+
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.GETNEWS_ONSTART;
-import static com.cruz.sergio.myproteinpricechecker.TabFragment.tabLayout;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
 
 public class NewsFragment extends Fragment {
+    private static final int NUMBER_OF_NEWS_SITES = 2;
+    public int news_fetched = 0;
     Activity mActivity;
     SwipeRefreshLayout refreshNewsLayout;
     LinearLayout ll_news_vertical;
     RecyclerView newsListView;
-    private static final int NUMBER_OF_NEWS_SITES = 2;
-    public int news_fetched = 0;
     List<String> list_NewsContent = new ArrayList<>();
 
     NewsFetchedListener listener;
-    public interface NewsFetchedListener {
-        void OnNewsFetched(Boolean fetched);
-    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -117,32 +119,65 @@ public class NewsFragment extends Fragment {
             list_NewsContent.clear();
             list_NewsContent.add("header");
             newsListView.setAdapter(new RecyclerViewAdapter(list_NewsContent));
-            TabLayout.Tab tab = tabLayout.getTabAt(MainActivity.TAB_IDS.WATCHING);
-            tabLayout.setScrollPosition(MainActivity.TAB_IDS.WATCHING, 0f, true);
-            if (tab != null) tab.select();
         }
     }
 
+    public void getNews() {
+        AsyncTask<Void, Void, Boolean> internetAsyncTask = new checkInternetAsyncTask();
+        internetAsyncTask.execute();
+    }
+
+    private void set_webView(String news_text, int style) {
+        LayoutInflater inflater = (LayoutInflater) mActivity.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
+        View view = inflater.inflate(R.layout.news_webview_layout, null);
+        WebView webView = (WebView) view.findViewById(R.id.news_webview);
+        webView.getSettings().setBuiltInZoomControls(false);
+        webView.getSettings().setDisplayZoomControls(false);
+        webView.setVerticalScrollBarEnabled(false);
+        webView.setHorizontalScrollBarEnabled(false);
+
+        switch (style) {
+            case 0:
+                news_text = getCSS_Styling_MP(news_text);
+                break;
+            case 1:
+                news_text = getCSS_Styling_PRZ(news_text);
+                break;
+        }
+        webView.loadData(news_text, "text/html; charset=utf-8", "utf-8");
+        ll_news_vertical.addView(view);
+    }
+
+    private String getCSS_Styling_MP(String bodyHTML) {
+        String style = "<style>" +
+                "div{" +
+                "background-repeat:no-repeat;" +
+                "background-position: center center;" +
+                "background-size: cover;" +
+                "font-size:x-small;" +
+                "}" +
+                "</style>";
+        return "<html><head>" + style + "</head><body>" + bodyHTML + "</body></html>";
+    }
+
+    private String getCSS_Styling_PRZ(String bodyHTML) {
+        String style = "<style>" +
+                "img{" +
+                "width:100%;" +
+                "align-content:center center;" +
+                "}" +
+                "</style>";
+        return "<html><head>" + style + "</head><body>" + bodyHTML + "</body></html>";
+    }
+
+    public interface NewsFetchedListener {
+        void OnNewsFetched(Boolean fetched);
+    }
+
     public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapter.ViewHolder> {
-        private List<String> mDataset;
         static final int HEADER_VIEW = 0;
         static final int ITEM_VIEW = 1;
-
-        // Provide a reference to the views for each data item
-        // Complex data items may need more than one view per item, and
-        // you provide access to all the views for a data item in a view holder
-        public class ViewHolder extends RecyclerView.ViewHolder {
-            public WebView mWebView;
-
-            public ViewHolder(CardView c) {
-                super(c);
-                mWebView = (WebView) c.findViewById(R.id.news_webview);
-            }
-
-            public ViewHolder(RelativeLayout r) {
-                super(r);
-            }
-        }
+        private List<String> mDataset;
 
         // Provide a suitable constructor (depends on the kind of dataset)
         public RecyclerViewAdapter(List<String> myDataset) {
@@ -188,12 +223,23 @@ public class NewsFragment extends Fragment {
             }
         }
 
+        // Provide a reference to the views for each data item
+        // Complex data items may need more than one view per item, and
+        // you provide access to all the views for a data item in a view holder
+        public class ViewHolder extends RecyclerView.ViewHolder {
+            public WebView mWebView;
 
-    }
+            public ViewHolder(CardView c) {
+                super(c);
+                mWebView = (WebView) c.findViewById(R.id.news_webview);
+            }
 
-    public void getNews() {
-        AsyncTask<Void, Void, Boolean> internetAsyncTask = new checkInternetAsyncTask();
-        internetAsyncTask.execute();
+            public ViewHolder(RelativeLayout r) {
+                super(r);
+            }
+        }
+
+
     }
 
     public class checkInternetAsyncTask extends AsyncTask<Void, Void, Boolean> {
@@ -239,7 +285,9 @@ public class NewsFragment extends Fragment {
             this.url = params[0];
             Document resultDocument = null;
             try {
-                resultDocument = Jsoup.connect(url)
+                resultDocument = Jsoup
+                        .connect(url)
+                        .validateTLSCertificates(false)
                         .userAgent(userAgent)
                         .timeout(NET_TIMEOUT)
                         .maxBodySize(0) //sem limite de tamanho do doc recebido
@@ -291,11 +339,33 @@ public class NewsFragment extends Fragment {
             this.url = params[0];
             Document resultDocument = null;
             try {
-                resultDocument = Jsoup.connect(url)
-                        .userAgent(userAgent)
-                        .timeout(NET_TIMEOUT)
-                        .maxBodySize(0) //sem limite de tamanho do doc recebido
-                        .get();
+
+
+                if (android.os.Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+
+                    HttpsURLConnection netCipherconnection = NetCipher.getHttpsURLConnection(url);
+                    netCipherconnection.connect();
+
+                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(netCipherconnection.getInputStream()));
+                    StringBuilder stringBuilder = new StringBuilder();
+                    String stringHTML;
+                    while ((stringHTML = bufferedReader.readLine()) != null)
+                        stringBuilder.append(stringHTML);
+                    bufferedReader.close();
+
+                    resultDocument = Jsoup.parse(String.valueOf(stringBuilder));
+
+                } else {
+
+                    resultDocument = Jsoup
+                            .connect(url)
+                            .validateTLSCertificates(false)
+                            .userAgent(userAgent)
+                            .timeout(NET_TIMEOUT)
+                            .maxBodySize(0) //sem limite de tamanho do doc recebido
+                            .get();
+                }
+
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -340,46 +410,5 @@ public class NewsFragment extends Fragment {
         }
     }
 
-    private void set_webView(String news_text, int style) {
-        LayoutInflater inflater = (LayoutInflater) mActivity.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
-        View view = inflater.inflate(R.layout.news_webview_layout, null);
-        WebView webView = (WebView) view.findViewById(R.id.news_webview);
-        webView.getSettings().setBuiltInZoomControls(false);
-        webView.getSettings().setDisplayZoomControls(false);
-        webView.setVerticalScrollBarEnabled(false);
-        webView.setHorizontalScrollBarEnabled(false);
 
-        switch (style) {
-            case 0:
-                news_text = getCSS_Styling_MP(news_text);
-                break;
-            case 1:
-                news_text = getCSS_Styling_PRZ(news_text);
-                break;
-        }
-        webView.loadData(news_text, "text/html; charset=utf-8", "utf-8");
-        ll_news_vertical.addView(view);
-    }
-
-    private String getCSS_Styling_MP(String bodyHTML) {
-        String style = "<style>" +
-                "div{" +
-                "background-repeat:no-repeat;" +
-                "background-position: center center;" +
-                "background-size: cover;" +
-                "font-size:x-small;" +
-                "}" +
-                "</style>";
-        return "<html><head>" + style + "</head><body>" + bodyHTML + "</body></html>";
-    }
-
-    private String getCSS_Styling_PRZ(String bodyHTML) {
-        String style = "<style>" +
-                "img{" +
-                "width:100%;" +
-                "align-content:center center;" +
-                "}" +
-                "</style>";
-        return "<html><head>" + style + "</head><body>" + bodyHTML + "</body></html>";
-    }
 }

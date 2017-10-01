@@ -297,6 +297,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
     }
 
     @Override
@@ -716,7 +717,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                             radio_target[0].setEnabled(alertSwitch[0].isChecked());
                             alertTextView[0].setEnabled(alertSwitch[0].isChecked() && radio_target[0].isChecked());
                             alertTextView[0].setActivated(alertSwitch[0].isChecked() && radio_target[0].isChecked());
-                            alertTextView[0].setText(alertSwitch[0].isChecked() ? String.valueOf(notify_value) : "");
+                            alertTextView[0].setText(alertSwitch[0].isChecked() && radio_target[0].isChecked() ? String.valueOf(notify_value) : "");
                         }
                     });
 
@@ -778,7 +779,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                                         showCustomToast(mActivity, "Updated notifications for " + prod_name + "\n" +
                                                         (alertSwitch[0].isChecked() && radio_target[0].isChecked() ? "Alert when price reaches " + String.valueOf(target_val) :
                                                                 (alertSwitch[0].isChecked() && radio_every[0].isChecked()) ? "Alert every time price drops." : "Do not notify"),
-                                                R.mipmap.ic_info, R.color.f_color1, Toast.LENGTH_SHORT);
+                                                R.mipmap.ic_info, R.color.f_color1, Toast.LENGTH_LONG);
                                     } else {
                                         showCustomToast(mActivity, "Error updating notifications!",
                                                 R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);

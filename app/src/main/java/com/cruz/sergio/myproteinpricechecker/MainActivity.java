@@ -28,14 +28,8 @@ import static com.cruz.sergio.myproteinpricechecker.TabFragment.viewPager;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.UnregisterBroadcastReceiver;
 
 public class MainActivity extends AppCompatActivity {
+    public static final String PREFERENCE_FILE_NAME = "wpt_preferences_file";
     public static NavigationView mNavigationView;
-    DrawerLayout mDrawerLayout;
-    static FragmentManager mFragmentManager;
-    FragmentTransaction mFragmentTransaction;
-    Activity mActivity;
-    Handler mHandler;
-    Bundle indexBundle;
-    int index = 0;
     public static Boolean GETNEWS_ONSTART;
     public static Boolean CACHE_IMAGES;
     public static Boolean UPDATE_ONSTART;
@@ -43,21 +37,19 @@ public class MainActivity extends AppCompatActivity {
     public static float scale;
     public static int density;
     public static boolean detailsActivityIsActive;
-    public static final String PREFERENCE_FILE_NAME = "wpt_preferences_file";
-
-    public static class TAB_IDS {
-        public static final int NEWS = 0;
-        public static final int WATCHING = 1;
-        public static final int SEARCH = 2;
-        public static final int GRAPHS = 3;
-        public static final int VOUCHERS = 4;
-        public static final int CARTS = 5;
-    }
+    static FragmentManager mFragmentManager;
+    DrawerLayout mDrawerLayout;
+    FragmentTransaction mFragmentTransaction;
+    Activity mActivity;
+    Handler mHandler;
+    Bundle indexBundle;
+    int index = 0;
 
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState, @Nullable PersistableBundle persistentState) {
         super.onCreate(savedInstanceState, persistentState);
+
     }
 
     @Override
@@ -238,7 +230,6 @@ public class MainActivity extends AppCompatActivity {
 //        toolbar.getChildAt(0).setLayoutParams(lp);
 
 
-
         // Menu icons are inflated just as they were with actionbar
         // Sets the Toolbar to act as the ActionBar for this Activity window.
         // Make sure the toolbar exists in the activity and is not null
@@ -251,7 +242,6 @@ public class MainActivity extends AppCompatActivity {
         mDrawerToggle.syncState();
 
     }
-
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
@@ -292,8 +282,18 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    public static class TAB_IDS {
+        public static final int NEWS = 0;
+        public static final int WATCHING = 1;
+        public static final int SEARCH = 2;
+        public static final int GRAPHS = 3;
+        public static final int VOUCHERS = 4;
+        public static final int CARTS = 5;
+    }
+
     public static class TheMenuItem {
         static MenuItem lastMenuItem;
+
         TheMenuItem(MenuItem lastMenuItem) {
             this.lastMenuItem = lastMenuItem;
         }
