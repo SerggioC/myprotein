@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
@@ -13,6 +12,7 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,18 +28,13 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.net.ssl.HttpsURLConnection;
-
-import info.guardianproject.netcipher.NetCipher;
-
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.GETNEWS_ONSTART;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.getHTMLDocument_with_NetCipher;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
@@ -340,35 +335,25 @@ public class NewsFragment extends Fragment {
             Document resultDocument = null;
             try {
 
+                //if (android.os.Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+                //    resultDocument = getHTMLDocument_with_NetCipher(url);
+                //} else {
 
-                if (android.os.Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-
-                    HttpsURLConnection netCipherconnection = NetCipher.getHttpsURLConnection(url);
-                    netCipherconnection.connect();
-
-                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(netCipherconnection.getInputStream()));
-                    StringBuilder stringBuilder = new StringBuilder();
-                    String stringHTML;
-                    while ((stringHTML = bufferedReader.readLine()) != null)
-                        stringBuilder.append(stringHTML);
-                    bufferedReader.close();
-
-                    resultDocument = Jsoup.parse(String.valueOf(stringBuilder));
-
-                } else {
-
-                    resultDocument = Jsoup
-                            .connect(url)
-                            .validateTLSCertificates(false)
-                            .userAgent(userAgent)
-                            .timeout(NET_TIMEOUT)
-                            .maxBodySize(0) //sem limite de tamanho do doc recebido
-                            .get();
-                }
+                resultDocument = Jsoup
+                        .connect(url)
+                        .validateTLSCertificates(false)
+                        .userAgent(userAgent)
+                        .timeout(NET_TIMEOUT)
+                        .maxBodySize(0) //sem limite de tamanho do doc recebido
+                        .get();
+                //}
 
 
             } catch (IOException e) {
+                // may happen if (android.os.Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
                 e.printStackTrace();
+                Log.w("Sergio>", this + "doInBackground IOException: Going NetCipher");
+                resultDocument = getHTMLDocument_with_NetCipher(url);
             }
             return resultDocument;
         }

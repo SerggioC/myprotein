@@ -96,8 +96,8 @@ import static com.cruz.sergio.myproteinpricechecker.MainActivity.density;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
 import static com.cruz.sergio.myproteinpricechecker.R.id.main_cardview;
 import static com.cruz.sergio.myproteinpricechecker.TabFragment.tabLayout;
+import static com.cruz.sergio.myproteinpricechecker.helper.Alarm.updatePricesOnReceive;
 import static com.cruz.sergio.myproteinpricechecker.helper.FirebaseJobservice.LAST_DB_UPDATE_PREF_KEY;
-import static com.cruz.sergio.myproteinpricechecker.helper.FirebaseJobservice.updatePricesOnStart;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomSlimToast;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomToast;
 import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.ProductsEntry.ALL_PRODUCT_COLUMNS_PROJECTION;
@@ -253,7 +253,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     public void onStart() {
         super.onStart();
         if (UPDATE_ONSTART) {
-            FirebaseJobservice.updatePricesOnStart(mActivity, false, false, null);
+            //FirebaseJobservice.updatePricesOnStart(mActivity, false, false, null);
+            updatePricesOnReceive(mActivity, false, false, null);
         }
     }
 
@@ -281,7 +282,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                         timer.cancel();
                         timer.purge();
                         timer = new Timer();
-                        updatePricesOnStart(mActivity, false, false, null);
+                        //updatePricesOnStart(mActivity, false, false, null);
+                        updatePricesOnReceive(mActivity, false, false, null);
                     }
                 }
         );
@@ -810,7 +812,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                             @Override
                             public void onClick(View v) {
                                 //UPDATE THIS ITEM ONLY
-                                updatePricesOnStart(mActivity, false, true, String.valueOf(this_product_id));
+                                //updatePricesOnStart(mActivity, false, true, String.valueOf(this_product_id));
+                                updatePricesOnReceive(mActivity, false, true, String.valueOf(this_product_id));
                                 v.setVisibility(View.GONE);
                                 viewHolder.small_pb_undercard.setVisibility(View.VISIBLE);
                             }
@@ -839,7 +842,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                                                     showCustomToast(mActivity, "Error deleting " + prod_name + " from DataBase!",
                                                             R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
                                                 }
-
 
                                             }
                                         })

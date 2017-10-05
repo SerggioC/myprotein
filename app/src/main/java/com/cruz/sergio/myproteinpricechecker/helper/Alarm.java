@@ -1,7 +1,9 @@
 package com.cruz.sergio.myproteinpricechecker.helper;
 
+import android.app.AlarmManager;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -12,15 +14,13 @@ import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
-import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.NotificationCompat;
 import android.text.TextUtils;
 import android.util.Log;
 
 import com.cruz.sergio.myproteinpricechecker.MainActivity;
 import com.cruz.sergio.myproteinpricechecker.R;
-import com.firebase.jobdispatcher.JobParameters;
-import com.firebase.jobdispatcher.JobService;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -33,54 +33,63 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static android.content.Context.MODE_PRIVATE;
+import static android.content.Context.NOTIFICATION_SERVICE;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
-import static com.cruz.sergio.myproteinpricechecker.helper.StartFirebase.JOB_DELTA_INTERVAL_BUNDLE;
 import static com.cruz.sergio.myproteinpricechecker.helper.StartFirebase.MINIMUM_DELTA_INTERVAL;
 
 /**
- * Created by Sergio on 03/06/2017.
- * Extends Service
- * https://github.com/firebase/firebase-jobdispatcher-android
+ * Created by Sergio on 03/10/2017.
  */
-public class FirebaseJobservice extends JobService {
+
+public class Alarm extends BroadcastReceiver {
+    public static final String ACTION_ALARM_REF = "ACTION_ALARM";
+    public static final int ALARM_REQ_CODE = 0;
+    public static final String LAST_DB_UPDATE_PREF_KEY = "last_db_update";
     static final String JSON_METHOD = "getUpdatedJSONPrice";
     static final String BASE_METHOD = "getUpdatedBasePrice";
-    public static final String LAST_DB_UPDATE_PREF_KEY = "last_db_update";
     public static UpdateCompleteListener listener;
     static Boolean isJob;
     static Boolean isSingleLine;
     static String singleLineID;
     static int job_delta_time = 0;
+    static SharedPreferences sharedPref;
     private static int cursorSize;
     private static int currentCursor;
-    static SharedPreferences sharedPref;
-    public static int SERVICE_ID = 1;
 
-    public static void updatePricesOnStart(Context context, Boolean isJob, Boolean isSingleLine, String singleLineID) {
-        FirebaseJobservice.isJob = isJob;
-        FirebaseJobservice.isSingleLine = isSingleLine;
-        FirebaseJobservice.singleLineID = singleLineID;
+    public void setAlarm(Context context) {
+        Log.i("Sergio>", this + " Alarm extends BroadcastReceiver setAlarm()");
+        int DELTA_INTERVAL; // em segundos
+
+        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
+        DELTA_INTERVAL = Integer.parseInt(sharedPrefs.getString("sync_frequency", String.valueOf(MINIMUM_DELTA_INTERVAL)));
+        if (DELTA_INTERVAL < MINIMUM_DELTA_INTERVAL || DELTA_INTERVAL < 0) DELTA_INTERVAL = MINIMUM_DELTA_INTERVAL;
+
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(ACTION_ALARM_REF, null, context, Alarm.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, ALARM_REQ_CODE, intent, PendingIntent.FLAG_CANCEL_CURRENT);
+        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), DELTA_INTERVAL, pendingIntent);
+        // *** Repete o alarme a cada DELTA_INTERVAL segundos ***
+    }
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        Log.w("Sergio>", this + " onReceive() Received alarm intent");
+        updatePricesOnReceive(context, true, false, null);
+    }
+
+    public static void updatePricesOnReceive(Context context, Boolean isJob, Boolean isSingleLine, String singleLineID) {
+        Log.d("Sergio>", "Alarm updatePricesOnReceive()" );
+        Alarm.isJob = isJob;
+        Alarm.isSingleLine = isSingleLine;
+        Alarm.singleLineID = singleLineID;
         DBHelper dbHelper = new DBHelper(context);
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         String job_status = "null";
 
-//        Cursor cursor = db.rawQuery("SELECT " + ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_DATE +
-//                        " FROM " + ProductsContract.PricesEntry.TABLE_NAME +
-//                        " WHERE " + ProductsContract.PricesEntry._ID + " = " +
-//                        "(SELECT MAX(" + ProductsContract.PricesEntry._ID + ") FROM " +
-//                        ProductsContract.PricesEntry.TABLE_NAME + ");"
-//                , null);
-//
-//        long now = System.currentTimeMillis();
-//        long last_saved_date = now;
-//        if (cursor.getCount() > 0 && cursor.moveToFirst()) {
-//            last_saved_date = cursor.getLong(cursor.getColumnIndex(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_DATE));
-//        }
-
-
-        // Parâmetro único centralizado para última atualização da Database, mais eficiente que o anterior.
+        // Parâmetro único centralizado para guardar última atualização da Database, mais eficiente que o anterior (checkar a DB toda).
         sharedPref = context.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE);
         long now = System.currentTimeMillis();
         long last_saved_date = sharedPref.getLong(LAST_DB_UPDATE_PREF_KEY, now);
@@ -88,11 +97,11 @@ public class FirebaseJobservice extends JobService {
 
         // Limitar fazer demasiados requests quando o tempo é menor que MINIMUM_DELTA_INTERVAL ou (job_delta_time) 3hr
         if (calculated_delta_t < job_delta_time && isJob) {
-            Log.w("Sergio>", "FirebaseJobservice updatePricesOnStart: \n" +
+            Log.w("Sergio>", "Alarm OnReceive: \n" +
                     "Too soon to save to database wait up Job!");
             job_status = "postpone";
         } else if (calculated_delta_t > job_delta_time && isJob || !isJob || isSingleLine) {
-            Log.w("Sergio>", "FirebaseJobservice updatePricesOnStart: \n" +
+            Log.w("Sergio>", "Alarm OnReceive: \n" +
                     "Starting update!");
 
             String singleLineRef = isSingleLine ? " WHERE " + ProductsContract.ProductsEntry._ID + " = '" + singleLineID + "'" : "";
@@ -180,6 +189,32 @@ public class FirebaseJobservice extends JobService {
             cursor.close();
         }
         db.close();
+    }
+
+
+
+    static class CursorObj {
+        int row_id;
+        String prod_name;
+        String jsonURL;
+        String baseURL;
+        double min_price;
+        double max_price;
+        double actual_price;
+        long actual_price_date;
+        double previous_price;
+
+        CursorObj(int row_id, String prod_name, String jsonURL, String baseURL, double min_price, double max_price, double actual_price, long actual_price_date, double previous_price) {
+            this.row_id = row_id;
+            this.prod_name = prod_name;
+            this.jsonURL = jsonURL;
+            this.baseURL = baseURL;
+            this.min_price = min_price;
+            this.max_price = max_price;
+            this.actual_price = actual_price;
+            this.actual_price_date = actual_price_date;
+            this.previous_price = previous_price;
+        }
     }
 
     private static void savePriceToDB(Context context, CursorObj cursorObj, String priceString) {
@@ -275,65 +310,6 @@ public class FirebaseJobservice extends JobService {
 
     }
 
-    public void setUpdateCompleteListener(UpdateCompleteListener listener) {
-        FirebaseJobservice.listener = listener;
-    }
-
-    @Override
-    public boolean onStartJob(JobParameters job) {
-        // Do some work here
-        Log.w("Sergio>", this + "\nonStartJob");
-        Bundle extras = job.getExtras();
-        if (extras != null) {
-            job_delta_time = extras.getInt(JOB_DELTA_INTERVAL_BUNDLE);
-        } else {
-            job_delta_time = MINIMUM_DELTA_INTERVAL;
-        }
-
-        updatePricesOnStart(this.getApplicationContext(), true, false, null);
-        return false; // Answers the question: "Is there still work going on?"
-    }
-
-    @Override
-    public boolean onStopJob(JobParameters job) {
-        Log.w("Sergio>", this + "\nonStopJob: FirebaseJobservice");
-        return true; // Answers the question: "Should this job be retried?"
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-    }
-
-    // This interface defines the type of messages I want to communicate to my owner
-    public interface UpdateCompleteListener {
-        void onUpdateReady(Boolean isReady, Boolean isSingleLine);
-    }
-
-    static class CursorObj {
-        int row_id;
-        String prod_name;
-        String jsonURL;
-        String baseURL;
-        double min_price;
-        double max_price;
-        double actual_price;
-        long actual_price_date;
-        double previous_price;
-
-        CursorObj(int row_id, String prod_name, String jsonURL, String baseURL, double min_price, double max_price, double actual_price, long actual_price_date, double previous_price) {
-            this.row_id = row_id;
-            this.prod_name = prod_name;
-            this.jsonURL = jsonURL;
-            this.baseURL = baseURL;
-            this.min_price = min_price;
-            this.max_price = max_price;
-            this.actual_price = actual_price;
-            this.actual_price_date = actual_price_date;
-            this.previous_price = previous_price;
-        }
-    }
-
     static class checkInternetAsyncMethod2 extends AsyncTask<CursorObj, Void, Boolean> {
         String method;
         Context context;
@@ -370,7 +346,7 @@ public class FirebaseJobservice extends JobService {
                         break;
                     }
                     default: {
-                        Log.e("Sergio>", this + " onPostExecute: invalid method given in switch, FirebaseJobService");
+                        Log.e("Sergio>", this + " onPostExecute: invalid method given in switch, Alarm");
                         break;
                     }
                 }
@@ -481,5 +457,19 @@ public class FirebaseJobservice extends JobService {
         }
     }
 
-}
 
+    public void cancelAlarm(Context context) {
+        Log.i("Sergio>", this + " Alarm extends BroadcastReceiver cancelAlarm()");
+        Intent intent = new Intent(ACTION_ALARM_REF, null, context, Alarm.class);
+        PendingIntent sender = PendingIntent.getBroadcast(context, ALARM_REQ_CODE, intent, PendingIntent.FLAG_CANCEL_CURRENT);
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        alarmManager.cancel(sender);
+    }
+
+
+    // This interface defines the type of messages I want to communicate to my owner
+    public interface UpdateCompleteListener {
+        void onUpdateReady(Boolean isReady, Boolean isSingleLine);
+    }
+
+}

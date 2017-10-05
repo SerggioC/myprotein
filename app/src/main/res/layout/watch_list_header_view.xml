@@ -7,17 +7,21 @@
     android:layout_marginBottom="2dp">
 
     <ImageView
+        android:id="@+id/ic_blue_eye"
         android:layout_width="40dp"
         android:layout_height="40dp"
+        android:contentDescription="View icon"
         android:src="@mipmap/ic_blue_eye"/>
 
     <TextView
         android:id="@+id/watching_txtv1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_toRightOf="@id/ic_blue_eye"
+        android:gravity="center"
         android:text="Swipe down to update"
         android:textAlignment="center"
-        android:gravity="center_horizontal"
         android:textColor="@color/colorPrimaryDarker"
         android:textSize="16sp"/>
 
@@ -26,6 +30,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/watching_txtv1"
+        android:layout_centerHorizontal="true"
+        android:layout_toRightOf="@id/ic_blue_eye"
         android:gravity="center"
         android:orientation="horizontal">
 

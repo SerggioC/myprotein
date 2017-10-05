@@ -68,6 +68,7 @@ import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.STATUS_N
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.STATUS_OK;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.UNSUPPORTED_MIME_TYPE;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.getHTMLDocument_with_NetCipher;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomSlimToast;
@@ -668,7 +669,7 @@ public class SearchFragment extends Fragment {
         }
     }
 
-    class ProzisSearch extends AsyncTask<String, Void, ConnectionObject> {
+    private class ProzisSearch extends AsyncTask<String, Void, ConnectionObject> {
         String PRZ_Domain = "https://www.prozis.com";
         String searchString;
         int thisWebstoreIndex;
@@ -689,6 +690,7 @@ public class SearchFragment extends Fragment {
         protected ConnectionObject doInBackground(String... params) {
             Document resultDocument = null;
             int resultStatus;
+            String queryStrURL = new String();
 
             try {
                 searchString = params[0];
@@ -699,15 +701,15 @@ public class SearchFragment extends Fragment {
                 String prz_country = prefManager.getString("prz_website_location", "pt").toLowerCase();
                 String prz_language = prefManager.getString("prz_language", "pt");
                 //String queryStrURL = PRZ_Domain + "/" + prz_country + "/" + prz_language + "/" + "search/q/page/" + pageNumber_PRZ + "/text/" + searchString;
-                String queryStrURL = PRZ_Domain + "/" + prz_country + "/" + prz_language + "/" + "search/q/ctype/inline/page/" + pageNumber_PRZ + "/text/" + searchString;
+                queryStrURL = PRZ_Domain + "/" + prz_country + "/" + prz_language + "/" + "search/q/ctype/inline/page/" + pageNumber_PRZ + "/text/" + searchString;
                 Log.i("Sergio>>>", "ProzisSearch: queryStrURL=" + queryStrURL);
 
+                searchTypeURL = 5;
 //1              https://www.prozis.com/pt/pt/search/q/text/whey
 //2              https://www.prozis.com/pt/pt/search?text=whey
 //3              https://www.prozis.com/pt/pt/catalog/search-suggestions?text=whey
 //4              https://www.prozis.com/pt/pt/search/q/page/1/text/whey?jsonpCallback=jsonpCallback
 //5              https://www.prozis.com/pt/pt/search/q/ctype/inline/page/1/text/whey
-                searchTypeURL = 5;
 
                 resultDocument = Jsoup.connect(queryStrURL)
                         .userAgent(userAgent)
@@ -725,7 +727,14 @@ public class SearchFragment extends Fragment {
             } catch (HttpStatusException e4) {
                 resultStatus = STATUS_NOT_OK;
             } catch (IOException e4) {
-                resultStatus = IOEXCEPTION;
+                try {
+                    Log.w("Sergio>", this + "doInBackground IOException: Going NetCipher");
+                    resultDocument = getHTMLDocument_with_NetCipher(queryStrURL);
+                    resultStatus = STATUS_OK;
+                } catch (Exception e) {
+                    resultStatus = IOEXCEPTION;
+                    e.printStackTrace();
+                }
             }
             return new ConnectionObject(resultDocument, resultStatus);
         }

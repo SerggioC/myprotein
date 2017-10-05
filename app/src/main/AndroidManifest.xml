@@ -94,22 +94,6 @@
             android:multiprocess="true">
         </provider>
 
-        <!--
-                    <service
-                    android:name=".helper.UpdatePricesService"
-                    android:enabled="true"
-                    android:exported="false"
-                    android:persistent="true"/>
-        -->
-
-
-        <!-- <receiver android:name=".helper.ReceiveBootCompleted"> -->
-        <!-- <intent-filter> -->
-        <!-- <action android:name="android.intent.action.BOOT_COMPLETED"/> -->
-        <!-- <action android:name="android.intent.action.QUICKBOOT_POWERON"/> -->
-        <!-- </intent-filter> -->
-        <!-- </receiver> -->
-
         <service
             android:name=".helper.FirebaseJobservice"
             android:exported="false">
@@ -117,6 +101,30 @@
                 <action android:name="com.firebase.jobdispatcher.ACTION_EXECUTE"/>
             </intent-filter>
         </service>
+
+        <receiver
+            android:name=".helper.AutoStartAlarm"
+            android:enabled="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+                <action android:name="android.intent.action.REBOOT"/>
+            </intent-filter>
+
+        </receiver>
+
+        <receiver
+            android:name=".helper.Alarm"
+            android:enabled="true">
+
+            <intent-filter>
+                <action android:name="com.cruz.sergio.myproteinpricechecker.ACTION_ALARM"/>
+            </intent-filter>
+
+        </receiver>
+
 
     </application>
 

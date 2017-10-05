@@ -25,8 +25,17 @@ import android.widget.Toast;
 
 import com.cruz.sergio.myproteinpricechecker.R;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
+
+import javax.net.ssl.HttpsURLConnection;
+
+import info.guardianproject.netcipher.NetCipher;
 
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.BC_Registered;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
@@ -185,5 +194,20 @@ public class NetworkUtils {
 
     }
 
-
+    public static Document getHTMLDocument_with_NetCipher(String url) {
+        StringBuilder stringBuilder = new StringBuilder();
+        try {
+            HttpsURLConnection netCipherconnection = NetCipher.getHttpsURLConnection(url);
+            netCipherconnection.connect();
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(netCipherconnection.getInputStream()));
+            String stringHTML;
+            while ((stringHTML = bufferedReader.readLine()) != null)
+                stringBuilder.append(stringHTML);
+            bufferedReader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return Jsoup.parse(String.valueOf(stringBuilder));
+    }
 }

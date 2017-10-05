@@ -3,8 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/news_rl_header"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:gravity="center_horizontal">
+    android:layout_height="wrap_content">
 
     <ImageView
         android:id="@+id/image_news"
@@ -14,30 +13,27 @@
         android:src="@drawable/ic_news_blue"/>
 
     <TextView
+        android:gravity="center"
+        android:layout_centerHorizontal="true"
         android:id="@+id/textView1_news"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fontFamily="serif"
         android:text="Latest News and Offers"
+        android:layout_toRightOf="@id/image_news"
         android:textAlignment="center"
         android:textColor="@android:color/holo_red_light"
         android:textSize="20sp"/>
 
     <TextView
+        android:gravity="center"
+        android:layout_centerHorizontal="true"
         android:id="@+id/swipe_news"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/textView1_news"
+        android:layout_toRightOf="@id/image_news"
         android:text="Swipe down to update"
         android:textAlignment="center"/>
-
-    <ProgressBar
-        android:id="@+id/news_progressBar"
-        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/swipe_news"
-        android:indeterminate="true"
-        android:visibility="gone"/>
 
 </RelativeLayout>

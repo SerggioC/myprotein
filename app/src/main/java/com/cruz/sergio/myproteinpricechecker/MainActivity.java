@@ -6,9 +6,7 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.PersistableBundle;
 import android.preference.PreferenceManager;
-import android.support.annotation.Nullable;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.FragmentManager;
@@ -20,8 +18,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
-import com.cruz.sergio.myproteinpricechecker.helper.StartFirebase;
+import com.cruz.sergio.myproteinpricechecker.helper.Alarm;
 
 import static com.cruz.sergio.myproteinpricechecker.TabFragment.tabLayout;
 import static com.cruz.sergio.myproteinpricechecker.TabFragment.viewPager;
@@ -45,11 +42,21 @@ public class MainActivity extends AppCompatActivity {
     Bundle indexBundle;
     int index = 0;
 
+    public static final class TAB_IDS {
+        public static final int NEWS = 0;
+        public static final int WATCHING = 1;
+        public static final int SEARCH = 2;
+        public static final int GRAPHS = 3;
+        public static final int VOUCHERS = 4;
+        public static final int CARTS = 5;
+    }
 
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState, @Nullable PersistableBundle persistentState) {
-        super.onCreate(savedInstanceState, persistentState);
+    public static class TheMenuItem {
+        static MenuItem lastMenuItem;
 
+        TheMenuItem(MenuItem lastMenuItem) {
+            this.lastMenuItem = lastMenuItem;
+        }
     }
 
     @Override
@@ -60,7 +67,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        BC_Registered = NetworkUtils.createBroadcast(mActivity);
     }
 
     @Override
@@ -134,16 +140,22 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         mActivity = this;
 
+        Alarm alarm = new Alarm();
+        alarm.setAlarm(this);
+
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
 
         CACHE_IMAGES = sharedPrefs.getBoolean("cache_images", false);
         UPDATE_ONSTART = sharedPrefs.getBoolean("update_on_start", false);
         GETNEWS_ONSTART = sharedPrefs.getBoolean("getnews_on_start", true);
 
-        StartFirebase.createJobDispatcher(this);
 
+        /* THIS IS WORKING
+//*
+//*        StartFirebase.createJobDispatcher(this);
+//*
+*/
         setContentView(R.layout.activity_main);
-
 
         scale = getResources().getDisplayMetrics().density;
         density = getResources().getDisplayMetrics().densityDpi;
@@ -281,23 +293,5 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
-
-    public static class TAB_IDS {
-        public static final int NEWS = 0;
-        public static final int WATCHING = 1;
-        public static final int SEARCH = 2;
-        public static final int GRAPHS = 3;
-        public static final int VOUCHERS = 4;
-        public static final int CARTS = 5;
-    }
-
-    public static class TheMenuItem {
-        static MenuItem lastMenuItem;
-
-        TheMenuItem(MenuItem lastMenuItem) {
-            this.lastMenuItem = lastMenuItem;
-        }
-    }
-
 
 }

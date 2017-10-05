@@ -11,6 +11,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 
 import static com.cruz.sergio.myproteinpricechecker.R.id.webview;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.getHTMLDocument_with_NetCipher;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
@@ -89,6 +91,23 @@ public class VoucherFragment extends Fragment {
         internetAsyncTask.execute();
 
 
+    }
+
+    private void setStoreLogo(int logo) {
+        ImageView image = new ImageView(mActivity);
+        float dpvalue = 8;
+        int pixels = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dpvalue, getResources().getDisplayMetrics());
+        image.setPadding(0, pixels, 0, pixels);
+        image.setImageResource(logo);
+        ll_scroll.addView(image);
+    }
+
+    private void set_webView(String voucherText) {
+        LayoutInflater inflater = (LayoutInflater) mActivity.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
+        View view = inflater.inflate(R.layout.voucher_webview, null);
+        WebView webView = (WebView) view.findViewById(webview);
+        webView.loadData(voucherText, "text/html; charset=utf-8", "utf-8");
+        ll_scroll.addView(view);
     }
 
     public class checkInternetAsyncTask extends AsyncTask<Void, Void, Boolean> {
@@ -186,7 +205,7 @@ public class VoucherFragment extends Fragment {
     class GetPRZVouchersAsync extends AsyncTask<String, Void, Document> {
         @Override
         protected Document doInBackground(String... params) {
-            Document resultDocument = null;
+            Document resultDocument;
             try {
                 resultDocument = Jsoup.connect(params[0])
                         .userAgent(userAgent)
@@ -195,7 +214,10 @@ public class VoucherFragment extends Fragment {
                         .get();
 
             } catch (IOException e) {
+                // may happen if (android.os.Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
                 e.printStackTrace();
+                Log.w("Sergio>", this + "doInBackground IOException: Going NetCipher");
+                resultDocument = getHTMLDocument_with_NetCipher(params[0]);
             }
             return resultDocument;
         }
@@ -219,23 +241,6 @@ public class VoucherFragment extends Fragment {
             }
             mySwipeRefreshLayout.setRefreshing(false);
         }
-    }
-
-    private void setStoreLogo(int logo) {
-        ImageView image = new ImageView(mActivity);
-        float dpvalue = 8;
-        int pixels = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dpvalue, getResources().getDisplayMetrics());
-        image.setPadding(0, pixels, 0, pixels);
-        image.setImageResource(logo);
-        ll_scroll.addView(image);
-    }
-
-    private void set_webView(String voucherText) {
-        LayoutInflater inflater = (LayoutInflater) mActivity.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
-        View view = inflater.inflate(R.layout.voucher_webview, null);
-        WebView webView = (WebView) view.findViewById(webview);
-        webView.loadData(voucherText, "text/html; charset=utf-8", "utf-8");
-        ll_scroll.addView(view);
     }
 
     private class postToWebviewAdapter extends ArrayAdapter {

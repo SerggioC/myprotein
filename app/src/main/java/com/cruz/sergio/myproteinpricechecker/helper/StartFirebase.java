@@ -20,7 +20,7 @@ import com.firebase.jobdispatcher.Trigger;
  */
 
 public class StartFirebase {
-    public static final int MINIMUM_DELTA_INTERVAL = 6 * 60 * 60; // 6hr em segundos
+    public static final int MINIMUM_DELTA_INTERVAL = 3 * 60 * 60; // 3hr em segundos
     public static final String JOB_DELTA_INTERVAL_BUNDLE = "delta_interval";
 
     // Só repete os jobs com o aparelho em carga ou com o modo de economia de energia desativado
