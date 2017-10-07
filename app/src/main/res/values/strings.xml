@@ -14,21 +14,23 @@
     <string name="pref_ringtone_silent">Silent</string>
     <string name="pref_title_vibrate">Vibration</string>
 
-
-    <string name="pref_title_sync_frequency">Sync frequency</string>
+    <!-- Milliseconds -->
+    <string name="pref_title_sync_frequency">Prices Update Frequency</string>
     <string-array name="pref_sync_frequency_titles">
         <item>3 hours</item>
         <item>6 hours</item>
         <item>12 hours</item>
         <item>24 hours</item>
+        <item>36 hours</item>
         <item>48 hours</item>
     </string-array>
     <string-array name="pref_sync_frequency_values">
-        <item>180</item>
-        <item>360</item>
-        <item>720</item>
-        <item>1440</item>
-        <item>2880</item>
+        <item>10800000</item>
+        <item>21600000</item>
+        <item>43200000</item>
+        <item>86400000</item>
+        <item>129600000</item>
+        <item>172800000</item>
     </string-array>
 
     <string name="settings_title">Settings</string>

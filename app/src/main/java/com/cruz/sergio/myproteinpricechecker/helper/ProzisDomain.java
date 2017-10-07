@@ -1,10 +1,34 @@
 package com.cruz.sergio.myproteinpricechecker.helper;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * Created by Sergio on 17/09/2017.
  */
 
 public class ProzisDomain {
+
+    public static String getProzisWebLocation(String przCountry) {
+        List<String> ww_arr = Arrays.asList("AL", "DZ", "AR", "AM", "AU", "BA", "BO", "BW", "CV", "CM", "CA", "ECT",
+                "CL", "CO", "CU", "DO", "EC", "EG", "MK", "FO", "GP", "GT", "GG", "GF", "HT", "HK", "IN", "ID",
+                "IM", "IL", "JM", "JP", "JE", "LB", "LI", "MO", "MY", "MQ", "UM", "MC", "ME", "MA", "MZ", "MX",
+                "NZ", "NI", "NG", "NO", "PA", "PY", "PE", "PH", "PR", "RE", "BL", "SA", "RS", "SG", "SO", "ZA",
+                "LK", "ST", "SN", "TW", "TH", "TL", "TN", "TR", "AE", "US", "UY", "VE");
+        List<String> ru_arr = Arrays.asList("AZ", "BY", "GE", "KZ", "MD", "RU", "UA", "UZ");
+        List<String> eu_arr = Arrays.asList("BG", "CY", "CZ", "EE", "HR", "IS", "LV", "LT", "HU", "MT", "RO", "SI");
+
+        if (ww_arr.contains(przCountry)) {
+            return "ww";
+        } else if (ru_arr.contains(przCountry)) {
+            return "ru";
+        } else if (eu_arr.contains(przCountry)) {
+            return "eu";
+        } else {
+            return przCountry.toLowerCase();
+        }
+    }
+
 //
 //    public static final String getHref(String country, String language) {
 //        String country_href = "";

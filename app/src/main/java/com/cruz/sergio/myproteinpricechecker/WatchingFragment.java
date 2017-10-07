@@ -60,8 +60,8 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
+import com.cruz.sergio.myproteinpricechecker.helper.Alarm;
 import com.cruz.sergio.myproteinpricechecker.helper.DBHelper;
-import com.cruz.sergio.myproteinpricechecker.helper.FirebaseJobservice;
 import com.cruz.sergio.myproteinpricechecker.helper.ProductsContract;
 
 import org.json.JSONArray;
@@ -211,8 +211,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             imageSizesToUse = new String[]{"270x270", "300x300", "350x350"};
         }
 
-        FirebaseJobservice jobservice = new FirebaseJobservice();
-        jobservice.setUpdateCompleteListener(new FirebaseJobservice.UpdateCompleteListener() {
+        Alarm alarm_jobservice = new Alarm();
+        alarm_jobservice.setUpdateCompleteListener(new Alarm.UpdateCompleteListener() {
             @Override
             public void onUpdateReady(Boolean isReady, Boolean isSingleLine) {
                 Log.w("Sergio>", this + "\n" + "onUpdateReady= " + isReady);
@@ -221,7 +221,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                         watchingSwipeRefreshLayout.setRefreshing(false);
                     }
                     if (isReady || isSingleLine) {
-                        //TODO TCHARAM ACABOU DE ATUALIZAR UMA LINHA!!!!
                         timer.cancel();
                         timer.purge();
                         timer = new Timer();

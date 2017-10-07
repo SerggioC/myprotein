@@ -697,8 +697,12 @@ public class SearchFragment extends Fragment {
                 if (params.length > 1) {
                     pageNumber_PRZ = Integer.parseInt(params[1]);
                 }
+
+
+                SharedPreferences sharedPrefEditor = mActivity.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE);
+                String prz_country = sharedPrefEditor.getString("prz_website_location", "pt");
+
                 SharedPreferences prefManager = PreferenceManager.getDefaultSharedPreferences(mActivity);
-                String prz_country = prefManager.getString("prz_website_location", "pt").toLowerCase();
                 String prz_language = prefManager.getString("prz_language", "pt");
                 //String queryStrURL = PRZ_Domain + "/" + prz_country + "/" + prz_language + "/" + "search/q/page/" + pageNumber_PRZ + "/text/" + searchString;
                 queryStrURL = PRZ_Domain + "/" + prz_country + "/" + prz_language + "/" + "search/q/ctype/inline/page/" + pageNumber_PRZ + "/text/" + searchString;

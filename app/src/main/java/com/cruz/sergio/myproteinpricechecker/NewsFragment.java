@@ -32,7 +32,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static android.content.Context.MODE_PRIVATE;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.GETNEWS_ONSTART;
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.getHTMLDocument_with_NetCipher;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
@@ -250,16 +252,21 @@ public class NewsFragment extends Fragment {
 
             if (hasInternet) {
                 SharedPreferences prefManager = PreferenceManager.getDefaultSharedPreferences(mActivity);
-                String pref_MP_Domain = prefManager.getString("mp_website_location", "en-gb");
+                String pref_MP_Domain = prefManager.getString("mp_website_location", "pt-pt");
                 String MP_Domain = MyProteinDomain.getHref(pref_MP_Domain);
                 AsyncTask<String, Void, Document> getMPNewsAsync = new GetMPNewsAsync();
                 getMPNewsAsync.executeOnExecutor(THREAD_POOL_EXECUTOR, MP_Domain);
 
-                String prz_country = prefManager.getString("prz_website_location", "pt").toLowerCase();
+                SharedPreferences sharedPrefEditor = mActivity.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE);
+                String prz_country = sharedPrefEditor.getString("prz_website_location", "pt");
                 String prz_language = prefManager.getString("prz_language", "pt");
                 String PRZ_Domain = "https://www.prozis.com" + "/" + prz_country + "/" + prz_language + "/";
                 AsyncTask<String, Void, Document> getPRZNewsAsync = new GetPRZNewsAsync();
                 getPRZNewsAsync.executeOnExecutor(THREAD_POOL_EXECUTOR, PRZ_Domain);
+
+                Log.i("Sergio>", this + "\n" +
+                        "NEWS MP_Domain= " + MP_Domain + "\n" +
+                        "NEWS PRZ_Domain= " + PRZ_Domain);
 
             } else {
                 if (noNetworkSnackBar != null && !noNetworkSnackBar.isShown()) {
@@ -311,16 +318,12 @@ public class NewsFragment extends Fragment {
                             newsText = newsText.replaceAll(replace, "href=\"" + url);
                         }
                         list_NewsContent.add(getCSS_Styling_MP(newsText));
-
-                        //set_webView(newsText, 0);
                     }
                 } else {
-
                     list_NewsContent.add("Myprotein news not available");
-
-                    //set_webView("Myprotein news not available", -1);
-
                 }
+            } else {
+                list_NewsContent.add("Myprotein news not available");
             }
             listener.OnNewsFetched(true);
         }
@@ -386,9 +389,9 @@ public class NewsFragment extends Fragment {
                     }
                 } else {
                     list_NewsContent.add("Prozis news not available");
-                    //set_webView("No News Found", -1);
-
                 }
+            } else {
+                list_NewsContent.add("Prozis news not available");
             }
 
             listener.OnNewsFetched(true);

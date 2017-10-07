@@ -32,6 +32,8 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import static android.content.Context.MODE_PRIVATE;
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
 import static com.cruz.sergio.myproteinpricechecker.R.id.webview;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.getHTMLDocument_with_NetCipher;
@@ -138,14 +140,17 @@ public class VoucherFragment extends Fragment {
                     voucher_url_sufix = "cupoes-desconto-myprotein.list";
                 } else {
                     voucher_url_sufix = "voucher-codes.list";
-
                 }
 
                 String mp_voucher_url = MP_Domain + voucher_url_sufix;
                 AsyncTask<String, Void, Document> getMPVouchersAsync = new GetMPVouchersAsync();
                 getMPVouchersAsync.executeOnExecutor(THREAD_POOL_EXECUTOR, mp_voucher_url);
 
-                String prz_voucher_url = "https://www.prozis.com/pt/pt/promotional-coupons";
+                SharedPreferences sharedPrefEditor = mActivity.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE);
+                String prz_country = sharedPrefEditor.getString("prz_website_location", "pt");
+                String prz_language = prefManager.getString("prz_language", "pt");
+
+                String prz_voucher_url = "https://www.prozis.com/" + prz_country + "/" + prz_language + "/promotional-coupons";
                 AsyncTask<String, Void, Document> GetPRZVouchersAsync = new GetPRZVouchersAsync();
                 GetPRZVouchersAsync.executeOnExecutor(THREAD_POOL_EXECUTOR, prz_voucher_url);
 
@@ -182,8 +187,8 @@ public class VoucherFragment extends Fragment {
         @Override
         protected void onPostExecute(Document document) {
             super.onPostExecute(document);
-            setStoreLogo(R.drawable.myprotein_logo);
-            if (document != null) {
+            if (document != null && VoucherFragment.this.isAdded()) {
+                setStoreLogo(R.drawable.myprotein_logo);
                 Elements voucherElements = document.getElementsByClass("voucher-info-wrapper");
                 if (voucherElements != null && voucherElements.size() != 0) {
                     for (int i = 0; i < voucherElements.size(); i++) {
@@ -197,7 +202,11 @@ public class VoucherFragment extends Fragment {
 
                         set_webView(voucherText);
                     }
+                } else {
+                    set_webView("No available Myprotein coupons or discount codes.");
                 }
+            } else {
+                set_webView("Couldn't get Myprotein coupons webpage.\nTry again later");
             }
         }
     }
@@ -225,8 +234,8 @@ public class VoucherFragment extends Fragment {
         @Override
         protected void onPostExecute(Document document) {
             super.onPostExecute(document);
-            setStoreLogo(R.drawable.prozis_logo34);
-            if (document != null) {
+            if (document != null && VoucherFragment.this.isAdded()) {
+                setStoreLogo(R.drawable.prozis_logo34);
                 Elements voucherElements = document.getElementsByClass("each-coupon-holder");
                 if (voucherElements != null && voucherElements.size() != 0) {
                     for (int i = 0; i < voucherElements.size(); i++) {
@@ -234,10 +243,10 @@ public class VoucherFragment extends Fragment {
                         set_webView(voucherText);
                     }
                 } else {
-                    set_webView("No available coupons or discount codes.");
+                    set_webView("No available Prozis coupons or discount codes.");
                 }
             } else {
-                set_webView("Couldn't get coupons webpage.\nTry again later");
+                set_webView("Couldn't get Prozis coupons webpage.\nTry again later");
             }
             mySwipeRefreshLayout.setRefreshing(false);
         }

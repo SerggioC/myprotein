@@ -5,6 +5,7 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Locale;
 
 import static android.content.res.Configuration.SCREENLAYOUT_SIZE_XLARGE;
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.mNavigationView;
 
 /**
@@ -51,6 +53,23 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     static String deviceLanguage;
     static String deviceCountry;
     static String deviceCurrency;
+    static Activity mActivity;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        mActivity = this;
+
+        //setupActionBar();
+        Locale local = getCurrentLocale();
+        Log.i("Sergio>", this + "onCreate: local= " + local + " country= " + local.getCountry());
+        deviceCountry = local.getCountry(); // PT
+        deviceLanguage = local.toString().toLowerCase().replace("_", "-"); // pt_PT -> pt-pt
+        deviceCurrency = Currency.getInstance(local).toString();
+
+        Log.i("Sergio>", this + " onCreate\ndeviceCountry= " + deviceCountry + " deviceLanguage= " + deviceLanguage + " deviceCurrency= " + deviceCurrency);
+    }
+
     /**
      * A preference value change listener that updates the preference's summary
      * to reflect its new value.
@@ -68,7 +87,10 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                 // Set the summary to reflect the new value.
                 preference.setSummary(index >= 0 ? listPreference.getEntries()[index] : null);
 
+                // yay hacking... :D
                 if (preference.getKey().equals("prz_website_location")) {
+                    SharedPreferences.Editor sharedPrefEditor = mActivity.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE).edit();
+
                     ListPreference langpreference = (ListPreference) preference.getPreferenceManager().findPreference("prz_language");
                     String[] lang_entries = new String[]{"English", "Français", "Español", "Português", "Italiano"};
                     String[] lang_entryValues = new String[]{"en", "fr", "es", "pt", "it"};
@@ -81,88 +103,103 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                     if (ww_arr.contains(stringValue)) {
                         lang_entries = new String[]{"English", "Français", "Español", "Português", "Italiano"};
                         lang_entryValues = new String[]{"en", "fr", "es", "pt", "it"};
+                        sharedPrefEditor.putString("prz_website_location", "ww").commit();
                     }
                     List<String> ao_arr = Arrays.asList("AO", "PT");
                     if (ao_arr.contains(stringValue)) {
                         lang_entries = new String[]{"Português", "English"};
                         lang_entryValues = new String[]{"pt", "en"};
+                        sharedPrefEditor.putString("prz_website_location", stringValue.toLowerCase()).commit();
                     }
                     List<String> ru_arr = Arrays.asList("AZ", "BY", "GE", "KZ", "MD", "RU", "UA", "UZ");
                     if (ru_arr.contains(stringValue)) {
                         lang_entries = new String[]{"Русский", "English"};
                         lang_entryValues = new String[]{"ru", "en"};
+                        sharedPrefEditor.putString("prz_website_location", "ru").commit();
                     }
                     if (stringValue.contains("BE")) {
                         lang_entries = new String[]{"Français", "Nederlands", "English"};
                         lang_entryValues = new String[]{"fr", "nl", "en"};
+                        sharedPrefEditor.putString("prz_website_location", stringValue.toLowerCase()).commit();
                     }
                     if (stringValue.contains("BR")) {
                         lang_entries = new String[]{"Português"};
                         lang_entryValues = new String[]{"pt"};
+                        sharedPrefEditor.putString("prz_website_location", stringValue.toLowerCase()).commit();
                     }
                     List<String> eu_arr = Arrays.asList("BG", "CY", "CZ", "EE", "HR", "IS", "LV", "LT", "HU", "MT", "RO", "SI");
                     if (eu_arr.contains(stringValue)) {
                         lang_entries = new String[]{"English", "Français", "Español", "Português", "Italiano", "Ελληνικά"};
                         lang_entryValues = new String[]{"en", "fr", "es", "pt", "it", "el"};
+                        sharedPrefEditor.putString("prz_website_location", "eu").commit();
                     }
                     if (stringValue.contains("CN")) {
                         lang_entries = new String[]{"Mandarin", "English"};
                         lang_entryValues = new String[]{"zh", "en"};
+                        sharedPrefEditor.putString("prz_website_location", stringValue.toLowerCase()).commit();
                     }
                     if (stringValue.contains("DK")) {
                         lang_entries = new String[]{"Dansk", "English"};
                         lang_entryValues = new String[]{"da", "en"};
+                        sharedPrefEditor.putString("prz_website_location", stringValue.toLowerCase()).commit();
                     }
                     List<String> de_arr = Arrays.asList("DE", "AT");
                     if (de_arr.contains(stringValue)) {
                         lang_entries = new String[]{"Deutsch", "English"};
                         lang_entryValues = new String[]{"de", "en"};
+                        sharedPrefEditor.putString("prz_website_location", stringValue.toLowerCase()).commit();
                     }
                     if (stringValue.contains("ES")) {
                         lang_entries = new String[]{"Español", "English"};
                         lang_entryValues = new String[]{"es", "en"};
+                        sharedPrefEditor.putString("prz_website_location", stringValue.toLowerCase()).commit();
                     }
                     if (stringValue.contains("FR")) {
                         lang_entries = new String[]{"Français", "English"};
                         lang_entryValues = new String[]{"fr", "en"};
+                        sharedPrefEditor.putString("prz_website_location", stringValue.toLowerCase()).commit();
                     }
                     if (stringValue.contains("GR")) {
                         lang_entries = new String[]{"Ελληνικά", "English"};
                         lang_entryValues = new String[]{"el", "en"};
+                        sharedPrefEditor.putString("prz_website_location", stringValue.toLowerCase()).commit();
                     }
                     List<String> ie_arr = Arrays.asList("IE", "GB");
                     if (ie_arr.contains(stringValue)) {
                         lang_entries = new String[]{"English"};
                         lang_entryValues = new String[]{"en"};
+                        sharedPrefEditor.putString("prz_website_location", stringValue.toLowerCase()).commit();
                     }
                     if (stringValue.contains("IT")) {
                         lang_entries = new String[]{"Italiano", "English"};
                         lang_entryValues = new String[]{"it", "en"};
+                        sharedPrefEditor.putString("prz_website_location", stringValue.toLowerCase()).commit();
                     }
                     if (stringValue.contains("LU")) {
                         lang_entries = new String[]{"Français", "Deutsch", "Português", "English"};
                         lang_entryValues = new String[]{"fr", "de", "pt", "en"};
+                        sharedPrefEditor.putString("prz_website_location", stringValue.toLowerCase()).commit();
                     }
                     if (stringValue.contains("NL")) {
                         lang_entries = new String[]{"Nederlands", "English"};
                         lang_entryValues = new String[]{"nl", "en"};
+                        sharedPrefEditor.putString("prz_website_location", stringValue.toLowerCase()).commit();
                     }
                     if (stringValue.contains("PL")) {
                         lang_entries = new String[]{"Polski", "English"};
                         lang_entryValues = new String[]{"pl", "en"};
+                        sharedPrefEditor.putString("prz_website_location", stringValue.toLowerCase()).commit();
                     }
                     if (stringValue.contains("SK")) {
                         lang_entries = new String[]{"Slovak", "English"};
                         lang_entryValues = new String[]{"sk", "en"};
+                        sharedPrefEditor.putString("prz_website_location", stringValue.toLowerCase()).commit();
                     }
                     List<String> fi_se_arr = Arrays.asList("FI", "SE");
                     if (fi_se_arr.contains(stringValue)) {
                         lang_entries = new String[]{"Svenska", "English"};
                         lang_entryValues = new String[]{"sv", "en"};
-                    }
-                    if (stringValue.contains("CN")) {
-                        lang_entries = new String[]{"English", "Français", "Deutsch", "Italiano", "Português"};
-                        lang_entryValues = new String[]{"en", "fr", "de", "it", "pt"};
+                        sharedPrefEditor.putString("prz_website_location", stringValue.toLowerCase()).commit();
                     }
 
                     langpreference.setEntries(lang_entries);
@@ -171,7 +208,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                     langpreference.setValueIndex(0);
                     langpreference.setSummary(lang_entries[0]);
                 }
-
 
             } else if (preference instanceof RingtonePreference) {
                 // For ringtone preferences, look up the correct display value using RingtoneManager.
@@ -201,6 +237,15 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         }
     };
 
+    /**
+     * MyHelper method to determine if the device has an extra-large screen. For
+     * example, 10" tablets are extra-large.
+     */
+    private static boolean isXLargeTablet(Context context) {
+        return (context.getResources().getConfiguration().screenLayout
+                & Configuration.SCREENLAYOUT_SIZE_MASK) >= SCREENLAYOUT_SIZE_XLARGE;
+    }
+
 //    /*** Set up the {@link android.app.ActionBar}, if the API is available.     */
 //    private void setupActionBar() {
 //        ActionBar actionBar = getSupportActionBar();
@@ -210,15 +255,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 //            actionBar.setDisplayHomeAsUpEnabled(true);
 //        }
 //    }
-
-    /**
-     * MyHelper method to determine if the device has an extra-large screen. For
-     * example, 10" tablets are extra-large.
-     */
-    private static boolean isXLargeTablet(Context context) {
-        return (context.getResources().getConfiguration().screenLayout
-                & Configuration.SCREENLAYOUT_SIZE_MASK) >= SCREENLAYOUT_SIZE_XLARGE;
-    }
 
     /**
      * Binds a preference's summary to its value. More specifically, when the
@@ -231,54 +267,65 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
      */
     private static void bindPreferenceSummaryToValue(Preference preference) {
 
-        switch (preference.getKey()) {
-            case "mp_website_location": {
-                preference.setDefaultValue(deviceLanguage);
-                ((ListPreference) preference).setValue(deviceLanguage);
-                break;
+        if (preference != null) {
+            switch (preference.getKey()) {
+                case "mp_website_location": {
+                    if (((ListPreference) preference).getValue() == null) {
+                        preference.setDefaultValue(deviceLanguage);
+                        ((ListPreference) preference).setValue(deviceLanguage);
+                    } else {
+                        ((ListPreference) preference).setValue(((ListPreference) preference).getValue());
+                    }
+                    break;
+                }
+                case "mp_shipping_location": {
+                    if (((ListPreference) preference).getValue() == null) {
+                        preference.setDefaultValue(deviceCountry);
+                        ((ListPreference) preference).setValue(deviceCountry);
+                    } else {
+                        ((ListPreference) preference).setValue(((ListPreference) preference).getValue());
+                    }
+                    break;
+                }
+                case "mp_currencies": {
+                    if (((ListPreference) preference).getValue() == null) {
+                        preference.setDefaultValue(deviceCurrency);
+                        ((ListPreference) preference).setValue(deviceCurrency);
+                    } else {
+                        ((ListPreference) preference).setValue(((ListPreference) preference).getValue());
+                    }
+                    break;
+                }
+                case "prz_website_location": {
+                    if (((ListPreference) preference).getValue() == null) {
+                        preference.setDefaultValue(deviceCountry);
+                        ((ListPreference) preference).setValue(deviceCountry);
+                    } else {
+                        ((ListPreference) preference).setValue(((ListPreference) preference).getValue());
+                    }
+                    break;
+                }
+                case "prz_language": {
+                    if (((ListPreference) preference).getValue() == null) {
+                        preference.setDefaultValue(deviceCountry.toLowerCase());
+                        ((ListPreference) preference).setValue(deviceCountry.toLowerCase());
+                    } else {
+                        ((ListPreference) preference).setValue(((ListPreference) preference).getValue());
+                    }
+                    break;
+                }
             }
-            case "mp_shipping_location": {
-                preference.setDefaultValue(deviceCountry);
-                ((ListPreference) preference).setValue(deviceCountry);
-                break;
-            }
-            case "mp_currencies": {
-                preference.setDefaultValue(deviceCurrency);
-                ((ListPreference) preference).setValue(deviceCurrency);
-                break;
-            }
-            case "prz_website_location": {
-                preference.setDefaultValue(deviceCountry);
-                ((ListPreference) preference).setValue(deviceCountry);
-                break;
-            }
-            case "prz_language": {
-                preference.setDefaultValue(deviceCountry.toLowerCase());
-                ((ListPreference) preference).setValue(deviceCountry.toLowerCase());
-                break;
-            }
+
+
+            // Set the listener to watch for value changes.
+            preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
+
+            // Trigger the listener immediately with the preference's current value.
+            sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
+                    PreferenceManager.getDefaultSharedPreferences(preference.getContext()).getString(preference.getKey(), ""));
         }
-
-        // Set the listener to watch for value changes.
-        preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
-
-        // Trigger the listener immediately with the preference's current value.
-        sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
-                PreferenceManager.getDefaultSharedPreferences(preference.getContext()).getString(preference.getKey(), ""));
     }
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        //setupActionBar();
-        Locale local = getCurrentLocale();
-        Log.i("Sergio>", this + "onCreate: local= " + local + " country= " + local.getCountry());
-        deviceCountry = local.getCountry(); // PT
-        deviceLanguage = local.toString().toLowerCase().replace("_", "-"); // pt_PT -> pt-pt
-        deviceCurrency = Currency.getInstance(local).toString();
-
-        Log.i("Sergio>", this + " onCreate\ndeviceCountry= " + deviceCountry + " deviceLanguage= " + deviceLanguage + " deviceCurrency= " + deviceCurrency);
-    }
 
     @TargetApi(Build.VERSION_CODES.N)
     public Locale getCurrentLocale() {

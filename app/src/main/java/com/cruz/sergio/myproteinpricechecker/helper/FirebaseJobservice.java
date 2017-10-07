@@ -84,7 +84,7 @@ public class FirebaseJobservice extends JobService {
         sharedPref = context.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE);
         long now = System.currentTimeMillis();
         long last_saved_date = sharedPref.getLong(LAST_DB_UPDATE_PREF_KEY, now);
-        long calculated_delta_t = TimeUnit.MILLISECONDS.toSeconds(now - last_saved_date);
+        long calculated_delta_t = now - last_saved_date;
 
         // Limitar fazer demasiados requests quando o tempo é menor que MINIMUM_DELTA_INTERVAL ou (job_delta_time) 3hr
         if (calculated_delta_t < job_delta_time && isJob) {

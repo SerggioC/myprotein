@@ -27,6 +27,7 @@ import android.text.SpannableStringBuilder;
 import android.text.style.ImageSpan;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -36,6 +37,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageSwitcher;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -74,9 +76,11 @@ import java.util.regex.Pattern;
 import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.BC_Registered;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.CACHE_IMAGES;
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.detailsActivityIsActive;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
 import static com.cruz.sergio.myproteinpricechecker.WatchingFragment.imageSizesToUse;
+import static com.cruz.sergio.myproteinpricechecker.helper.Alarm.LAST_DB_UPDATE_PREF_KEY;
 import static com.cruz.sergio.myproteinpricechecker.helper.MyProteinDomain.MP_DESKTOP_SITES;
 import static com.cruz.sergio.myproteinpricechecker.helper.MyProteinDomain.MP_MOBILE_SITES;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
@@ -109,6 +113,12 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
     Boolean gotImages = false;
     JSONArray JSON_ArrayArray_Images;
     ImageSwitcher image_switcher_details;
+    android.support.v7.widget.SwitchCompat alertSwitch;
+    RadioGroup radioGroup;
+    android.support.v7.widget.AppCompatRadioButton radio_every;
+    android.support.v7.widget.AppCompatRadioButton radio_target;
+    android.support.design.widget.TextInputEditText alertTextView;
+    float notify_value = 0;
     Timer timer;
     public boolean hadInternet_off;
     boolean is_web_address;
@@ -213,6 +223,8 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
         } else {
             ViewCompat.setElevation(toolbar, pixels);
         }
+        // Corrigir posição da toolbar que fica debaixo da status bar (dar padding para cima do tamanho da status bar)
+        toolbar.setPadding(0, getStatusBarHeight(), 0, 0);
 
         productContentValues = new ContentValues(); //content values para a DB
         all_image_sizes = new ArrayList<>(Arrays.asList(MP_ALL_IMAGE_TYPES));
@@ -220,16 +232,84 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
         CACHE_IMAGES = sharedPrefs.getBoolean("cache_images", false);
 
-        ll_variations = (LinearLayout) mActivity.findViewById(R.id.ll_variations);
-        linearLayoutSpiners = (LinearLayout) mActivity.findViewById(R.id.spiners);
-        productImageView = (ImageView) mActivity.findViewById(R.id.p_details_image);
+        ll_variations = mActivity.findViewById(R.id.ll_variations);
+        linearLayoutSpiners = mActivity.findViewById(R.id.spiners);
+        productImageView = mActivity.findViewById(R.id.p_details_image);
         productImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Toast.makeText(mActivity, "Clicked Image", Toast.LENGTH_SHORT).show();
             }
         });
-        image_switcher_details = (ImageSwitcher) mActivity.findViewById(R.id.image_switcher_details);
+        image_switcher_details = mActivity.findViewById(R.id.image_switcher_details);
+
+
+        // Notifications section
+        alertSwitch = mActivity.findViewById(R.id.switch_notify);
+        alertTextView = mActivity.findViewById(R.id.tv_alert_value);
+        radio_every = mActivity.findViewById(R.id.radioButton_every);
+        radio_target = mActivity.findViewById(R.id.radioButton_target);
+        radioGroup = mActivity.findViewById(R.id.radioGroup_notify);
+
+        alertSwitch.setChecked(true);
+        radioGroup.setEnabled(true);
+
+        radio_every.setEnabled(true);
+        radio_every.setChecked(true);
+
+        radio_target.setEnabled(true);
+        radio_target.setChecked(false);
+
+        alertTextView.setEnabled(false);
+        alertTextView.setActivated(false);
+        alertTextView.setText("");
+
+        alertSwitch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                radioGroup.setEnabled(alertSwitch.isChecked());
+                radio_every.setEnabled(alertSwitch.isChecked());
+                radio_target.setEnabled(alertSwitch.isChecked());
+                alertTextView.setEnabled(alertSwitch.isChecked() && radio_target.isChecked());
+                alertTextView.setActivated(alertSwitch.isChecked() && radio_target.isChecked());
+                alertTextView.setText(alertSwitch.isChecked() && radio_target.isChecked() ? String.valueOf(notify_value) : "");
+            }
+        });
+
+        radio_every.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                alertTextView.setEnabled(radio_target.isChecked());
+                alertTextView.setActivated(radio_target.isChecked());
+                alertTextView.setText(radio_target.isChecked() ? String.valueOf(notify_value) : "");
+            }
+        });
+
+        radio_target.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                alertTextView.setEnabled(radio_target.isChecked());
+                alertTextView.setActivated(radio_target.isChecked());
+                alertTextView.setText(radio_target.isChecked() ? String.valueOf(notify_value) : "");
+            }
+        });
+
+        alertTextView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textview, int actionId, KeyEvent event) {
+                try {
+                    notify_value = Float.parseFloat(textview.getText().toString());
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                    notify_value = Float.parseFloat(String.valueOf(2_147_483_647));
+                }
+                Log.i("Sergio>", this + " onEditorAction\nnotify_value= " + notify_value);
+                return true;
+            }
+        });
+
+
+
         Bundle extras = getIntent().getExtras();
 
         if (extras != null) {
@@ -305,6 +385,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
 
         } else {
             showCustomToast(mActivity, "Error getting product details. Try again.", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
+            url = "https://www.myprotein.com/";
             MainActivity.mFragmentManager.popBackStack();
         }
 
@@ -313,8 +394,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
         mActivity.findViewById(R.id.open_in_browser).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Uri address = Uri.parse(url);
-                Intent browser = new Intent(Intent.ACTION_VIEW, address);
+                Intent browser = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                 startActivity(browser);
             }
         });
@@ -335,6 +415,13 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                 price = price.replaceAll(",", ".");
                 double price_value = Double.parseDouble(price);
 
+                try {
+                    notify_value = Float.parseFloat(alertTextView.getText().toString());
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                    notify_value = Float.parseFloat(String.valueOf(2_147_483_647));
+                }
+
                 ContentValues priceContentValues = new ContentValues();
                 priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE, priceString);
                 priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_VALUE, price_value);
@@ -351,7 +438,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE, price_value);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE, timeMillis);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE, 0);
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS, 1); // TODO get info from layout
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS, notify_value);
 
                 if (JSON_ArrayArray_Images != null) { // Imagens do JSON (Mais completo)
                     ArrayList<ArrayList<String>> arrayListArrayListImageURIs = new ArrayList<>();
@@ -415,6 +502,13 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                             showCustomToast(mActivity, "Now following product price!",
                                     R.mipmap.ic_ok2, R.color.green, Toast.LENGTH_LONG);
                             addedNewProduct = true;
+
+                            Cursor dbSize = db.rawQuery("SELECT COUNT(*) FROM" + ProductsContract.ProductsEntry.TABLE_NAME, null);
+                            if (dbSize.getCount() == 1) {
+                                SharedPreferences.Editor editor = mActivity.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE).edit();
+                                editor.putLong(LAST_DB_UPDATE_PREF_KEY, timeMillis);
+                                editor.commit();
+                            }
                         }
                     }
                 }
@@ -989,6 +1083,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
         String JSON_URL_Details = MP_Domain + "variations.json?productId=" + productID + options + "&" + URL_suffix;
         //String jsonurl = "https://pt.myprotein.com/variations.json?productId=10530943";
         //String options = "&selected=3 &variation1=5 &option1=2413 &variation2=6 &option2=2407 &variation3=7 &option3=5935"
+        //String mais = "&settingsSaved=Y&shippingcountry=PT&switchcurrency=GBP&countrySelected=Y"
         //String mais = "&settingsSaved=Y&shippingcountry=PT&switchcurrency=GBP&countrySelected=Y"
 
         Log.i("Sergio>>>", "getPriceMethod: \nJSON_URL_Details=\n" + JSON_URL_Details);

@@ -8,7 +8,6 @@
     android:layout_height="wrap_content"
     android:layout_gravity="right"
     android:background="@color/colorPrimary"
-    android:fitsSystemWindows="true"
     android:theme="@style/toolbar_theme"
     app:navigationIcon="?homeAsUpIndicator"
     tools:showIn="@layout/activity_main">
@@ -16,8 +15,7 @@
     <RelativeLayout
         android:id="@+id/relativelayout"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        >
+        android:layout_height="wrap_content">
 
         <ImageView
             android:id="@+id/appIcon"

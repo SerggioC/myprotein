@@ -81,7 +81,7 @@
 
     <PreferenceCategory android:title="@string/pref_header_data_sync">
         <ListPreference
-            android:defaultValue="180"
+            android:defaultValue="21600000"
             android:entries="@array/pref_sync_frequency_titles"
             android:entryValues="@array/pref_sync_frequency_values"
             android:icon="@mipmap/ic_sync"
@@ -104,7 +104,7 @@
             android:title="@string/pref_update_on_start"/>
 
         <SwitchPreference
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:icon="@mipmap/ic_new_view"
             android:key="getnews_on_start"
             android:title="@string/pref_getnews_on_start"/>

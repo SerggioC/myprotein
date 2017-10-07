@@ -19,6 +19,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import com.cruz.sergio.myproteinpricechecker.helper.Alarm;
+import com.cruz.sergio.myproteinpricechecker.helper.ProzisDomain;
 
 import static com.cruz.sergio.myproteinpricechecker.TabFragment.tabLayout;
 import static com.cruz.sergio.myproteinpricechecker.TabFragment.viewPager;
@@ -144,10 +145,13 @@ public class MainActivity extends AppCompatActivity {
         alarm.setAlarm(this);
 
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
-
         CACHE_IMAGES = sharedPrefs.getBoolean("cache_images", false);
         UPDATE_ONSTART = sharedPrefs.getBoolean("update_on_start", false);
-        GETNEWS_ONSTART = sharedPrefs.getBoolean("getnews_on_start", true);
+        GETNEWS_ONSTART = sharedPrefs.getBoolean("getnews_on_start", false);
+
+        String prz_country = ProzisDomain.getProzisWebLocation(sharedPrefs.getString("prz_website_location", "pt")).toLowerCase();
+        SharedPreferences.Editor sharedPrefEditor = mActivity.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE).edit();
+        sharedPrefEditor.putString("prz_website_location", prz_country).commit();
 
 
         /* THIS IS WORKING
@@ -216,6 +220,7 @@ public class MainActivity extends AppCompatActivity {
                     case R.id.nav_item_fav:
 //                        FragmentTransaction fragmentTransaction = mFragmentManager.beginTransaction();
 //                        fragmentTransaction.replace(R.id.containerView, new DetailsFragment()).commit();
+                        startActivity(new Intent(mActivity, DetailsActivityMyprotein.class));
                         break;
                 }
 
@@ -254,6 +259,8 @@ public class MainActivity extends AppCompatActivity {
         mDrawerToggle.syncState();
 
     }
+
+
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {

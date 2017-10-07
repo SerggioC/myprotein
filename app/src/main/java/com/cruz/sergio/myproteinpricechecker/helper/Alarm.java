@@ -29,6 +29,7 @@ import org.jsoup.nodes.Document;
 
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -38,13 +39,13 @@ import static android.content.Context.NOTIFICATION_SERVICE;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
-import static com.cruz.sergio.myproteinpricechecker.helper.StartFirebase.MINIMUM_DELTA_INTERVAL;
 
 /**
  * Created by Sergio on 03/10/2017.
  */
 
 public class Alarm extends BroadcastReceiver {
+    public static final int MINIMUM_DELTA_INTERVAL = 3 * 60 * 60 * 1000; // 3hr em ms
     public static final String ACTION_ALARM_REF = "ACTION_ALARM";
     public static final int ALARM_REQ_CODE = 0;
     public static final String LAST_DB_UPDATE_PREF_KEY = "last_db_update";
@@ -54,24 +55,35 @@ public class Alarm extends BroadcastReceiver {
     static Boolean isJob;
     static Boolean isSingleLine;
     static String singleLineID;
-    static int job_delta_time = 0;
     static SharedPreferences sharedPref;
     private static int cursorSize;
     private static int currentCursor;
 
-    public void setAlarm(Context context) {
-        Log.i("Sergio>", this + " Alarm extends BroadcastReceiver setAlarm()");
-        int DELTA_INTERVAL; // em segundos
+    public void setUpdateCompleteListener(UpdateCompleteListener listener) {
+        Alarm.listener = listener;
+    }
 
+    public void setAlarm(Context context) {
+        // Preferência de atualização do utilizador (max freq = 3hr)
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
-        DELTA_INTERVAL = Integer.parseInt(sharedPrefs.getString("sync_frequency", String.valueOf(MINIMUM_DELTA_INTERVAL)));
+        long DELTA_INTERVAL = Long.parseLong(sharedPrefs.getString("sync_frequency", String.valueOf(MINIMUM_DELTA_INTERVAL)));
         if (DELTA_INTERVAL < MINIMUM_DELTA_INTERVAL || DELTA_INTERVAL < 0) DELTA_INTERVAL = MINIMUM_DELTA_INTERVAL;
+
+        // Parâmetro único centralizado para guardar última atualização da Database, mais eficiente que o anterior (checkar a DB toda).
+        sharedPref = context.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE);
+        long now = System.currentTimeMillis();
+        long last_update_date = sharedPref.getLong(LAST_DB_UPDATE_PREF_KEY, now);
 
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         Intent intent = new Intent(ACTION_ALARM_REF, null, context, Alarm.class);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(context, ALARM_REQ_CODE, intent, PendingIntent.FLAG_CANCEL_CURRENT);
-        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), DELTA_INTERVAL, pendingIntent);
+        // Se já ultrapassou o tempo executa agora, else executa daqui à diferença que falta.
+        long triggerAtMillis = now > last_update_date + DELTA_INTERVAL ? now : last_update_date + DELTA_INTERVAL; // now + DELTA_INTERVAL - (now - last_update_date)
         // *** Repete o alarme a cada DELTA_INTERVAL segundos ***
+        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, triggerAtMillis, DELTA_INTERVAL, pendingIntent);
+
+        Log.i("Sergio>", this + "Alarm extends BroadcastReceiver setAlarm()\n" +
+                "triggerAtMillis (Date)= " + new Date(triggerAtMillis));
     }
 
     @Override
@@ -89,18 +101,23 @@ public class Alarm extends BroadcastReceiver {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         String job_status = "null";
 
+        // Preferência de atualização do utilizador (max freq = 3hr)
+        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
+        long DELTA_INTERVAL = Long.parseLong(sharedPrefs.getString("sync_frequency", String.valueOf(MINIMUM_DELTA_INTERVAL)));
+        if (DELTA_INTERVAL < MINIMUM_DELTA_INTERVAL || DELTA_INTERVAL < 0) DELTA_INTERVAL = MINIMUM_DELTA_INTERVAL;
+
         // Parâmetro único centralizado para guardar última atualização da Database, mais eficiente que o anterior (checkar a DB toda).
         sharedPref = context.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE);
         long now = System.currentTimeMillis();
-        long last_saved_date = sharedPref.getLong(LAST_DB_UPDATE_PREF_KEY, now);
-        long calculated_delta_t = TimeUnit.MILLISECONDS.toSeconds(now - last_saved_date);
+        long last_update_date = sharedPref.getLong(LAST_DB_UPDATE_PREF_KEY, now);
+        long calculated_delta_t = now - last_update_date;
 
-        // Limitar fazer demasiados requests quando o tempo é menor que MINIMUM_DELTA_INTERVAL ou (job_delta_time) 3hr
-        if (calculated_delta_t < job_delta_time && isJob) {
+        // Limitar fazer demasiados requests quando o tempo é menor que MINIMUM_DELTA_INTERVAL ou (DELTA_INTERVAL) 6hr
+        if (calculated_delta_t < DELTA_INTERVAL && isJob) {
             Log.w("Sergio>", "Alarm OnReceive: \n" +
                     "Too soon to save to database wait up Job!");
             job_status = "postpone";
-        } else if (calculated_delta_t > job_delta_time && isJob || !isJob || isSingleLine) {
+        } else if (calculated_delta_t > DELTA_INTERVAL && isJob || !isJob || isSingleLine) {
             Log.w("Sergio>", "Alarm OnReceive: \n" +
                     "Starting update!");
 
