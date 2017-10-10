@@ -11,9 +11,14 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.support.v7.app.NotificationCompat;
 import android.text.TextUtils;
@@ -36,6 +41,7 @@ import java.util.regex.Pattern;
 
 import static android.content.Context.MODE_PRIVATE;
 import static android.content.Context.NOTIFICATION_SERVICE;
+import static android.content.Context.VIBRATOR_SERVICE;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
@@ -93,6 +99,7 @@ public class Alarm extends BroadcastReceiver {
     }
 
     public static void updatePricesOnReceive(Context context, Boolean isJob, Boolean isSingleLine, String singleLineID) {
+        create_Notification("TEST", "TEST", context, 1);
         Log.d("Sergio>", "Alarm updatePricesOnReceive()" );
         Alarm.isJob = isJob;
         Alarm.isSingleLine = isSingleLine;
@@ -131,7 +138,9 @@ public class Alarm extends BroadcastReceiver {
                     ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE + " , " +
                     ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE + " , " +
                     ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE + " , " +
-                    ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE +
+                    ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE + " , " +
+                    ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS + " , " +
+                    ProductsContract.ProductsEntry.COLUMN_NOTIFY_VALUE +
                     " FROM " + ProductsContract.ProductsEntry.TABLE_NAME
                     + singleLineRef, null);
 
@@ -150,9 +159,11 @@ public class Alarm extends BroadcastReceiver {
                     double actual_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE));
                     long actual_price_date = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE));
                     double previous_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE));
+                    Boolean show_notifications = cursor.getInt(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS)) == 1;
+                    double notify_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_NOTIFY_VALUE));
 
                     CursorObj cursorObj =
-                            new CursorObj(row_id, product_name, jsonURL, baseURL, min_price_value, max_price_value, actual_price_value, actual_price_date, previous_price_value);
+                            new CursorObj(row_id, product_name, jsonURL, baseURL, min_price_value, max_price_value, actual_price_value, actual_price_date, previous_price_value, show_notifications, notify_value);
 
                     if (!TextUtils.isEmpty(jsonURL)) {
                         Log.d("Sergio>", context + " onStartJob: JSON_METHOD= " + JSON_METHOD);
@@ -220,8 +231,12 @@ public class Alarm extends BroadcastReceiver {
         double actual_price;
         long actual_price_date;
         double previous_price;
+        Boolean show_notifications;
+        double notify_value;
 
-        CursorObj(int row_id, String prod_name, String jsonURL, String baseURL, double min_price, double max_price, double actual_price, long actual_price_date, double previous_price) {
+        CursorObj(int row_id, String prod_name, String jsonURL, String baseURL,
+                  double min_price, double max_price, double actual_price,
+                  long actual_price_date, double previous_price, Boolean show_notifications, double notify_value) {
             this.row_id = row_id;
             this.prod_name = prod_name;
             this.jsonURL = jsonURL;
@@ -231,7 +246,10 @@ public class Alarm extends BroadcastReceiver {
             this.actual_price = actual_price;
             this.actual_price_date = actual_price_date;
             this.previous_price = previous_price;
+            this.show_notifications = show_notifications;
+            this.notify_value = notify_value;
         }
+
     }
 
     private static void savePriceToDB(Context context, CursorObj cursorObj, String priceString) {
@@ -258,7 +276,7 @@ public class Alarm extends BroadcastReceiver {
         ContentValues priceContentValues = new ContentValues(4);
         priceContentValues.put(ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS, cursorObj.row_id); // _ID do produto
         priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE, priceString); // preço com o símbolo
-        priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_VALUE, price_value); // preço (valor em float)
+        priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_VALUE, price_value); // preço (valor em double, mais preciso que float)
         priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_DATE, currentTimeMillis);
         db.insert(ProductsContract.PricesEntry.TABLE_NAME, null, priceContentValues);
 
@@ -278,13 +296,20 @@ public class Alarm extends BroadcastReceiver {
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE, price_value);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, currentTimeMillis);
 
-            create_Notification(cursorObj.prod_name, priceString, context, cursorObj.row_id);
-
         } else if (price_value > cursorObj.max_price) {
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, priceString);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE, price_value);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, currentTimeMillis);
         }
+
+
+        if (cursorObj.show_notifications && price_value != 0) {
+            if ((price_value <= cursorObj.notify_value && cursorObj.notify_value != 0) ||
+                    (price_value < cursorObj.actual_price && cursorObj.notify_value == 0)) {
+                create_Notification(cursorObj.prod_name, priceString, context, cursorObj.row_id);
+            }
+        }
+
 
         db.update(ProductsContract.ProductsEntry.TABLE_NAME, productContentValues,
                 ProductsContract.ProductsEntry._ID + " = '" + cursorObj.row_id + "'", null);
@@ -296,7 +321,7 @@ public class Alarm extends BroadcastReceiver {
                 // Guardar ultimo update à DB nas SharedPreferences
                 //SharedPreferences sharedPref = ((Activity) context).getPreferences(Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = sharedPref.edit();
-                editor.putLong(LAST_DB_UPDATE_PREF_KEY, System.currentTimeMillis());
+                editor.putLong(LAST_DB_UPDATE_PREF_KEY, currentTimeMillis);
                 editor.commit();
             }
 
@@ -308,11 +333,16 @@ public class Alarm extends BroadcastReceiver {
     }
 
     private static void create_Notification(String prod_name, String priceString, Context context, int notificationID) {
+        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
+        Uri ringtoneURI = Uri.parse(sharedPrefs.getString("ringtone_notifications_key", null));
+
         NotificationCompat.Builder notification_Builder = (NotificationCompat.Builder) new NotificationCompat.Builder(context)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setLargeIcon(BitmapFactory.decodeResource(context.getResources(), R.mipmap.ic_launcher))
                 .setContentTitle(context.getString(R.string.app_name))
-                .setContentText(prod_name + " price has dropped to " + priceString);
+                .setContentText(prod_name + " price has dropped to " + priceString)
+                .setSound(ringtoneURI)
+                .setLights(Color.parseColor("#42dcf4"), 500, 400); // Azul
 
         Intent resultIntent = new Intent(context, MainActivity.class);
         PendingIntent resultPendingIntent = PendingIntent.getActivity(context, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -324,6 +354,21 @@ public class Alarm extends BroadcastReceiver {
         // Sets an ID for the notification
         // Builds the notification and issues it.
         mNotifyMgr.notify(notificationID, notification_Builder.build());
+
+
+        Boolean shouldVibrate = sharedPrefs.getBoolean("vibrate_notifications_key", true);
+
+        if (shouldVibrate) {
+            Vibrator vibrator = (Vibrator) context.getSystemService(VIBRATOR_SERVICE);
+            if (vibrator.hasVibrator()) {
+                if (Build.VERSION.SDK_INT >= 26) {
+                    vibrator.vibrate(VibrationEffect.createWaveform(new long[]{0, 200, 100, 200, 100, 200}, 1));
+                } else {
+                    vibrator.vibrate(new long[]{0, 200, 100, 200, 100, 200}, -1); // Vibrate pattern 3 vibrations with pause
+                }
+            }
+
+        }
 
     }
 

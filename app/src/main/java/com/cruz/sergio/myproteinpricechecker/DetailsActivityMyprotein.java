@@ -58,6 +58,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
+import org.jsoup.helper.StringUtil;
 import org.jsoup.nodes.DataNode;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -76,6 +77,7 @@ import java.util.regex.Pattern;
 import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.BC_Registered;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.CACHE_IMAGES;
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.MAX_NOTIFY_VALUE;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.detailsActivityIsActive;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
@@ -89,6 +91,7 @@ import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNe
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomToast;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
+import static java.lang.Double.parseDouble;
 
 public class DetailsActivityMyprotein extends AppCompatActivity {
     public static final String ADDED_NEW_PROD_REF = "addedNewProduct";
@@ -114,11 +117,8 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
     JSONArray JSON_ArrayArray_Images;
     ImageSwitcher image_switcher_details;
     android.support.v7.widget.SwitchCompat alertSwitch;
-    RadioGroup radioGroup;
-    android.support.v7.widget.AppCompatRadioButton radio_every;
-    android.support.v7.widget.AppCompatRadioButton radio_target;
     android.support.design.widget.TextInputEditText alertTextView;
-    float notify_value = 0;
+    double notify_value = 0;
     Timer timer;
     public boolean hadInternet_off;
     boolean is_web_address;
@@ -244,12 +244,13 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
         image_switcher_details = mActivity.findViewById(R.id.image_switcher_details);
 
 
-        // Notifications section
+        // Notifications section //
         alertSwitch = mActivity.findViewById(R.id.switch_notify);
         alertTextView = mActivity.findViewById(R.id.tv_alert_value);
-        radio_every = mActivity.findViewById(R.id.radioButton_every);
-        radio_target = mActivity.findViewById(R.id.radioButton_target);
-        radioGroup = mActivity.findViewById(R.id.radioGroup_notify);
+        final android.support.v7.widget.AppCompatRadioButton radio_every = mActivity.findViewById(R.id.radioButton_every);
+        final android.support.v7.widget.AppCompatRadioButton radio_target = mActivity.findViewById(R.id.radioButton_target);
+        final RadioGroup radioGroup = mActivity.findViewById(R.id.radioGroup_notify);
+        final TextView textView1 = mActivity.findViewById(R.id.tv_alert1);
 
         alertSwitch.setChecked(true);
         radioGroup.setEnabled(true);
@@ -260,9 +261,11 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
         radio_target.setEnabled(true);
         radio_target.setChecked(false);
 
+        textView1.setEnabled(false);
+        textView1.setActivated(false);
+
         alertTextView.setEnabled(false);
         alertTextView.setActivated(false);
-        alertTextView.setText("");
 
         alertSwitch.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -273,6 +276,8 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                 alertTextView.setEnabled(alertSwitch.isChecked() && radio_target.isChecked());
                 alertTextView.setActivated(alertSwitch.isChecked() && radio_target.isChecked());
                 alertTextView.setText(alertSwitch.isChecked() && radio_target.isChecked() ? String.valueOf(notify_value) : "");
+                textView1.setEnabled(alertSwitch.isChecked() && radio_target.isChecked());
+                textView1.setActivated(alertSwitch.isChecked() && radio_target.isChecked());
             }
         });
 
@@ -282,6 +287,8 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                 alertTextView.setEnabled(radio_target.isChecked());
                 alertTextView.setActivated(radio_target.isChecked());
                 alertTextView.setText(radio_target.isChecked() ? String.valueOf(notify_value) : "");
+                textView1.setEnabled(radio_target.isChecked());
+                textView1.setActivated(radio_target.isChecked());
             }
         });
 
@@ -291,6 +298,8 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                 alertTextView.setEnabled(radio_target.isChecked());
                 alertTextView.setActivated(radio_target.isChecked());
                 alertTextView.setText(radio_target.isChecked() ? String.valueOf(notify_value) : "");
+                textView1.setEnabled(radio_target.isChecked());
+                textView1.setActivated(radio_target.isChecked());
             }
         });
 
@@ -298,10 +307,10 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
             @Override
             public boolean onEditorAction(TextView textview, int actionId, KeyEvent event) {
                 try {
-                    notify_value = Float.parseFloat(textview.getText().toString());
+                    notify_value = parseDouble(textview.getText().toString());
                 } catch (NumberFormatException e) {
                     e.printStackTrace();
-                    notify_value = Float.parseFloat(String.valueOf(2_147_483_647));
+                    notify_value = parseDouble(String.valueOf(MAX_NOTIFY_VALUE));
                 }
                 Log.i("Sergio>", this + " onEditorAction\nnotify_value= " + notify_value);
                 return true;
@@ -413,13 +422,20 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                 Matcher match = regex.matcher(price);
                 price = match.replaceAll("");
                 price = price.replaceAll(",", ".");
-                double price_value = Double.parseDouble(price);
+                double price_value = parseDouble(price);
 
-                try {
-                    notify_value = Float.parseFloat(alertTextView.getText().toString());
-                } catch (NumberFormatException e) {
-                    e.printStackTrace();
-                    notify_value = Float.parseFloat(String.valueOf(2_147_483_647));
+                String notifyValueStr = alertTextView.getText().toString();
+
+                if (StringUtil.isBlank(notifyValueStr)) {
+                    notify_value = 0;
+                } else {
+                    try {
+                        notify_value = parseDouble(notifyValueStr);
+                    } catch (NumberFormatException e) {
+                        // número demasiado grande
+                        e.printStackTrace();
+                        notify_value = parseDouble(String.valueOf(MAX_NOTIFY_VALUE));
+                    }
                 }
 
                 ContentValues priceContentValues = new ContentValues();
@@ -438,7 +454,8 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE, price_value);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE, timeMillis);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE, 0);
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS, notify_value);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS, alertSwitch.isChecked() ? 1 : 0);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_NOTIFY_VALUE, notify_value);
 
                 if (JSON_ArrayArray_Images != null) { // Imagens do JSON (Mais completo)
                     ArrayList<ArrayList<String>> arrayListArrayListImageURIs = new ArrayList<>();

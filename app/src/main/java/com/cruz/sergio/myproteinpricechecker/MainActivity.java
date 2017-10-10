@@ -32,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
     public static Boolean CACHE_IMAGES;
     public static Boolean UPDATE_ONSTART;
     public static Boolean BC_Registered = false;
+    public static int MAX_NOTIFY_VALUE = 1_000_000_000;
     public static float scale;
     public static int density;
     public static boolean detailsActivityIsActive;

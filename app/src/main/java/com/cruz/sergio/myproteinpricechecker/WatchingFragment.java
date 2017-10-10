@@ -90,6 +90,7 @@ import static android.util.DisplayMetrics.DENSITY_XHIGH;
 import static android.util.DisplayMetrics.DENSITY_XXHIGH;
 import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.CACHE_IMAGES;
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.MAX_NOTIFY_VALUE;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.UPDATE_ONSTART;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.density;
@@ -111,6 +112,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     public static final int LOADER_ID = 0;
     public static final int IMAGE_PERIOD = 5400;
     public static DeletedProductListener delete_listener;
+    // TODO remove static listview
     static ListView listViewItems;
     static Loader<Cursor> loaderManager;
     static String[] imageSizesToUse;
@@ -268,11 +270,11 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         loaderManager = getLoaderManager().initLoader(LOADER_ID, null, this);
 
         cursorDBAdapter = new cursorDBAdapter(mActivity, null, 0);
-        listViewItems = (ListView) rootview.findViewById(R.id.watching_listview);
+        listViewItems = rootview.findViewById(R.id.watching_listview);
         listViewItems.addHeaderView(View.inflate(mActivity, R.layout.watch_list_header_view, null));
         listViewItems.setAdapter(cursorDBAdapter);
 
-        watchingSwipeRefreshLayout = (SwipeRefreshLayout) rootview.findViewById(R.id.watching_swiperefresh);
+        watchingSwipeRefreshLayout = rootview.findViewById(R.id.watching_swiperefresh);
 
         watchingSwipeRefreshLayout.setOnRefreshListener(
                 new SwipeRefreshLayout.OnRefreshListener() {
@@ -546,45 +548,45 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     }
 
     public static class ViewHolder {
-        public final TextView titleView; // ou Product Name
-        public final TextView highestPriceView;
-        public final TextView lowestPriceView;
-        public final TextView currentPriceView;
-        public final TextView highestPriceDate;
-        public final TextView lowestPriceDate;
-        public final TextView info_top;
-        public final TextView currentInfo;
-        public final TextView undercard_tv_desc;
-        public final ImageSwitcher imageSwitcher;
-        public final LinearLayout ll_current_price;
-        public final ImageView up_down_icon;
-        public final CardView main_cardView;
-        public final CardView under_view;
-        public final TextView undercard_last_updated;
-        public final ProgressBar small_pb_undercard;
-        public final TextView product_brand;
-        public final ImageView notify_icon;
+        final TextView titleView; // ou Product Name
+        final TextView highestPriceView;
+        final TextView lowestPriceView;
+        final TextView currentPriceView;
+        final TextView highestPriceDate;
+        final TextView lowestPriceDate;
+        final TextView info_top;
+        final TextView currentInfo;
+        final TextView undercard_tv_desc;
+        final ImageSwitcher imageSwitcher;
+        final LinearLayout ll_current_price;
+        final ImageView up_down_icon;
+        final CardView main_cardView;
+        final CardView under_view;
+        final TextView undercard_last_updated;
+        final ProgressBar small_pb_undercard;
+        final TextView product_brand;
+        final ImageView notify_icon;
 
 
         public ViewHolder(View view) {
-            titleView = (TextView) view.findViewById(R.id.item_title_textview);
-            highestPriceView = (TextView) view.findViewById(R.id.item_highest_price_textview);
-            lowestPriceView = (TextView) view.findViewById(R.id.item_lowest_price_textview);
-            currentPriceView = (TextView) view.findViewById(R.id.item_current_price_textview);
-            highestPriceDate = (TextView) view.findViewById(R.id.item_highest_price_date);
-            lowestPriceDate = (TextView) view.findViewById(R.id.item_lowest_price_date);
-            info_top = (TextView) view.findViewById(R.id.info_top);
-            currentInfo = (TextView) view.findViewById(R.id.current_info);
-            ll_current_price = (LinearLayout) view.findViewById(R.id.ll_current_price);
-            imageSwitcher = (ImageSwitcher) view.findViewById(R.id.image_switcher);
-            up_down_icon = (ImageView) view.findViewById(R.id.up_down_arrow);
-            under_view = (CardView) view.findViewById(R.id.under_cardview);
-            main_cardView = (CardView) view.findViewById(main_cardview);
-            undercard_tv_desc = (TextView) view.findViewById(R.id.description_undercard);
-            undercard_last_updated = (TextView) view.findViewById(R.id.last_updated_undercard);
-            small_pb_undercard = (ProgressBar) view.findViewById(R.id.pbar_undercard);
-            product_brand = (TextView) view.findViewById(R.id.product_brand);
-            notify_icon = (ImageView) view.findViewById(R.id.notify);
+            titleView = view.findViewById(R.id.item_title_textview);
+            highestPriceView = view.findViewById(R.id.item_highest_price_textview);
+            lowestPriceView = view.findViewById(R.id.item_lowest_price_textview);
+            currentPriceView = view.findViewById(R.id.item_current_price_textview);
+            highestPriceDate = view.findViewById(R.id.item_highest_price_date);
+            lowestPriceDate = view.findViewById(R.id.item_lowest_price_date);
+            info_top = view.findViewById(R.id.info_top);
+            currentInfo = view.findViewById(R.id.current_info);
+            ll_current_price = view.findViewById(R.id.ll_current_price);
+            imageSwitcher = view.findViewById(R.id.image_switcher);
+            up_down_icon = view.findViewById(R.id.up_down_arrow);
+            under_view = view.findViewById(R.id.under_cardview);
+            main_cardView = view.findViewById(main_cardview);
+            undercard_tv_desc = view.findViewById(R.id.description_undercard);
+            undercard_last_updated = view.findViewById(R.id.last_updated_undercard);
+            small_pb_undercard = view.findViewById(R.id.pbar_undercard);
+            product_brand = view.findViewById(R.id.product_brand);
+            notify_icon = view.findViewById(R.id.notify);
         }
     }
 
@@ -652,11 +654,11 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             final String url = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BASE_URL));
             final String string_array_images = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGES));
             final String productBrand = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BRAND));
-            final Boolean[] show_notifications = {cursor.getInt(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS)) == 1 ? true : false};
+            final Boolean[] show_notifications = {cursor.getInt(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS)) == 1};
             final double notify_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_NOTIFY_VALUE));
 
 
-            final CardView mainCardView = (CardView) view.findViewById(R.id.main_cardview);
+            final CardView mainCardView = view.findViewById(R.id.main_cardview);
             mainCardView.findViewById(R.id.open_web).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -691,11 +693,12 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                     LayoutInflater inflater = mActivity.getLayoutInflater();
                     View dialogView = inflater.inflate(R.layout.notifications_alert_dialog, null);
                     alertDialogBuilder.setView(dialogView);
-                    alertSwitch[0] = (android.support.v7.widget.SwitchCompat) dialogView.findViewById(R.id.switch_notify);
-                    alertTextView[0] = (android.support.design.widget.TextInputEditText) dialogView.findViewById(R.id.tv_alert_value);
-                    radio_every[0] = (android.support.v7.widget.AppCompatRadioButton) dialogView.findViewById(R.id.radioButton_every);
-                    radio_target[0] = (android.support.v7.widget.AppCompatRadioButton) dialogView.findViewById(R.id.radioButton_target);
-                    radioGroup[0] = (RadioGroup) dialogView.findViewById(R.id.radioGroup_notify);
+                    alertSwitch[0] = dialogView.findViewById(R.id.switch_notify);
+                    alertTextView[0] = dialogView.findViewById(R.id.tv_alert_value);
+                    radio_every[0] = dialogView.findViewById(R.id.radioButton_every);
+                    radio_target[0] = dialogView.findViewById(R.id.radioButton_target);
+                    radioGroup[0] = dialogView.findViewById(R.id.radioGroup_notify);
+                    final TextView textView1 = dialogView.findViewById(R.id.tv_alert1);
 
                     alertSwitch[0].setChecked(show_notifications[0]);
                     radioGroup[0].setEnabled(show_notifications[0]);
@@ -705,6 +708,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
                     radio_target[0].setEnabled(show_notifications[0]);
                     radio_target[0].setChecked(show_notifications[0] && notify_value > 0 ? true : false);
+
+                    textView1.setEnabled(alertSwitch[0].isChecked() && radio_target[0].isChecked());
+                    textView1.setActivated(alertSwitch[0].isChecked() && radio_target[0].isChecked());
 
                     alertTextView[0].setEnabled(show_notifications[0] && notify_value > 0);
                     alertTextView[0].setActivated(show_notifications[0] && notify_value > 0);
@@ -719,6 +725,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                             alertTextView[0].setEnabled(alertSwitch[0].isChecked() && radio_target[0].isChecked());
                             alertTextView[0].setActivated(alertSwitch[0].isChecked() && radio_target[0].isChecked());
                             alertTextView[0].setText(alertSwitch[0].isChecked() && radio_target[0].isChecked() ? String.valueOf(notify_value) : "");
+                            textView1.setEnabled(alertSwitch[0].isChecked() && radio_target[0].isChecked());
+                            textView1.setActivated(alertSwitch[0].isChecked() && radio_target[0].isChecked());
                         }
                     });
 
@@ -728,6 +736,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                             alertTextView[0].setEnabled(radio_target[0].isChecked());
                             alertTextView[0].setActivated(radio_target[0].isChecked());
                             alertTextView[0].setText(radio_target[0].isChecked() ? String.valueOf(notify_value) : "");
+                            textView1.setEnabled(radio_target[0].isChecked());
+                            textView1.setActivated(radio_target[0].isChecked());
                         }
                     });
 
@@ -737,6 +747,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                             alertTextView[0].setEnabled(radio_target[0].isChecked());
                             alertTextView[0].setActivated(radio_target[0].isChecked());
                             alertTextView[0].setText(radio_target[0].isChecked() ? String.valueOf(notify_value) : "");
+                            textView1.setEnabled(radio_target[0].isChecked());
+                            textView1.setActivated(radio_target[0].isChecked());
                         }
                     });
 
@@ -759,7 +771,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                                             target_val = Double.parseDouble(target_val_str);
                                         } catch (NumberFormatException e) {
                                             e.printStackTrace();
-                                            target_val = 0;
+                                            target_val = MAX_NOTIFY_VALUE;
                                         } catch (NullPointerException e) {
                                             e.printStackTrace();
                                             target_val = 0;
@@ -768,7 +780,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
                                     ContentValues contentValues = new ContentValues(2);
                                     contentValues.put(ProductsContract.ProductsEntry.COLUMN_NOTIFY_VALUE, target_val);
-                                    contentValues.put(ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS, alertSwitch[0].isChecked());
+                                    contentValues.put(ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS, alertSwitch[0].isChecked() ? 1 : 0);
 
                                     int update_result = db.update(ProductsContract.ProductsEntry.TABLE_NAME, contentValues, "_ID=" + "'" + this_product_id + "'", null);
 
