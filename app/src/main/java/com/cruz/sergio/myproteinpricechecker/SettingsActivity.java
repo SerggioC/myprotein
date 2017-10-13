@@ -419,7 +419,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             bindPreferenceSummaryToValue(findPreference("mp_currencies"));
             bindPreferenceSummaryToValue(findPreference("prz_website_location"));
             bindPreferenceSummaryToValue(findPreference("prz_language"));
-            bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
+            bindPreferenceSummaryToValue(findPreference("ringtone_notifications_key"));
             bindPreferenceSummaryToValue(findPreference("sync_frequency"));
 
         }
@@ -470,7 +470,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             bindPreferenceSummaryToValue(findPreference("mp_currencies"));
             bindPreferenceSummaryToValue(findPreference("prz_website_location"));
             bindPreferenceSummaryToValue(findPreference("prz_language"));
-            bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
+            bindPreferenceSummaryToValue(findPreference("ringtone_notifications_key"));
             bindPreferenceSummaryToValue(findPreference("sync_frequency"));
         }
 

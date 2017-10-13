@@ -23,3 +23,5 @@
 -keep public class org.jsoup.** {
 public *;
 }
+
+-dontwarn info.guardianproject.netcipher.**

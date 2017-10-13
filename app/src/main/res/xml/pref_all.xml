@@ -60,19 +60,19 @@
         <SwitchPreference
             android:defaultValue="true"
             android:icon="@mipmap/ic_notification_bell"
-            android:key="notifications_new_message"
+            android:key="notifications_global_key"
             android:title="@string/pref_title_alert_notification"/>
 
         <SwitchPreference
             android:defaultValue="true"
-            android:dependency="notifications_new_message"
+            android:dependency="notifications_global_key"
             android:icon="@mipmap/ic_vibration"
             android:key="vibrate_notifications_key"
             android:title="@string/pref_title_vibrate"/>
 
         <RingtonePreference
             android:defaultValue="content://settings/system/notification_sound"
-            android:dependency="notifications_new_message"
+            android:dependency="notifications_global_key"
             android:icon="@mipmap/ic_ringtone"
             android:key="ringtone_notifications_key"
             android:ringtoneType="notification"

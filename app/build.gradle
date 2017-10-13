@@ -9,8 +9,8 @@ android {
         applicationId "com.cruz.sergio.myproteinpricechecker"
         minSdkVersion 16
         targetSdkVersion 26
-        versionCode 9
-        versionName "0.99"
+        versionCode 10
+        versionName "0.991"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }

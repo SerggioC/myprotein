@@ -64,49 +64,18 @@ public class Alarm extends BroadcastReceiver {
     static SharedPreferences sharedPref;
     private static int cursorSize;
     private static int currentCursor;
-
-    public void setUpdateCompleteListener(UpdateCompleteListener listener) {
-        Alarm.listener = listener;
-    }
-
-    public void setAlarm(Context context) {
-        // Preferência de atualização do utilizador (max freq = 3hr)
-        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
-        long DELTA_INTERVAL = Long.parseLong(sharedPrefs.getString("sync_frequency", String.valueOf(MINIMUM_DELTA_INTERVAL)));
-        if (DELTA_INTERVAL < MINIMUM_DELTA_INTERVAL || DELTA_INTERVAL < 0) DELTA_INTERVAL = MINIMUM_DELTA_INTERVAL;
-
-        // Parâmetro único centralizado para guardar última atualização da Database, mais eficiente que o anterior (checkar a DB toda).
-        sharedPref = context.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE);
-        long now = System.currentTimeMillis();
-        long last_update_date = sharedPref.getLong(LAST_DB_UPDATE_PREF_KEY, now);
-
-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        Intent intent = new Intent(ACTION_ALARM_REF, null, context, Alarm.class);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, ALARM_REQ_CODE, intent, PendingIntent.FLAG_CANCEL_CURRENT);
-        // Se já ultrapassou o tempo executa agora, else executa daqui à diferença que falta.
-        long triggerAtMillis = now > last_update_date + DELTA_INTERVAL ? now : last_update_date + DELTA_INTERVAL; // now + DELTA_INTERVAL - (now - last_update_date)
-        // *** Repete o alarme a cada DELTA_INTERVAL segundos ***
-        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, triggerAtMillis, DELTA_INTERVAL, pendingIntent);
-
-        Log.i("Sergio>", this + "Alarm extends BroadcastReceiver setAlarm()\n" +
-                "triggerAtMillis (Date)= " + new Date(triggerAtMillis));
-    }
-
-    @Override
-    public void onReceive(Context context, Intent intent) {
-        Log.w("Sergio>", this + " onReceive() Received alarm intent");
-        updatePricesOnReceive(context, true, false, null);
-    }
+    private static SharedPreferences defaultSharedPreferences;
 
     public static void updatePricesOnReceive(Context context, Boolean isJob, Boolean isSingleLine, String singleLineID) {
-        create_Notification("TEST", "TEST", context, 1);
-        Log.d("Sergio>", "Alarm updatePricesOnReceive()" );
+        Log.d("Sergio>", "Alarm updatePricesOnReceive()");
         Alarm.isJob = isJob;
         Alarm.isSingleLine = isSingleLine;
         Alarm.singleLineID = singleLineID;
         DBHelper dbHelper = new DBHelper(context);
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         String job_status = "null";
+
+        defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 
         // Preferência de atualização do utilizador (max freq = 3hr)
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
@@ -219,39 +188,6 @@ public class Alarm extends BroadcastReceiver {
         db.close();
     }
 
-
-
-    static class CursorObj {
-        int row_id;
-        String prod_name;
-        String jsonURL;
-        String baseURL;
-        double min_price;
-        double max_price;
-        double actual_price;
-        long actual_price_date;
-        double previous_price;
-        Boolean show_notifications;
-        double notify_value;
-
-        CursorObj(int row_id, String prod_name, String jsonURL, String baseURL,
-                  double min_price, double max_price, double actual_price,
-                  long actual_price_date, double previous_price, Boolean show_notifications, double notify_value) {
-            this.row_id = row_id;
-            this.prod_name = prod_name;
-            this.jsonURL = jsonURL;
-            this.baseURL = baseURL;
-            this.min_price = min_price;
-            this.max_price = max_price;
-            this.actual_price = actual_price;
-            this.actual_price_date = actual_price_date;
-            this.previous_price = previous_price;
-            this.show_notifications = show_notifications;
-            this.notify_value = notify_value;
-        }
-
-    }
-
     private static void savePriceToDB(Context context, CursorObj cursorObj, String priceString) {
         long currentTimeMillis = System.currentTimeMillis();
         double price_value;
@@ -302,8 +238,9 @@ public class Alarm extends BroadcastReceiver {
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, currentTimeMillis);
         }
 
+        Boolean globalNotifications = defaultSharedPreferences.getBoolean("notifications_global_key", true);
 
-        if (cursorObj.show_notifications && price_value != 0) {
+        if (cursorObj.show_notifications && price_value != 0 && globalNotifications) {
             if ((price_value <= cursorObj.notify_value && cursorObj.notify_value != 0) ||
                     (price_value < cursorObj.actual_price && cursorObj.notify_value == 0)) {
                 create_Notification(cursorObj.prod_name, priceString, context, cursorObj.row_id);
@@ -333,8 +270,7 @@ public class Alarm extends BroadcastReceiver {
     }
 
     private static void create_Notification(String prod_name, String priceString, Context context, int notificationID) {
-        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
-        Uri ringtoneURI = Uri.parse(sharedPrefs.getString("ringtone_notifications_key", null));
+        Uri ringtoneURI = Uri.parse(defaultSharedPreferences.getString("ringtone_notifications_key", "content://settings/system/notification_sound")); // Default notification Sound
 
         NotificationCompat.Builder notification_Builder = (NotificationCompat.Builder) new NotificationCompat.Builder(context)
                 .setSmallIcon(R.mipmap.ic_launcher)
@@ -342,7 +278,8 @@ public class Alarm extends BroadcastReceiver {
                 .setContentTitle(context.getString(R.string.app_name))
                 .setContentText(prod_name + " price has dropped to " + priceString)
                 .setSound(ringtoneURI)
-                .setLights(Color.parseColor("#42dcf4"), 500, 400); // Azul
+                .setLights(Color.RED, 500, 400)
+                .setTicker(prod_name + " price has dropped to " + priceString);
 
         Intent resultIntent = new Intent(context, MainActivity.class);
         PendingIntent resultPendingIntent = PendingIntent.getActivity(context, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -356,7 +293,7 @@ public class Alarm extends BroadcastReceiver {
         mNotifyMgr.notify(notificationID, notification_Builder.build());
 
 
-        Boolean shouldVibrate = sharedPrefs.getBoolean("vibrate_notifications_key", true);
+        Boolean shouldVibrate = defaultSharedPreferences.getBoolean("vibrate_notifications_key", true);
 
         if (shouldVibrate) {
             Vibrator vibrator = (Vibrator) context.getSystemService(VIBRATOR_SERVICE);
@@ -368,6 +305,83 @@ public class Alarm extends BroadcastReceiver {
                 }
             }
 
+        }
+
+    }
+
+    public void setUpdateCompleteListener(UpdateCompleteListener listener) {
+        Alarm.listener = listener;
+    }
+
+    public void setAlarm(Context context) {
+        // Preferência de atualização do utilizador (max freq = 3hr)
+        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
+        long DELTA_INTERVAL = Long.parseLong(sharedPrefs.getString("sync_frequency", String.valueOf(MINIMUM_DELTA_INTERVAL)));
+        if (DELTA_INTERVAL < MINIMUM_DELTA_INTERVAL || DELTA_INTERVAL < 0) DELTA_INTERVAL = MINIMUM_DELTA_INTERVAL;
+
+        // Parâmetro único centralizado para guardar última atualização da Database, mais eficiente que o anterior (checkar a DB toda).
+        sharedPref = context.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE);
+        long now = System.currentTimeMillis();
+        long last_update_date = sharedPref.getLong(LAST_DB_UPDATE_PREF_KEY, now);
+
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(ACTION_ALARM_REF, null, context, Alarm.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, ALARM_REQ_CODE, intent, PendingIntent.FLAG_CANCEL_CURRENT);
+        // Se já ultrapassou o tempo executa agora, else executa daqui à diferença que falta.
+        long triggerAtMillis = now > last_update_date + DELTA_INTERVAL ? now : last_update_date + DELTA_INTERVAL; // now + DELTA_INTERVAL - (now - last_update_date)
+        // *** Repete o alarme a cada DELTA_INTERVAL segundos ***
+        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, triggerAtMillis, DELTA_INTERVAL, pendingIntent);
+
+        Log.i("Sergio>", this + "Alarm extends BroadcastReceiver setAlarm()\n" +
+                "triggerAtMillis (Date)= " + new Date(triggerAtMillis));
+    }
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        Log.w("Sergio>", this + " onReceive() Received alarm intent");
+        updatePricesOnReceive(context, true, false, null);
+    }
+
+    public void cancelAlarm(Context context) {
+        Log.i("Sergio>", this + " Alarm extends BroadcastReceiver cancelAlarm()");
+        Intent intent = new Intent(ACTION_ALARM_REF, null, context, Alarm.class);
+        PendingIntent sender = PendingIntent.getBroadcast(context, ALARM_REQ_CODE, intent, PendingIntent.FLAG_CANCEL_CURRENT);
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        alarmManager.cancel(sender);
+    }
+
+    // This interface defines the type of messages I want to communicate to my owner
+    public interface UpdateCompleteListener {
+        void onUpdateReady(Boolean isReady, Boolean isSingleLine);
+    }
+
+    static class CursorObj {
+        int row_id;
+        String prod_name;
+        String jsonURL;
+        String baseURL;
+        double min_price;
+        double max_price;
+        double actual_price;
+        long actual_price_date;
+        double previous_price;
+        Boolean show_notifications;
+        double notify_value;
+
+        CursorObj(int row_id, String prod_name, String jsonURL, String baseURL,
+                  double min_price, double max_price, double actual_price,
+                  long actual_price_date, double previous_price, Boolean show_notifications, double notify_value) {
+            this.row_id = row_id;
+            this.prod_name = prod_name;
+            this.jsonURL = jsonURL;
+            this.baseURL = baseURL;
+            this.min_price = min_price;
+            this.max_price = max_price;
+            this.actual_price = actual_price;
+            this.actual_price_date = actual_price_date;
+            this.previous_price = previous_price;
+            this.show_notifications = show_notifications;
+            this.notify_value = notify_value;
         }
 
     }
@@ -517,21 +531,6 @@ public class Alarm extends BroadcastReceiver {
             }
             savePriceToDB(context, cursorObj, price);
         }
-    }
-
-
-    public void cancelAlarm(Context context) {
-        Log.i("Sergio>", this + " Alarm extends BroadcastReceiver cancelAlarm()");
-        Intent intent = new Intent(ACTION_ALARM_REF, null, context, Alarm.class);
-        PendingIntent sender = PendingIntent.getBroadcast(context, ALARM_REQ_CODE, intent, PendingIntent.FLAG_CANCEL_CURRENT);
-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        alarmManager.cancel(sender);
-    }
-
-
-    // This interface defines the type of messages I want to communicate to my owner
-    public interface UpdateCompleteListener {
-        void onUpdateReady(Boolean isReady, Boolean isSingleLine);
     }
 
 }

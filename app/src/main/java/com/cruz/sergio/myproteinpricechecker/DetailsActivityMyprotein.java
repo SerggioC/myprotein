@@ -29,6 +29,7 @@ import android.util.Log;
 import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
@@ -96,6 +97,55 @@ import static java.lang.Double.parseDouble;
 public class DetailsActivityMyprotein extends AppCompatActivity {
     public static final String ADDED_NEW_PROD_REF = "addedNewProduct";
     public static final String HAD_INTERNET_OFF_REF = "had_internet_off";
+    final static String[] MP_ALL_IMAGE_TYPES = new String[]{
+            "extrasmall",   // 20/20
+            "small",        // 50/50
+            "smallthumb",   // 60/60
+            "thumbnail",    // 70/70
+            "smallprod",    // 100/100
+            "product",      // 130/130
+            "large",        // 180/180
+            "list",         // 200/200
+            "raw",          // 270/270
+            "largeproduct", // 300/300
+            "quickview",    // 350/350
+            "carousel",     // 480/480
+            "extralarge",   // 600/600
+            "zoom",         // 960/960
+            "magnify"};    // 1600/1600
+    final static String[] MP_XX_IMAGE_TYPES = new String[]{
+            "20x20",        // 20/20
+            "50x50",        // 50/50
+            "60x60",        // 60/60
+            "70x70",        // 70/70
+            "100x100",      // 100/100
+            "130x130",      // 130/130
+            "180x180",      // 180/180
+            "200x200",      // 200/200
+            "270x270",      // 270/270
+            "300x300",      // 300/300
+            "350x350",      // 350/350
+            "480x480",      // 480/480
+            "600x600",      // 600/600
+            "960x960",      // 960/960
+            "1600x1600"};   // 1600/1600
+    final static String[] MP_BB_IMAGE_TYPES = new String[]{
+            "/20/20/",        // 20/20
+            "/50/50/",        // 50/50
+            "/60/60/",        // 60/60
+            "/70/70/",        // 70/70
+            "/100/100/",      // 100/100
+            "/130/130/",      // 130/130
+            "/180/180/",      // 180/180
+            "/200/200/",      // 200/200
+            "/270/270/",      // 270/270
+            "/300/300/",      // 300/300
+            "/350/350/",      // 350/350
+            "/480/480/",      // 480/480
+            "/600/600/",      // 600/600
+            "/960/960/",      // 960/960
+            "/1600/1600/"};   // 1600/1600
+    public boolean hadInternet_off;
     Activity mActivity;
     Boolean gotPrice = true;
     ArrayList<String> description;
@@ -120,61 +170,8 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
     android.support.design.widget.TextInputEditText alertTextView;
     double notify_value = 0;
     Timer timer;
-    public boolean hadInternet_off;
     boolean is_web_address;
-
     ArrayList<String> all_image_sizes;
-    final static String[] MP_ALL_IMAGE_TYPES = new String[]{
-            "extrasmall",   // 20/20
-            "small",        // 50/50
-            "smallthumb",   // 60/60
-            "thumbnail",    // 70/70
-            "smallprod",    // 100/100
-            "product",      // 130/130
-            "large",        // 180/180
-            "list",         // 200/200
-            "raw",          // 270/270
-            "largeproduct", // 300/300
-            "quickview",    // 350/350
-            "carousel",     // 480/480
-            "extralarge",   // 600/600
-            "zoom",         // 960/960
-            "magnify"};    // 1600/1600
-
-    final static String[] MP_XX_IMAGE_TYPES = new String[]{
-            "20x20",        // 20/20
-            "50x50",        // 50/50
-            "60x60",        // 60/60
-            "70x70",        // 70/70
-            "100x100",      // 100/100
-            "130x130",      // 130/130
-            "180x180",      // 180/180
-            "200x200",      // 200/200
-            "270x270",      // 270/270
-            "300x300",      // 300/300
-            "350x350",      // 350/350
-            "480x480",      // 480/480
-            "600x600",      // 600/600
-            "960x960",      // 960/960
-            "1600x1600"};   // 1600/1600
-
-    final static String[] MP_BB_IMAGE_TYPES = new String[]{
-            "/20/20/",        // 20/20
-            "/50/50/",        // 50/50
-            "/60/60/",        // 60/60
-            "/70/70/",        // 70/70
-            "/100/100/",      // 100/100
-            "/130/130/",      // 130/130
-            "/180/180/",      // 180/180
-            "/200/200/",      // 200/200
-            "/270/270/",      // 270/270
-            "/300/300/",      // 300/300
-            "/350/350/",      // 350/350
-            "/480/480/",      // 480/480
-            "/600/600/",      // 600/600
-            "/960/960/",      // 960/960
-            "/1600/1600/"};   // 1600/1600
-
 
     @Override
     protected void onStart() {
@@ -263,9 +260,11 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
 
         textView1.setEnabled(false);
         textView1.setActivated(false);
+        textView1.clearFocus();
 
         alertTextView.setEnabled(false);
         alertTextView.setActivated(false);
+        alertTextView.clearFocus();
 
         alertSwitch.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -303,6 +302,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
             }
         });
 
+
         alertTextView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textview, int actionId, KeyEvent event) {
@@ -317,7 +317,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
             }
         });
 
-
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 
         Bundle extras = getIntent().getExtras();
 
@@ -328,6 +328,8 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
             Log.i("Sergio>", this + " onViewCreated: passed url=\n" + url);
 
             is_web_address = extras.getBoolean("is_web_address");
+            webstoreName = extras.getString("webstoreName");
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BRAND, "MyProtein");
 
             if (!is_web_address) {
                 pref_MP_Locale = sharedPrefs.getString("mp_website_location", "pt-pt"); // pt-pt
@@ -342,7 +344,6 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                 List<String> texts = java.util.Arrays.asList(getResources().getStringArray(R.array.pref_mp_website_titles));
                 List<String> values = java.util.Arrays.asList(getResources().getStringArray(R.array.pref_mp_website_values));
                 String country_name = texts.get(values.indexOf(pref_MP_Locale));
-                webstoreName = extras.getString("webstoreName");
                 productID = extras.getString("productID");
                 description = extras.getStringArrayList("description");
                 String imgURL = extras.getString("image_url");
@@ -372,7 +373,6 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                     description_DB = description_DB.substring(0, description_DB.length() - 1); //Remover ultimo caractere \n
                 }
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION, description_DB);
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BRAND, webstoreName);
 
                 //Lista da descrição enviado da activity anterior (SearchFragment.java) com imagens à esquerda
                 ((TextView) mActivity.findViewById(R.id.p_description)).setText(pptList_SSB);
@@ -398,7 +398,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
             MainActivity.mFragmentManager.popBackStack();
         }
 
-        priceTV = (TextView) mActivity.findViewById(R.id.price_tv);
+        priceTV = mActivity.findViewById(R.id.price_tv);
 
         mActivity.findViewById(R.id.open_in_browser).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -537,7 +537,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
     }
 
     public void fixToolbar() {
-        Toolbar toolbar = (Toolbar) mActivity.findViewById(R.id.details_toolbar);
+        Toolbar toolbar = mActivity.findViewById(R.id.details_toolbar);
 
         // Corrigir posição da toolbar que fica debaixo da statusbar
         //toolbar.setPadding(0, getStatusBarHeight(), 0, 0);
@@ -614,6 +614,204 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                 });
     }
 
+    private boolean getImagesFromScriptTag(Document resultDocument) {
+        Elements scriptTags = resultDocument.getElementsByTag("script");
+        for (Element tag : scriptTags) {
+            for (DataNode node : tag.dataNodes()) {
+                String script = node.getWholeData();
+                if (script.contains("arProductImages")) {
+                    JSON_ArrayArray_Images = new JSONArray();
+                    String[] imageFileTypes = new String[]{".jpg", ".png", ".bmp"};
+                    String IMG_FILETYPE = "";
+
+                    for (int i = 0; i < imageFileTypes.length; i++) {
+                        if (script.contains(imageFileTypes[i])) {
+                            IMG_FILETYPE = imageFileTypes[i];
+                        }
+                    }
+
+                    int indexOfarray = script.indexOf("arProductImages[");
+
+                    while (indexOfarray >= 0 && !IMG_FILETYPE.isEmpty()) {
+                        String sub_script = script.substring(indexOfarray, script.indexOf(");", indexOfarray));
+                        JSONArray inner_array = new JSONArray();
+
+                        int indexOfHttps = sub_script.indexOf("https");
+
+                        while (indexOfHttps >= 0) {
+
+                            String imgURL = sub_script.substring(indexOfHttps, sub_script.indexOf(IMG_FILETYPE, indexOfHttps) + 4);
+
+                            String size = "";
+                            for (int k = 0; k < MP_BB_IMAGE_TYPES.length; k++) {
+                                if (imgURL.contains(MP_BB_IMAGE_TYPES[k])) {
+                                    size = MP_XX_IMAGE_TYPES[k];
+                                }
+                            }
+
+                            JSONObject innerObject = new JSONObject();
+                            try {
+                                innerObject.put("url", imgURL);
+                                innerObject.put("size", size);
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                            inner_array.put(innerObject);
+
+                            indexOfHttps = sub_script.indexOf("https", indexOfHttps + 1);
+                        }
+
+                        JSON_ArrayArray_Images.put(inner_array);
+
+                        indexOfarray = script.indexOf("arProductImages[", indexOfarray + 1);
+                    }
+                }
+            }
+        }
+
+        if (JSON_ArrayArray_Images != null) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private void get_Available_Options() {
+        String full_JSON_URL = MP_Domain + "variations.json?productId=" + productID + "&" + URL_suffix;
+        AsyncTask<String, Void, Boolean> checkinternetAsyncTask = new checkInternetAsyncMethods("get_Available_Options");
+        checkinternetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, full_JSON_URL);
+        Log.i("Sergio>", this + " get_Available_Options: \nfull_JSON_URL=\n" + full_JSON_URL);
+    }
+
+    private void getPriceMethod(ArrayList<ArrayList<String>> arrayArrayKeys, ArrayList<String> opts_id) {
+        mActivity.findViewById(R.id.button_add_to_db).setEnabled(false);
+        String options = "&selected=3";
+        customProductID = "loc" + pref_MP_Locale + "pid" + productID;
+
+        for (int j = 0; j < arrayArrayKeys.size(); j++) {
+            Spinner spinner = (Spinner) ((RelativeLayout) linearLayoutSpiners.getChildAt(j)).getChildAt(0);
+            int selecteditemposition = spinner.getSelectedItemPosition();
+            String spinnerValue = spinner.getSelectedItem().toString();
+            arrayArrayKeys.get(j);
+            opts_id.get(j);
+            String index = String.valueOf(j + 1);
+            options += "&variation" + index + "=" + opts_id.get(j) + "&option" + index + "=" + arrayArrayKeys.get(j).get(selecteditemposition);
+            productContentValues.put("mp_variation" + index, opts_id.get(j));
+            productContentValues.put("mp_options" + index, arrayArrayKeys.get(j).get(selecteditemposition));
+            productContentValues.put("mp_options_name" + index, spinnerValue);
+            customProductID += "vid" + index + opts_id.get(j) + "oid" + index + arrayArrayKeys.get(j).get(selecteditemposition);
+        }
+        // vid = variation id / oid = option id
+        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID, customProductID);
+        Log.d(" Sergio>>>", this + " getPriceMethod: customProductID =" + customProductID);
+
+        String JSON_URL_Details = MP_Domain + "variations.json?productId=" + productID + options + "&" + URL_suffix;
+        //String jsonurl = "https://pt.myprotein.com/variations.json?productId=10530943";
+        //String options = "&selected=3 &variation1=5 &option1=2413 &variation2=6 &option2=2407 &variation3=7 &option3=5935"
+        //String mais = "&settingsSaved=Y&shippingcountry=PT&switchcurrency=GBP&countrySelected=Y"
+        //String mais = "&settingsSaved=Y&shippingcountry=PT&switchcurrency=GBP&countrySelected=Y"
+
+        Log.i("Sergio>>>", "getPriceMethod: \nJSON_URL_Details=\n" + JSON_URL_Details);
+
+        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS, JSON_URL_Details);
+
+        AsyncTask<String, Void, Boolean> checkinternetAsyncTask = new checkInternetAsyncMethods("GetPriceFromJSON");
+        checkinternetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, JSON_URL_Details);
+
+    }
+
+    private void placeImagesFromURL_Details(final ArrayList<String> arrayListImageURLsToLoad) {
+        final int size = arrayListImageURLsToLoad.size();
+        final ArrayList<Bitmap> arrayListImageBitmap = new ArrayList<>(size);
+
+        for (int i = 0; i < size; i++) {
+            final int finalI = i;
+            Glide.with(mActivity)
+                    .load(arrayListImageURLsToLoad.get(i))
+                    .asBitmap()
+                    .asIs()
+                    .format(PREFER_ARGB_8888)
+                    .dontTransform()
+                    .into(new SimpleTarget<Bitmap>() {
+                        @Override
+                        public void onResourceReady(final Bitmap resource, GlideAnimation glideAnimation) {
+                            arrayListImageBitmap.add(resource);
+                            if (finalI == size - 1) {
+                                if (timer != null) {
+                                    timer.cancel();
+                                    timer.purge();
+                                    timer = new Timer();
+                                } else {
+                                    timer = new Timer();
+                                }
+                                bitmapsReady(arrayListImageBitmap);
+                            }
+                        }
+                    });
+        }
+
+    }
+
+    private void bitmapsReady(final ArrayList<Bitmap> arrayListImageBitmap) {
+        final int size = arrayListImageBitmap.size();
+        image_switcher_details.removeAllViews();
+        image_switcher_details.setFactory(new ViewSwitcher.ViewFactory() {
+            public View makeView() {
+                return getNewImageView(100);
+            }
+        });
+        // Declare in and out animations and load them using AnimationUtils class
+        Animation fadeIn = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_in);
+        fadeIn.setDuration(1200);
+        Animation fadeOut = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_out);
+        fadeOut.setDuration(1200);
+
+        // set the animation type to ImageSwitcher
+        image_switcher_details.setInAnimation(fadeIn);
+        image_switcher_details.setOutAnimation(fadeOut);
+        //Set the schedule function and rate
+        final int[] currentIndex = {0};
+        timer.scheduleAtFixedRate(new TimerTask() {
+            public void run() {
+                //Called every 5000 milliseconds
+                mActivity.runOnUiThread(new Runnable() {
+                    public void run() {
+                        image_switcher_details.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
+                        currentIndex[0]++;
+                        if (currentIndex[0] == size) currentIndex[0] = 0;
+                    }
+                });
+            }
+        }, 0, 5000);
+
+        image_switcher_details.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mActivity.runOnUiThread(new Runnable() {
+                    public void run() {
+                        image_switcher_details.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
+                        currentIndex[0]++;
+                        if (currentIndex[0] == size) currentIndex[0] = 0;
+                    }
+                });
+            }
+        });
+    }
+
+    private View getNewImageView(int pixels_widthHeight) {
+        ImageView imageView = new ImageView(mActivity);
+        imageView.setPadding(0, 2, 2, 0);
+        imageView.setScaleType(ImageView.ScaleType.CENTER);
+        imageView.setAdjustViewBounds(true);
+        int widthHeight = (int) (pixels_widthHeight * scale + 0.5f);
+        imageView.setLayoutParams(new FrameLayout.LayoutParams(widthHeight, widthHeight));
+        return imageView;
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+    }
 
     public class checkInternetAsyncMethods extends AsyncTask<String, Void, Boolean> {
         String method;
@@ -760,68 +958,6 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
 
     }
 
-    private boolean getImagesFromScriptTag(Document resultDocument) {
-        Elements scriptTags = resultDocument.getElementsByTag("script");
-        for (Element tag : scriptTags) {
-            for (DataNode node : tag.dataNodes()) {
-                String script = node.getWholeData();
-                if (script.contains("arProductImages")) {
-                    JSON_ArrayArray_Images = new JSONArray();
-                    String[] imageFileTypes = new String[]{".jpg", ".png", ".bmp"};
-                    String IMG_FILETYPE = "";
-
-                    for (int i = 0; i < imageFileTypes.length; i++) {
-                        if (script.contains(imageFileTypes[i])) {
-                            IMG_FILETYPE = imageFileTypes[i];
-                        }
-                    }
-
-                    int indexOfarray = script.indexOf("arProductImages[");
-
-                    while (indexOfarray >= 0 && !IMG_FILETYPE.isEmpty()) {
-                        String sub_script = script.substring(indexOfarray, script.indexOf(");", indexOfarray));
-                        JSONArray inner_array = new JSONArray();
-
-                        int indexOfHttps = sub_script.indexOf("https");
-
-                        while (indexOfHttps >= 0) {
-
-                            String imgURL = sub_script.substring(indexOfHttps, sub_script.indexOf(IMG_FILETYPE, indexOfHttps) + 4);
-
-                            String size = "";
-                            for (int k = 0; k < MP_BB_IMAGE_TYPES.length; k++) {
-                                if (imgURL.contains(MP_BB_IMAGE_TYPES[k])) {
-                                    size = MP_XX_IMAGE_TYPES[k];
-                                }
-                            }
-
-                            JSONObject innerObject = new JSONObject();
-                            try {
-                                innerObject.put("url", imgURL);
-                                innerObject.put("size", size);
-                            } catch (JSONException e) {
-                                e.printStackTrace();
-                            }
-                            inner_array.put(innerObject);
-
-                            indexOfHttps = sub_script.indexOf("https", indexOfHttps + 1);
-                        }
-
-                        JSON_ArrayArray_Images.put(inner_array);
-
-                        indexOfarray = script.indexOf("arProductImages[", indexOfarray + 1);
-                    }
-                }
-            }
-        }
-
-        if (JSON_ArrayArray_Images != null) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     private class getProductPageWebAddress extends AsyncTask<String, Void, Document> {
         String url;
 
@@ -966,14 +1102,6 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
 
     }
 
-    private void get_Available_Options() {
-        String full_JSON_URL = MP_Domain + "variations.json?productId=" + productID + "&" + URL_suffix;
-        AsyncTask<String, Void, Boolean> checkinternetAsyncTask = new checkInternetAsyncMethods("get_Available_Options");
-        checkinternetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, full_JSON_URL);
-        Log.i("Sergio>", this + " get_Available_Options: \nfull_JSON_URL=\n" + full_JSON_URL);
-    }
-
-
     private class GetDetailsFromJSON extends AsyncTask<String, Void, JSONObject> {
         @Override
         protected JSONObject doInBackground(String... url_param) {
@@ -1072,43 +1200,6 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
             }
 
         }
-
-    }
-
-    private void getPriceMethod(ArrayList<ArrayList<String>> arrayArrayKeys, ArrayList<String> opts_id) {
-        mActivity.findViewById(R.id.button_add_to_db).setEnabled(false);
-        String options = "&selected=3";
-        customProductID = "loc" + pref_MP_Locale + "pid" + productID;
-
-        for (int j = 0; j < arrayArrayKeys.size(); j++) {
-            Spinner spinner = (Spinner) ((RelativeLayout) linearLayoutSpiners.getChildAt(j)).getChildAt(0);
-            int selecteditemposition = spinner.getSelectedItemPosition();
-            String spinnerValue = spinner.getSelectedItem().toString();
-            arrayArrayKeys.get(j);
-            opts_id.get(j);
-            String index = String.valueOf(j + 1);
-            options += "&variation" + index + "=" + opts_id.get(j) + "&option" + index + "=" + arrayArrayKeys.get(j).get(selecteditemposition);
-            productContentValues.put("mp_variation" + index, opts_id.get(j));
-            productContentValues.put("mp_options" + index, arrayArrayKeys.get(j).get(selecteditemposition));
-            productContentValues.put("mp_options_name" + index, spinnerValue);
-            customProductID += "vid" + index + opts_id.get(j) + "oid" + index + arrayArrayKeys.get(j).get(selecteditemposition);
-        }
-        // vid = variation id / oid = option id
-        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID, customProductID);
-        Log.d(" Sergio>>>", this + " getPriceMethod: customProductID =" + customProductID);
-
-        String JSON_URL_Details = MP_Domain + "variations.json?productId=" + productID + options + "&" + URL_suffix;
-        //String jsonurl = "https://pt.myprotein.com/variations.json?productId=10530943";
-        //String options = "&selected=3 &variation1=5 &option1=2413 &variation2=6 &option2=2407 &variation3=7 &option3=5935"
-        //String mais = "&settingsSaved=Y&shippingcountry=PT&switchcurrency=GBP&countrySelected=Y"
-        //String mais = "&settingsSaved=Y&shippingcountry=PT&switchcurrency=GBP&countrySelected=Y"
-
-        Log.i("Sergio>>>", "getPriceMethod: \nJSON_URL_Details=\n" + JSON_URL_Details);
-
-        productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_JSON_URL_DETAILS, JSON_URL_Details);
-
-        AsyncTask<String, Void, Boolean> checkinternetAsyncTask = new checkInternetAsyncMethods("GetPriceFromJSON");
-        checkinternetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, JSON_URL_Details);
 
     }
 
@@ -1266,99 +1357,6 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
             }
 
         }
-    }
-
-    private void placeImagesFromURL_Details(final ArrayList<String> arrayListImageURLsToLoad) {
-        final int size = arrayListImageURLsToLoad.size();
-        final ArrayList<Bitmap> arrayListImageBitmap = new ArrayList<>(size);
-
-        for (int i = 0; i < size; i++) {
-            final int finalI = i;
-            Glide.with(mActivity)
-                    .load(arrayListImageURLsToLoad.get(i))
-                    .asBitmap()
-                    .asIs()
-                    .format(PREFER_ARGB_8888)
-                    .dontTransform()
-                    .into(new SimpleTarget<Bitmap>() {
-                        @Override
-                        public void onResourceReady(final Bitmap resource, GlideAnimation glideAnimation) {
-                            arrayListImageBitmap.add(resource);
-                            if (finalI == size - 1) {
-                                if (timer != null) {
-                                    timer.cancel();
-                                    timer.purge();
-                                    timer = new Timer();
-                                } else {
-                                    timer = new Timer();
-                                }
-                                bitmapsReady(arrayListImageBitmap);
-                            }
-                        }
-                    });
-        }
-
-    }
-
-    private void bitmapsReady(final ArrayList<Bitmap> arrayListImageBitmap) {
-        final int size = arrayListImageBitmap.size();
-        image_switcher_details.removeAllViews();
-        image_switcher_details.setFactory(new ViewSwitcher.ViewFactory() {
-            public View makeView() {
-                return getNewImageView(100);
-            }
-        });
-        // Declare in and out animations and load them using AnimationUtils class
-        Animation fadeIn = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_in);
-        fadeIn.setDuration(1200);
-        Animation fadeOut = AnimationUtils.loadAnimation(mActivity, android.R.anim.fade_out);
-        fadeOut.setDuration(1200);
-
-        // set the animation type to ImageSwitcher
-        image_switcher_details.setInAnimation(fadeIn);
-        image_switcher_details.setOutAnimation(fadeOut);
-        //Set the schedule function and rate
-        final int[] currentIndex = {0};
-        timer.scheduleAtFixedRate(new TimerTask() {
-            public void run() {
-                //Called every 5000 milliseconds
-                mActivity.runOnUiThread(new Runnable() {
-                    public void run() {
-                        image_switcher_details.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
-                        currentIndex[0]++;
-                        if (currentIndex[0] == size) currentIndex[0] = 0;
-                    }
-                });
-            }
-        }, 0, 5000);
-
-        image_switcher_details.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mActivity.runOnUiThread(new Runnable() {
-                    public void run() {
-                        image_switcher_details.setImageDrawable(new BitmapDrawable(mActivity.getResources(), arrayListImageBitmap.get(currentIndex[0])));
-                        currentIndex[0]++;
-                        if (currentIndex[0] == size) currentIndex[0] = 0;
-                    }
-                });
-            }
-        });
-    }
-
-    private View getNewImageView(int pixels_widthHeight) {
-        ImageView imageView = new ImageView(mActivity);
-        imageView.setPadding(0, 2, 2, 0);
-        imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setAdjustViewBounds(true);
-        int widthHeight = (int) (pixels_widthHeight * scale + 0.5f);
-        imageView.setLayoutParams(new FrameLayout.LayoutParams(widthHeight, widthHeight));
-        return imageView;
-    }
-
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
     }
 
     //JSON SEARCH

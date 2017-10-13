@@ -19,6 +19,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
@@ -122,6 +123,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     Timer timer = new Timer();
     Boolean[] isExpandedArray = null;
     Boolean addedNewProduct = false;
+    SharedPreferences defaultSharedPreferences;
 
     public WatchingFragment() {
         //required empty constructor?
@@ -198,6 +200,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     public void onCreate(@Nullable Bundle savedInstanceState) {
         mActivity = getActivity();
         super.onCreate(savedInstanceState);
+        defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(mActivity);
 
         if (density <= DENSITY_LOW) {
             imageSizesToUse = new String[]{"50x50", "60x60", "70x70"};
@@ -673,12 +676,23 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 }
             });
 
+            Boolean globalNotifications = defaultSharedPreferences.getBoolean("notifications_global_key", true);
 
-            if (show_notifications[0]) {
-                viewHolder.notify_icon.setImageResource(R.drawable.ic_notifications);
+
+            if (globalNotifications) {
+                if (show_notifications[0]) {
+                    viewHolder.notify_icon.setImageResource(R.drawable.ic_notifications);
+                } else {
+                    viewHolder.notify_icon.setImageResource(R.drawable.ic_notifications_none);
+                }
             } else {
-                viewHolder.notify_icon.setImageResource(R.drawable.ic_notifications_none);
+                if (show_notifications[0]) {
+                    viewHolder.notify_icon.setImageResource(R.drawable.ic_notifications_off);
+                } else {
+                    viewHolder.notify_icon.setImageResource(R.drawable.ic_notifications_none);
+                }
             }
+
             final android.support.v7.widget.SwitchCompat[] alertSwitch = new android.support.v7.widget.SwitchCompat[1];
             final RadioGroup[] radioGroup = new RadioGroup[1];
             final android.support.v7.widget.AppCompatRadioButton[] radio_every = new AppCompatRadioButton[1];
