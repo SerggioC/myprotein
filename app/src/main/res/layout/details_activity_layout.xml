@@ -3,23 +3,22 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/root_ll_details"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
-
+    android:layout_height="wrap_content">
 
     <include layout="@layout/toolbar"/>
 
     <ScrollView
-        android:layout_below="@+id/toolbar"
         android:id="@+id/root_scrollview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/appBackground">
+        android:layout_below="@+id/toolbar"
+        android:background="@color/appBackground"
+        android:isScrollContainer="true">
 
         <LinearLayout
             android:id="@+id/ll_details"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical">
 
             <TextView

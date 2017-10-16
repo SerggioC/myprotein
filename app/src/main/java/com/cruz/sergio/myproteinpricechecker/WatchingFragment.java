@@ -34,10 +34,12 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.AppCompatRadioButton;
 import android.support.v7.widget.CardView;
+import android.support.v7.widget.SwitchCompat;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
 import android.text.style.RelativeSizeSpan;
+import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -97,6 +99,7 @@ import static com.cruz.sergio.myproteinpricechecker.MainActivity.UPDATE_ONSTART;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.density;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
 import static com.cruz.sergio.myproteinpricechecker.R.id.main_cardview;
+import static com.cruz.sergio.myproteinpricechecker.R.id.notify;
 import static com.cruz.sergio.myproteinpricechecker.TabFragment.tabLayout;
 import static com.cruz.sergio.myproteinpricechecker.helper.Alarm.updatePricesOnReceive;
 import static com.cruz.sergio.myproteinpricechecker.helper.FirebaseJobservice.LAST_DB_UPDATE_PREF_KEY;
@@ -226,10 +229,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                         watchingSwipeRefreshLayout.setRefreshing(false);
                     }
                     if (isReady || isSingleLine) {
-                        timer.cancel();
-                        timer.purge();
-                        timer = new Timer();
-                        getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
+                        redrawListView();
                     }
                 }
             }
@@ -240,16 +240,22 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             @Override
             public void onProductAdded(Boolean addedNew) {
                 Log.w("Sergio>", this + "\n" + "addedNewProduct= " + addedNew);
-                timer.cancel();
-                timer.purge();
-                timer = new Timer();
                 TabLayout.Tab tab = tabLayout.getTabAt(MainActivity.TAB_IDS.WATCHING);
                 tabLayout.setScrollPosition(MainActivity.TAB_IDS.WATCHING, 0f, true);
                 if (tab != null) tab.select();
-                getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
+                redrawListView();
                 addedNewProduct = addedNew;
             }
         });
+
+        MainActivity.notifySettingsChanged = new MainActivity.ChangedNotifySettings() {
+            @Override
+            public void onNotifySettingsChanged(Boolean hasChanged) {
+                if (hasChanged) {
+                    redrawListView();
+                }
+            }
+        };
 
     }
 
@@ -400,10 +406,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                         R.mipmap.ic_ok2, R.color.green, Toast.LENGTH_LONG);
 
                 // Redraw listView
-                timer.cancel();
-                timer.purge();
-                timer = new Timer();
-                getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
+                redrawListView();
 
                 // Reload/Redraw the graph
                 delete_listener.onProductDeleted(true);
@@ -569,6 +572,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         final ProgressBar small_pb_undercard;
         final TextView product_brand;
         final ImageView notify_icon;
+        final TextView notify_info;
 
 
         public ViewHolder(View view) {
@@ -589,7 +593,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             undercard_last_updated = view.findViewById(R.id.last_updated_undercard);
             small_pb_undercard = view.findViewById(R.id.pbar_undercard);
             product_brand = view.findViewById(R.id.product_brand);
-            notify_icon = view.findViewById(R.id.notify);
+            notify_icon = view.findViewById(notify);
+            notify_info = view.findViewById(R.id.notifications_info);
         }
     }
 
@@ -659,7 +664,10 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             final String productBrand = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BRAND));
             final Boolean[] show_notifications = {cursor.getInt(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS)) == 1};
             final double notify_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_NOTIFY_VALUE));
+            String current_price_string = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE));
+            String currencySymbol = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL));
 
+            boolean symb_before = current_price_string.indexOf(currencySymbol) == 0;
 
             final CardView mainCardView = view.findViewById(R.id.main_cardview);
             mainCardView.findViewById(R.id.open_web).setOnClickListener(new View.OnClickListener() {
@@ -676,20 +684,37 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 }
             });
 
-            Boolean globalNotifications = defaultSharedPreferences.getBoolean("notifications_global_key", true);
-
+            final Boolean globalNotifications = defaultSharedPreferences.getBoolean("notifications_global_key", true);
 
             if (globalNotifications) {
                 if (show_notifications[0]) {
                     viewHolder.notify_icon.setImageResource(R.drawable.ic_notifications);
+                    viewHolder.notify_info.setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_notifications), null, null, null);
+                    String notifyText = "Notify when price drops.";
+                    if (notify_value > 0) {
+                        notifyText = "Notify when price reaches " + (symb_before ? (currencySymbol + notify_value) : (notify_value + currencySymbol));
+                    }
+                    viewHolder.notify_info.append(notifyText);
                 } else {
                     viewHolder.notify_icon.setImageResource(R.drawable.ic_notifications_none);
+                    viewHolder.notify_info.setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_notifications_none), null, null, null);
+                    viewHolder.notify_info.append("Notifications disabled.");
                 }
             } else {
+                SpannableStringBuilder ssb1 = new SpannableStringBuilder("Notifications disabled.");
+                if (notify_value > 0) {
+                    String notifyText2 = "Notify when price reaches " + (symb_before ? (currencySymbol + notify_value) : (notify_value + currencySymbol));
+                    ssb1 = new SpannableStringBuilder(notifyText2);
+                    ssb1.setSpan(new StrikethroughSpan(), 0, notifyText2.length(), SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                viewHolder.notify_info.append(ssb1);
                 if (show_notifications[0]) {
                     viewHolder.notify_icon.setImageResource(R.drawable.ic_notifications_off);
+                    viewHolder.notify_info.setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_notifications_off), null, null, null);
                 } else {
                     viewHolder.notify_icon.setImageResource(R.drawable.ic_notifications_none);
+                    viewHolder.notify_info.setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_notifications_none), null, null, null);
+
                 }
             }
 
@@ -790,7 +815,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                                             e.printStackTrace();
                                             target_val = 0;
                                         }
-                                    } // Overkilling error catching lol
+                                    }
 
                                     ContentValues contentValues = new ContentValues(2);
                                     contentValues.put(ProductsContract.ProductsEntry.COLUMN_NOTIFY_VALUE, target_val);
@@ -799,10 +824,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                                     int update_result = db.update(ProductsContract.ProductsEntry.TABLE_NAME, contentValues, "_ID=" + "'" + this_product_id + "'", null);
 
                                     if (update_result == 1) {
-                                        timer.cancel();
-                                        timer.purge();
-                                        timer = new Timer();
-                                        getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
+                                        redrawListView();
                                         showCustomToast(mActivity, "Updated notifications for " + prod_name + "\n" +
                                                         (alertSwitch[0].isChecked() && radio_target[0].isChecked() ? "Alert when price reaches " + String.valueOf(target_val) :
                                                                 (alertSwitch[0].isChecked() && radio_every[0].isChecked()) ? "Alert every time price drops." : "Do not notify"),
@@ -831,7 +853,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 @Override
                 public void onClick(View v) {
                     if (mCursor != null) {
-                        final CardView under_view = (CardView) view.findViewById(R.id.under_cardview);
+                        final CardView under_view = view.findViewById(R.id.under_cardview);
 
                         under_view.findViewById(R.id.update_this_entry).setOnClickListener(new View.OnClickListener() {
                             @Override
@@ -878,36 +900,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
                                 AlertDialog alertDialog = alertDialogBuilder.create();
                                 alertDialog.show();
-//                                final Dialog dialogBuilder = new Dialog(mActivity);
-//
-//                                dialogBuilder.setContentView(R.layout.alert_dialog_layout);
-//                                ((ImageView) dialogBuilder.findViewById(R.id.dialog_icon))
-//                                        .setImageResource(R.mipmap.ic_error);
-//                                ((TextView) dialogBuilder.findViewById(R.id.dialog_title))
-//                                        .setText("Delete Product?");
-//                                ((TextView) dialogBuilder.findViewById(R.id.dialog_message))
-//                                        .setText("Are you sure you want to delete this entry?\n" +
-//                                                "All logged prices for this product will be lost!");
-//                                (dialogBuilder.findViewById(R.id.dialog_cancel)).setOnClickListener(new View.OnClickListener() {
-//                                    @Override
-//                                    public void onClick(View v) {
-//                                        dialogBuilder.dismiss();
-//                                    }
-//                                });
-//                                (dialogBuilder.findViewById(R.id.dialog_ok)).setOnClickListener(new View.OnClickListener() {
-//                                    @Override
-//                                    public void onClick(View v) {
-//                                        DBHelper dbHelper = new DBHelper(mActivity);
-//                                        SQLiteDatabase db = dbHelper.getWritableDatabase();
-//                                        int delete_result = db.delete(ProductsContract.ProductsEntry.TABLE_NAME, "_ID=" + "'" + this_product_id + "'", null);
-//
-//                                        NetworkUtils.showCustomSlimToast(mActivity, "Delete entry position" + this_position + "\n" +
-//                                                "DB product _ID = " + this_product_id + "\n" +
-//                                                "delete_result= " + delete_result, Toast.LENGTH_LONG);
-//                                    }
-//                                });
-//
-//                                dialogBuilder.show();
                             }
                         });
 
@@ -936,7 +928,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             String options_caixa = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME2));
             String options_quant = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_OPTIONS_NAME3));
 
-            String current_price_string = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE));
             double actual_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE));
             long actualPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE));
 
@@ -951,13 +942,11 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             long previousPriceDate = cursor.getLong(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_DATE));
             double previous_price_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE));
 
-            String currency_symb = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL));
-            boolean symb_after = currency_symb.indexOf(" ") == 0;
 
             if (options_sabor == null) options_sabor = "";
             if (options_caixa == null) options_caixa = "";
             if (options_quant == null) options_quant = "";
-            if (current_price_string == null || current_price_string.equals("")) current_price_string = "N/A";
+            if (StringUtil.isBlank(current_price_string)) current_price_string = "N/A";
 
             String sub_title = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_PRODUCT_SUBTITLE));
             String webstore_name = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_WEBSTORE_NAME));
@@ -1032,38 +1021,90 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                     SharedPreferences sharedPref = mActivity.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE);
                     long last_saved_date = sharedPref.getLong(LAST_DB_UPDATE_PREF_KEY, 0);
                     ((TextView) mActivity.findViewById(R.id.updated_tv)).setText(last_saved_date == 0 ? "Never" : getMillisecondsToDate(last_saved_date));
-
                 }
+
+                ImageView global_notifications_imageView = mActivity.findViewById(R.id.ic_global_notifications);
+                if (globalNotifications) {
+                    global_notifications_imageView.setImageResource(R.drawable.ic_notifications);
+                } else {
+                    global_notifications_imageView.setImageResource(R.drawable.ic_notifications_off_none);
+                }
+
+                global_notifications_imageView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(mActivity);
+
+                        LayoutInflater inflater = mActivity.getLayoutInflater();
+                        View dialogView = inflater.inflate(R.layout.notifications_alert_dialog_global, null);
+                        alertDialogBuilder.setView(dialogView);
+                        final SwitchCompat switchCompat = dialogView.findViewById(R.id.switch_notify_global);
+                        switchCompat.setChecked(globalNotifications);
+                        alertDialogBuilder.setTitle("Global Notifications");
+                        alertDialogBuilder.setIcon(R.mipmap.ic_notification_bell);
+                        alertDialogBuilder
+                                .setCancelable(true)
+                                .setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int id) {
+
+                                        boolean isChecked = switchCompat.isChecked();
+                                        if (globalNotifications != isChecked) {
+                                            defaultSharedPreferences.edit().putBoolean("notifications_global_key", isChecked).commit();
+                                            showCustomToast(mActivity, "Global Notifications are now " + (isChecked ? "Active" : "Disabled"),
+                                                    isChecked ? R.mipmap.ic_ok2 : R.mipmap.ic_warning,
+                                                    isChecked ? R.color.f_color2 : R.color.orange, Toast.LENGTH_LONG);
+                                            redrawListView();
+                                        }
+
+
+                                    }
+                                })
+                                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int id) {
+                                        dialog.cancel();
+                                    }
+                                });
+
+                        AlertDialog alertDialog = alertDialogBuilder.create();
+                        alertDialog.show();
+                    }
+                });
+
             }
 
             // pode dar erro ao atualizar o preço, ou o produto/opção não estar disponível
             // guardo o preço = 0 nesta situação
             if (actual_price_value != 0) {
 
-                // Decida de preço
+                // Descida de preço
                 if (actual_price_value < previous_price_value && previous_price_value != 0d) {
                     double diff = previous_price_value - actual_price_value;
                     String str_diff = "";
-                    if (diff > 0d && symb_after) {
-                        str_diff = "-" + round(diff) + currency_symb;
-                    } else if (diff > 0d && !symb_after) {
-                        str_diff = "-" + currency_symb + round(diff);
+                    if (diff > 0d && symb_before) {
+                        str_diff = "-" + currencySymbol + round(diff);
+                    } else if (diff > 0d && !symb_before) {
+                        str_diff = "-" + round(diff) + currencySymbol;
                     }
 
                     viewHolder.currentInfo.setVisibility(View.VISIBLE);
                     viewHolder.currentInfo.setText(str_diff);
                     viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.dark_green));
                     viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.down_arrow));
+
+                    if (globalNotifications && show_notifications[0] && notify_value == 0 ||
+                            globalNotifications && show_notifications[0] && notify_value > 0 && actual_price_value <= notify_value) {
+                        viewHolder.notify_icon.setImageResource(R.drawable.ic_notifications_active);
+                    }
                 }
 
                 // Subida de preço
                 if (actual_price_value > previous_price_value && previous_price_value != 0d) {
                     double diff = actual_price_value - previous_price_value;
                     String str_diff = "";
-                    if (diff > 0d && symb_after) {
-                        str_diff = "+" + round(diff) + currency_symb;
-                    } else if (diff > 0d && !symb_after) {
-                        str_diff = "+" + currency_symb + round(diff);
+                    if (diff > 0d && symb_before) {
+                        str_diff = "+" + currencySymbol + round(diff);
+                    } else if (diff > 0d && !symb_before) {
+                        str_diff = "+" + round(diff) + currencySymbol;
                     }
 
                     viewHolder.currentInfo.setVisibility(View.VISIBLE);
@@ -1077,10 +1118,10 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                     previous_price_value = previous_price_value == 0d ? actual_price_value : previous_price_value;
                     double diff = actual_price_value - previous_price_value;
                     String str_diff = "";
-                    if (diff > 0d && symb_after) {
-                        str_diff = "+" + round(diff) + currency_symb;
-                    } else if (diff > 0d && !symb_after) {
-                        str_diff = "+" + currency_symb + round(diff);
+                    if (diff > 0d && symb_before) {
+                        str_diff = "+" + currencySymbol + round(diff);
+                    } else if (diff > 0d && !symb_before) {
+                        str_diff = "+" + round(diff) + currencySymbol;
                     }
 
                     viewHolder.info_top.setVisibility(View.VISIBLE);
@@ -1099,10 +1140,10 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                     previous_price_value = previous_price_value == 0d ? actual_price_value : previous_price_value;
                     double diff = previous_price_value - min_price_value;
                     String str_diff = "";
-                    if (diff > 0d && symb_after) {
-                        str_diff = "-" + round(diff) + currency_symb;
-                    } else if (diff > 0d && !symb_after) {
-                        str_diff = "-" + currency_symb + round(diff);
+                    if (diff > 0d && symb_before) {
+                        str_diff = "-" + currencySymbol + round(diff);
+                    } else if (diff > 0d && !symb_before) {
+                        str_diff = "-" + round(diff) + currencySymbol;
                     }
 
                     viewHolder.info_top.setVisibility(View.VISIBLE);
@@ -1377,6 +1418,13 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             return imageView;
         }
 
+    }
+
+    public void redrawListView() {
+        timer.cancel();
+        timer.purge();
+        timer = new Timer();
+        getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
     }
 
 

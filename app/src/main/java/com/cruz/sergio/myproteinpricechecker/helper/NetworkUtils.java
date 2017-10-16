@@ -37,7 +37,6 @@ import javax.net.ssl.HttpsURLConnection;
 
 import info.guardianproject.netcipher.NetCipher;
 
-import static com.cruz.sergio.myproteinpricechecker.MainActivity.BC_Registered;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
 
 /*****
@@ -66,13 +65,13 @@ public class NetworkUtils {
         if (BCReceiver != null) {
             LocalBroadcastManager.getInstance(mActivity).unregisterReceiver(BCReceiver);
             BCReceiver = null;
-            BC_Registered = false;
+            noNetworkSnackBar = null;
             Log.i("Sergio>", "NetworkUtils: UnregisterBroadcastReceiver");
         }
     }
 
     public static final Boolean createBroadcast(final Activity mActivity) {
-        if (!BC_Registered && BCReceiver == null) {
+        if (BCReceiver == null) {
             makeNoNetworkSnackBar(mActivity);
             final IntentFilter intentFilter = new IntentFilter();
             intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
@@ -91,6 +90,7 @@ public class NetworkUtils {
             };
             try {
                 mActivity.registerReceiver(BCReceiver, intentFilter);
+                Log.i("Sergio>", "NetworkUtils: registerReceiver");
                 return true;
             } catch (Exception e) {
                 e.printStackTrace();

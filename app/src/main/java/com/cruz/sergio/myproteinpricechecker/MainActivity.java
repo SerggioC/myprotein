@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.TabLayout;
+import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
@@ -19,6 +20,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import com.cruz.sergio.myproteinpricechecker.helper.Alarm;
+import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
 import com.cruz.sergio.myproteinpricechecker.helper.ProzisDomain;
 
 import static com.cruz.sergio.myproteinpricechecker.TabFragment.tabLayout;
@@ -27,15 +29,17 @@ import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.Unregist
 
 public class MainActivity extends AppCompatActivity {
     public static final String PREFERENCE_FILE_NAME = "wpt_preferences_file";
+    public static final int SETTINGS_REQUEST_CODE = 5;
+    public static final String CHANGED_NOTIFY_SETTINGS_REF = "notify_settings_ref";
     public static NavigationView mNavigationView;
     public static Boolean GETNEWS_ONSTART;
     public static Boolean CACHE_IMAGES;
     public static Boolean UPDATE_ONSTART;
-    public static Boolean BC_Registered = false;
     public static int MAX_NOTIFY_VALUE = 1_000_000_000;
     public static float scale;
     public static int density;
     public static boolean detailsActivityIsActive;
+    public static ChangedNotifySettings notifySettingsChanged;
     static FragmentManager mFragmentManager;
     DrawerLayout mDrawerLayout;
     FragmentTransaction mFragmentTransaction;
@@ -43,23 +47,6 @@ public class MainActivity extends AppCompatActivity {
     Handler mHandler;
     Bundle indexBundle;
     int index = 0;
-
-    public static final class TAB_IDS {
-        public static final int NEWS = 0;
-        public static final int WATCHING = 1;
-        public static final int SEARCH = 2;
-        public static final int GRAPHS = 3;
-        public static final int VOUCHERS = 4;
-        public static final int CARTS = 5;
-    }
-
-    public static class TheMenuItem {
-        static MenuItem lastMenuItem;
-
-        TheMenuItem(MenuItem lastMenuItem) {
-            this.lastMenuItem = lastMenuItem;
-        }
-    }
 
     @Override
     protected void onRestart() {
@@ -74,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        NetworkUtils.createBroadcast(mActivity);
     }
 
     String getCurrencyCode(String symbol) {
@@ -128,8 +116,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onPause() {
-        super.onPause();
         UnregisterBroadcastReceiver(mActivity);
+        super.onPause();
     }
 
     @Override
@@ -259,9 +247,8 @@ public class MainActivity extends AppCompatActivity {
 
         mDrawerToggle.syncState();
 
+
     }
-
-
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
@@ -291,7 +278,13 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_settings) {
-            startActivity(new Intent(mActivity, SettingsActivity.class));
+            Bundle bundle = ActivityOptionsCompat.makeCustomAnimation(
+                    mActivity,
+                    android.R.anim.fade_in,
+                    android.R.anim.fade_out).toBundle();
+            startActivityForResult(new Intent(mActivity, SettingsActivity.class), SETTINGS_REQUEST_CODE, bundle);
+
+            //startActivity(new Intent(mActivity, SettingsActivity.class));
         }
 
         if (id == R.id.action_search) {
@@ -300,6 +293,38 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == SETTINGS_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
+            Boolean changedNotify = data.getExtras().getBoolean(CHANGED_NOTIFY_SETTINGS_REF);
+            if (changedNotify) {
+                notifySettingsChanged.onNotifySettingsChanged(changedNotify);
+            }
+        }
+    }
+
+    public interface ChangedNotifySettings {
+        void onNotifySettingsChanged(Boolean hasChanged);
+    }
+
+    public static final class TAB_IDS {
+        public static final int NEWS = 0;
+        public static final int WATCHING = 1;
+        public static final int SEARCH = 2;
+        public static final int GRAPHS = 3;
+        public static final int VOUCHERS = 4;
+        public static final int CARTS = 5;
+    }
+
+    public static class TheMenuItem {
+        static MenuItem lastMenuItem;
+
+        TheMenuItem(MenuItem lastMenuItem) {
+            this.lastMenuItem = lastMenuItem;
+        }
     }
 
 }

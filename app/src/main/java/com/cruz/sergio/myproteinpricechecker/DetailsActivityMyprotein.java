@@ -29,7 +29,6 @@ import android.util.Log;
 import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
@@ -76,7 +75,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.bumptech.glide.load.DecodeFormat.PREFER_ARGB_8888;
-import static com.cruz.sergio.myproteinpricechecker.MainActivity.BC_Registered;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.CACHE_IMAGES;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.MAX_NOTIFY_VALUE;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
@@ -96,7 +94,6 @@ import static java.lang.Double.parseDouble;
 
 public class DetailsActivityMyprotein extends AppCompatActivity {
     public static final String ADDED_NEW_PROD_REF = "addedNewProduct";
-    public static final String HAD_INTERNET_OFF_REF = "had_internet_off";
     final static String[] MP_ALL_IMAGE_TYPES = new String[]{
             "extrasmall",   // 20/20
             "small",        // 50/50
@@ -145,7 +142,6 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
             "/600/600/",      // 600/600
             "/960/960/",      // 960/960
             "/1600/1600/"};   // 1600/1600
-    public boolean hadInternet_off;
     Activity mActivity;
     Boolean gotPrice = true;
     ArrayList<String> description;
@@ -176,26 +172,30 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        BC_Registered = NetworkUtils.createBroadcast(mActivity);
+        NetworkUtils.createBroadcast(mActivity);
     }
 
     @Override
     public void onPause() {
-        super.onPause();
+        setActivityResult();
         detailsActivityIsActive = false;
         UnregisterBroadcastReceiver(mActivity);
+        super.onPause();
     }
 
     @Override
     public void onBackPressed() {
-        Intent intent = new Intent();
-        if (addedNewProduct) {
-            intent.putExtra(ADDED_NEW_PROD_REF, addedNewProduct);
-        }
-        intent.putExtra(HAD_INTERNET_OFF_REF, hadInternet_off);
-        setResult(RESULT_OK, intent);
-        finish();
+        setActivityResult();
         super.onBackPressed();
+    }
+
+    public void setActivityResult() {
+        if (addedNewProduct) {
+            Intent intent = new Intent();
+            intent.putExtra(ADDED_NEW_PROD_REF, addedNewProduct);
+            setResult(RESULT_OK, intent);
+            finish();
+        }
     }
 
 
@@ -258,12 +258,12 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
         radio_target.setEnabled(true);
         radio_target.setChecked(false);
 
-        textView1.setEnabled(false);
-        textView1.setActivated(false);
+        textView1.setEnabled(radio_target.isChecked());
+        textView1.setActivated(radio_target.isChecked());
         textView1.clearFocus();
 
-        alertTextView.setEnabled(false);
-        alertTextView.setActivated(false);
+        alertTextView.setEnabled(radio_target.isChecked());
+        alertTextView.setActivated(radio_target.isChecked());
         alertTextView.clearFocus();
 
         alertSwitch.setOnClickListener(new View.OnClickListener() {
@@ -317,7 +317,10 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
             }
         });
 
-        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+        // bugs do sistema android...
+        //getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+        // parâmetro no manifest android:windowSoftInputMode="stateHidden|adjustPan"
+
 
         Bundle extras = getIntent().getExtras();
 
@@ -832,7 +835,6 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
             super.onPostExecute(hasInternet);
 
             if (hasInternet) {
-                hadInternet_off = false;
                 switch (method) {
                     case "get_Available_Options": {
                         AsyncTask<String, Void, JSONObject> getDetailsFromJSON = new GetDetailsFromJSON();
@@ -861,7 +863,6 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                 }
 
             } else {
-                hadInternet_off = true;
                 if (noNetworkSnackBar != null) {
                     if (noNetworkSnackBar.isShown()) {
                         noNetworkSnackBar.dismiss();

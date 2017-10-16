@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:paddingBottom="4dp"
+    android:paddingLeft="16dp"
+    android:paddingRight="16dp"
+    android:paddingTop="4dp">
+
+    <android.support.v7.widget.SwitchCompat
+        android:id="@+id/switch_notify_global"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:checked="true"
+        android:hint="Enable or disable global notifications"
+        android:text="Global Notifications"
+        android:textOff="OFF"
+        android:textOn="ON"
+        android:textSize="14sp"/>
+
+</LinearLayout>

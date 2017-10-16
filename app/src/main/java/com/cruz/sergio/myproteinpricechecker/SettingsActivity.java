@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Locale;
 
 import static android.content.res.Configuration.SCREENLAYOUT_SIZE_XLARGE;
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.CHANGED_NOTIFY_SETTINGS_REF;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.mNavigationView;
 
@@ -54,22 +55,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     static String deviceCountry;
     static String deviceCurrency;
     static Activity mActivity;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        mActivity = this;
-
-        //setupActionBar();
-        Locale local = getCurrentLocale();
-        Log.i("Sergio>", this + "onCreate: local= " + local + " country= " + local.getCountry());
-        deviceCountry = local.getCountry(); // PT
-        deviceLanguage = local.toString().toLowerCase().replace("_", "-"); // pt_PT -> pt-pt
-        deviceCurrency = Currency.getInstance(local).toString();
-
-        Log.i("Sergio>", this + " onCreate\ndeviceCountry= " + deviceCountry + " deviceLanguage= " + deviceLanguage + " deviceCurrency= " + deviceCurrency);
-    }
-
+    static boolean changedNotifySettings = false;
     /**
      * A preference value change listener that updates the preference's summary
      * to reflect its new value.
@@ -246,16 +232,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                 & Configuration.SCREENLAYOUT_SIZE_MASK) >= SCREENLAYOUT_SIZE_XLARGE;
     }
 
-//    /*** Set up the {@link android.app.ActionBar}, if the API is available.     */
-//    private void setupActionBar() {
-//        ActionBar actionBar = getSupportActionBar();
-//        Log.i("Sergio>>>", "setupActionBar: actionbar= " + actionBar);
-//        if (actionBar != null) {
-//            // Show the Up button in the action bar.
-//            actionBar.setDisplayHomeAsUpEnabled(true);
-//        }
-//    }
-
     /**
      * Binds a preference's summary to its value. More specifically, when the
      * preference's value is changed, its summary (line of text below the
@@ -316,16 +292,41 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                 }
             }
 
-
             // Set the listener to watch for value changes.
             preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
 
             // Trigger the listener immediately with the preference's current value.
             sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
                     PreferenceManager.getDefaultSharedPreferences(preference.getContext()).getString(preference.getKey(), ""));
+
+
         }
     }
 
+//    /*** Set up the {@link android.app.ActionBar}, if the API is available.     */
+//    private void setupActionBar() {
+//        ActionBar actionBar = getSupportActionBar();
+//        Log.i("Sergio>>>", "setupActionBar: actionbar= " + actionBar);
+//        if (actionBar != null) {
+//            // Show the Up button in the action bar.
+//            actionBar.setDisplayHomeAsUpEnabled(true);
+//        }
+//    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        mActivity = this;
+
+        //setupActionBar();
+        Locale local = getCurrentLocale();
+        Log.i("Sergio>", this + "onCreate: local= " + local + " country= " + local.getCountry());
+        deviceCountry = local.getCountry(); // PT
+        deviceLanguage = local.toString().toLowerCase().replace("_", "-"); // pt_PT -> pt-pt
+        deviceCurrency = Currency.getInstance(local).toString();
+
+        Log.i("Sergio>", this + " onCreate\nlocal= " + local + " deviceCountry= " + deviceCountry + " deviceLanguage= " + deviceLanguage + " deviceCurrency= " + deviceCurrency);
+    }
 
     @TargetApi(Build.VERSION_CODES.N)
     public Locale getCurrentLocale() {
@@ -354,7 +355,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     }
 
     @Override
-    protected void onDestroy() {
+    public void onDestroy() {
+        setActivityResult();
         super.onDestroy();
         mNavigationView.getMenu().findItem(R.id.nav_item_settings).setChecked(false);
         Bundle bundle = getIntent().getExtras();
@@ -362,6 +364,24 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             int menuId = bundle.getInt("menuId");
             mNavigationView.setCheckedItem(menuId);
         }
+    }
+
+
+    public void setActivityResult() {
+        Intent returnIntent = new Intent();
+        returnIntent.putExtra(CHANGED_NOTIFY_SETTINGS_REF, changedNotifySettings);
+        setResult(RESULT_OK, returnIntent);
+        Log.d("Sergio>", this + "\n" +
+                "setActivityResult\n" +
+                "changedNotifySettings= " + changedNotifySettings);
+        finish();
+    }
+
+    @Override
+    public void onBackPressed() {
+        setActivityResult();
+        super.onBackPressed();
+
     }
 
     /**
@@ -421,6 +441,13 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             bindPreferenceSummaryToValue(findPreference("prz_language"));
             bindPreferenceSummaryToValue(findPreference("ringtone_notifications_key"));
             bindPreferenceSummaryToValue(findPreference("sync_frequency"));
+            findPreference("notifications_global_key").setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(Preference preference, Object newValue) {
+                    changedNotifySettings = true;
+                    return true;
+                }
+            });
 
         }
 

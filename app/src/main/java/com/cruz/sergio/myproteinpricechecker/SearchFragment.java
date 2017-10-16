@@ -59,7 +59,6 @@ import java.util.ArrayList;
 import static android.app.Activity.RESULT_OK;
 import static android.content.Context.MODE_PRIVATE;
 import static com.cruz.sergio.myproteinpricechecker.DetailsActivityMyprotein.ADDED_NEW_PROD_REF;
-import static com.cruz.sergio.myproteinpricechecker.DetailsActivityMyprotein.HAD_INTERNET_OFF_REF;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.IOEXCEPTION;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.MALFORMED_URL;
@@ -69,6 +68,7 @@ import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.STATUS_O
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.UNSUPPORTED_MIME_TYPE;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.getHTMLDocument_with_NetCipher;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.hasActiveNetworkConnection;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomSlimToast;
@@ -81,8 +81,8 @@ public class SearchFragment extends Fragment {
     public static SearchCompleteListener searchCompleteListener;
     public static UpdateGraphForNewProduct updateGraphListener;
     public static AddedNewProductListener addedNewProductListener;
-    public int SEARCH_REQUEST_CODE = 1;
-    public int VOICE_REQUEST_CODE = 2;
+    private static final int SEARCH_REQUEST_CODE = 1;
+    private static final int VOICE_REQUEST_CODE = 2;
     Activity mActivity;
     ArrayAdapter adapter;
     ArrayList<ProductCards> fullListProductCards = new ArrayList<>();
@@ -397,16 +397,6 @@ public class SearchFragment extends Fragment {
                 updateGraphListener.onProductAdded(addedProduct);
                 addedNewProductListener.onProductAdded(addedProduct);
             }
-            if (data.getExtras().getBoolean(HAD_INTERNET_OFF_REF)) {
-                if (noNetworkSnackBar != null) {
-                    noNetworkSnackBar = null;
-                    makeNoNetworkSnackBar(mActivity);
-                    noNetworkSnackBar.show();
-                } else {
-                    makeNoNetworkSnackBar(mActivity);
-                    noNetworkSnackBar.show();
-                }
-            }
         }
         if (requestCode == VOICE_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
             String voiceText = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).get(0);
@@ -420,7 +410,7 @@ public class SearchFragment extends Fragment {
 
     }
 
-    public interface SearchCompleteListener {
+    interface SearchCompleteListener {
         void onSearchComplete(Boolean isComplete, int thisWebstoreIndex, ArrayList<ProductCards> listProductCards);
     }
 
@@ -444,7 +434,7 @@ public class SearchFragment extends Fragment {
         @Override
         protected Boolean doInBackground(String... params) {
             this.searchString = params[0];
-            return NetworkUtils.hasActiveNetworkConnection(mActivity);
+            return hasActiveNetworkConnection(mActivity);
         }
 
         @Override

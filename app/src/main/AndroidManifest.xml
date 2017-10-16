@@ -68,7 +68,8 @@
         <activity
             android:name=".DetailsActivityMyprotein"
             android:label="@string/title_activity_details"
-            android:parentActivityName=".MainActivity">
+            android:parentActivityName=".MainActivity"
+            android:windowSoftInputMode="stateHidden|adjustPan"> <!--// adjustResize-->
         </activity>
         <activity
             android:name=".DetailsActivityProzis"
