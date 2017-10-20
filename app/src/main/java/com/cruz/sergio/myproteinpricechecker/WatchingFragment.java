@@ -78,6 +78,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DateFormat;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Timer;
@@ -126,6 +127,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     Timer timer = new Timer();
     Boolean[] isExpandedArray = null;
     Boolean addedNewProduct = false;
+    Boolean[] showPercent = null;
     SharedPreferences defaultSharedPreferences;
 
     public WatchingFragment() {
@@ -196,7 +198,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     }
 
     public void setDeleteProductlistener(DeletedProductListener listener) {
-        this.delete_listener = listener;
+        delete_listener = listener;
     }
 
     @Override
@@ -549,6 +551,13 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 });
     }
 
+    public void redrawListView() {
+        timer.cancel();
+        timer.purge();
+        timer = new Timer();
+        getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
+    }
+
     interface DeletedProductListener {
         void onProductDeleted(Boolean deleted);
     }
@@ -573,6 +582,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         final TextView product_brand;
         final ImageView notify_icon;
         final TextView notify_info;
+        final LinearLayout llPriceInfo;
 
 
         public ViewHolder(View view) {
@@ -595,6 +605,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             product_brand = view.findViewById(R.id.product_brand);
             notify_icon = view.findViewById(notify);
             notify_info = view.findViewById(R.id.notifications_info);
+            llPriceInfo = view.findViewById(R.id.ll_price_info);
         }
     }
 
@@ -631,6 +642,13 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
             View under_view = view.findViewById(R.id.under_cardview);
             expandOrCollapse(under_view, mCursor);
+
+            if (showPercent == null || showPercent.length != mCursor.getCount()) {
+                showPercent = new Boolean[mCursor.getCount()];
+                for (int i = 0; i < mCursor.getCount(); i++) {
+                    showPercent[i] = true;
+                }
+            }
 
             view.setTag(R.id.view_position, position);
 
@@ -1076,18 +1094,21 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             // guardo o preço = 0 nesta situação
             if (actual_price_value != 0) {
 
+                Boolean hasPercent = false;
+                String absDiffStr = "";
+                String percentStr = "";
+
                 // Descida de preço
                 if (actual_price_value < previous_price_value && previous_price_value != 0d) {
                     double diff = previous_price_value - actual_price_value;
-                    String str_diff = "";
-                    if (diff > 0d && symb_before) {
-                        str_diff = "-" + currencySymbol + round(diff);
-                    } else if (diff > 0d && !symb_before) {
-                        str_diff = "-" + round(diff) + currencySymbol;
+                    if (diff > 0d) {
+                        absDiffStr = "-" + getAbsDiffString(currencySymbol, symb_before, diff);
+                        percentStr = "-" + getPercentString(previous_price_value, diff);
+                        hasPercent = true;
                     }
 
                     viewHolder.currentInfo.setVisibility(View.VISIBLE);
-                    viewHolder.currentInfo.setText(str_diff);
+                    viewHolder.currentInfo.setText(showPercent[this_position] ? percentStr : absDiffStr);
                     viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.dark_green));
                     viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.down_arrow));
 
@@ -1100,15 +1121,13 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 // Subida de preço
                 if (actual_price_value > previous_price_value && previous_price_value != 0d) {
                     double diff = actual_price_value - previous_price_value;
-                    String str_diff = "";
-                    if (diff > 0d && symb_before) {
-                        str_diff = "+" + currencySymbol + round(diff);
-                    } else if (diff > 0d && !symb_before) {
-                        str_diff = "+" + round(diff) + currencySymbol;
+                    if (diff > 0d) {
+                        absDiffStr = "+" + getAbsDiffString(currencySymbol, symb_before, diff);
+                        percentStr = "+" + getPercentString(previous_price_value, diff);
+                        hasPercent = true;
                     }
-
                     viewHolder.currentInfo.setVisibility(View.VISIBLE);
-                    viewHolder.currentInfo.setText(str_diff);
+                    viewHolder.currentInfo.setText(showPercent[this_position] ? percentStr : absDiffStr);
                     viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.red));
                     viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.up_arrow));
                 }
@@ -1117,11 +1136,10 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 if (actual_price_value >= max_price_value && min_price_value != max_price_value) {
                     previous_price_value = previous_price_value == 0d ? actual_price_value : previous_price_value;
                     double diff = actual_price_value - previous_price_value;
-                    String str_diff = "";
-                    if (diff > 0d && symb_before) {
-                        str_diff = "+" + currencySymbol + round(diff);
-                    } else if (diff > 0d && !symb_before) {
-                        str_diff = "+" + round(diff) + currencySymbol;
+                    if (diff > 0d) {
+                        absDiffStr = "+" + getAbsDiffString(currencySymbol, symb_before, diff);
+                        percentStr = "+" + getPercentString(previous_price_value, diff);
+                        hasPercent = true;
                     }
 
                     viewHolder.info_top.setVisibility(View.VISIBLE);
@@ -1129,7 +1147,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                     viewHolder.info_top.setTextColor(ContextCompat.getColor(mActivity, R.color.red));
 
                     viewHolder.currentInfo.setVisibility(View.VISIBLE);
-                    viewHolder.currentInfo.setText(str_diff);
+                    viewHolder.currentInfo.setText(showPercent[this_position] ? percentStr : absDiffStr);
                     viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.red));
                     viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.up_arrow));
                     viewHolder.ll_current_price.setBackground(ContextCompat.getDrawable(mActivity, R.drawable.ll_red_bg));
@@ -1139,11 +1157,10 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 if (actual_price_value <= min_price_value && min_price_value != max_price_value) {
                     previous_price_value = previous_price_value == 0d ? actual_price_value : previous_price_value;
                     double diff = previous_price_value - min_price_value;
-                    String str_diff = "";
-                    if (diff > 0d && symb_before) {
-                        str_diff = "-" + currencySymbol + round(diff);
-                    } else if (diff > 0d && !symb_before) {
-                        str_diff = "-" + round(diff) + currencySymbol;
+                    if (diff > 0d) {
+                        absDiffStr = "-" + getAbsDiffString(currencySymbol, symb_before, diff);
+                        percentStr = "-" + getPercentString(previous_price_value, diff);
+                        hasPercent = true;
                     }
 
                     viewHolder.info_top.setVisibility(View.VISIBLE);
@@ -1151,11 +1168,31 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                     viewHolder.info_top.setTextColor(ContextCompat.getColor(mActivity, R.color.dark_green));
 
                     viewHolder.currentInfo.setVisibility(View.VISIBLE);
-                    viewHolder.currentInfo.setText(str_diff);
+                    viewHolder.currentInfo.setText(showPercent[this_position] ? percentStr : absDiffStr);
                     viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mActivity, R.color.dark_green));
                     viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mActivity, R.drawable.down_arrow));
                     viewHolder.ll_current_price.setBackground(ContextCompat.getDrawable(mActivity, R.drawable.ll_green_bg));
                 }
+
+
+                if (hasPercent) {
+                    final String finalPercentStr = percentStr;
+                    final String finalAbsoluteDiff = absDiffStr;
+                    viewHolder.llPriceInfo.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            if (showPercent[this_position]) {
+                                viewHolder.currentInfo.setText(finalAbsoluteDiff);
+                                showPercent[this_position] = false;
+                            } else {
+                                viewHolder.currentInfo.setText(finalPercentStr);
+                                showPercent[this_position] = true;
+                            }
+                        }
+                    });
+                }
+
+
             } else {
 
                 SpannableStringBuilder ssb_title = new SpannableStringBuilder(str_title + " (Not available)");
@@ -1168,6 +1205,16 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 //                viewHolder.info_top.setTextColor(ContextCompat.getColor(mActivity, R.color.red));
             }
         }   // End bindView
+
+        public String getAbsDiffString(String currencySymbol, boolean symb_before, double diff) {
+            return symb_before ? currencySymbol + round(diff) : round(diff) + currencySymbol;
+        }
+
+        @NonNull
+        public String getPercentString(double previous_price_value, double diff) {
+            DecimalFormat percentFormater = new DecimalFormat("##.#%");
+            return percentFormater.format(diff / previous_price_value);
+        }
 
         public String round(double value) {
             BigDecimal bd = new BigDecimal(value);
@@ -1184,7 +1231,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             }
             if (isExpandedArray[cursor.getPosition()]) {
                 expandIt(view, false);
-                TextView textView = (TextView) ((LinearLayout) view.getParent()).findViewById(R.id.expand_underview_tv);
+                TextView textView = ((LinearLayout) view.getParent()).findViewById(R.id.expand_underview_tv);
                 textView.setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_expand_less_black_24dp), null, null, null);
                 textView.setText("Close");
             }
@@ -1418,13 +1465,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             return imageView;
         }
 
-    }
-
-    public void redrawListView() {
-        timer.cancel();
-        timer.purge();
-        timer = new Timer();
-        getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
     }
 
 
