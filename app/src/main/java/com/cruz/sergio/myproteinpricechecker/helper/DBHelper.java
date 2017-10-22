@@ -117,6 +117,9 @@ public class DBHelper extends SQLiteOpenHelper {
         // should be your top priority before modifying this method.
         db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.ProductsEntry.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.PricesEntry.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.VouchersEntry.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.CartsEntry.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS jobs");
         onCreate(db);
     }
 
@@ -125,6 +128,9 @@ public class DBHelper extends SQLiteOpenHelper {
         super.onDowngrade(db, oldVersion, newVersion);
         db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.ProductsEntry.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.PricesEntry.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.VouchersEntry.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + ProductsContract.CartsEntry.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS jobs");
         onCreate(db);
     }
 

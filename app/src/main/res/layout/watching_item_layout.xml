@@ -215,9 +215,9 @@
 
             <LinearLayout
                 android:id="@+id/icons"
-                android:layout_marginTop="4dp"
                 android:layout_width="match_parent"
-                android:layout_height="24dp">
+                android:layout_height="24dp"
+                android:layout_marginTop="4dp">
 
                 <TextView
                     android:id="@+id/expand_underview_tv"
@@ -317,12 +317,25 @@
                 android:gravity="center"
                 android:text="Last updated: "/>
 
+            <TextView
+                android:id="@+id/notifications_info"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_below="@id/last_updated_undercard"
+                android:layout_marginBottom="4dp"
+                android:layout_marginLeft="4dp"
+                android:layout_marginTop="4dp"
+                android:drawableLeft="@drawable/ic_notifications_15dp"
+                android:drawablePadding="2dp"
+                android:gravity="center"/>
+
             <ImageView
                 android:id="@+id/delete_entry"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentRight="true"
-                android:layout_below="@id/last_updated_undercard"
+                android:layout_below="@id/notifications_info"
                 android:layout_margin="6dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
@@ -335,7 +348,7 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:layout_alignParentLeft="true"
-                android:layout_below="@id/last_updated_undercard"
+                android:layout_below="@id/notifications_info"
                 android:layout_margin="6dp"
                 android:visibility="gone"/>
 
@@ -344,27 +357,12 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:layout_alignParentLeft="true"
-                android:layout_below="@id/last_updated_undercard"
+                android:layout_below="@id/notifications_info"
                 android:layout_margin="6dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
                 android:contentDescription="Update entry"
                 android:src="@drawable/ic_update_this"/>
-
-
-            <TextView
-                android:id="@+id/notifications_info"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentLeft="true"
-                android:layout_below="@id/update_this_entry"
-                android:layout_marginBottom="4dp"
-                android:layout_marginLeft="4dp"
-                android:layout_marginTop="4dp"
-                android:drawableLeft="@drawable/ic_notifications"
-                android:drawablePadding="2dp"
-                android:gravity="center"/>
-
 
 
         </RelativeLayout>

@@ -12,6 +12,7 @@ import android.support.design.widget.TabLayout;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
@@ -23,15 +24,12 @@ import com.cruz.sergio.myproteinpricechecker.helper.Alarm;
 import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
 import com.cruz.sergio.myproteinpricechecker.helper.ProzisDomain;
 
-import static com.cruz.sergio.myproteinpricechecker.TabFragment.tabLayout;
-import static com.cruz.sergio.myproteinpricechecker.TabFragment.viewPager;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.UnregisterBroadcastReceiver;
 
 public class MainActivity extends AppCompatActivity {
     public static final String PREFERENCE_FILE_NAME = "wpt_preferences_file";
     public static final int SETTINGS_REQUEST_CODE = 5;
     public static final String CHANGED_NOTIFY_SETTINGS_REF = "notify_settings_ref";
-    public static NavigationView mNavigationView;
     public static Boolean GETNEWS_ONSTART;
     public static Boolean CACHE_IMAGES;
     public static Boolean UPDATE_ONSTART;
@@ -155,8 +153,8 @@ public class MainActivity extends AppCompatActivity {
         mHandler = new Handler();
 
         /** Setup the DrawerLayout and NavigationView **/
-        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawerLayout);
-        mNavigationView = (NavigationView) findViewById(R.id.nav_view);
+        mDrawerLayout = findViewById(R.id.drawerLayout);
+        NavigationView mNavigationView = findViewById(R.id.nav_view);
         mNavigationView.setItemIconTintList(null);
 
         /** Lets inflate the very first fragment
@@ -214,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if (tabFragment.isAdded()) {
-                    viewPager.setCurrentItem(index);
+                    ((ViewPager) findViewById(R.id.viewpager)).setCurrentItem(index);
                 } else {
                     indexBundle.putInt("index", index);
                     tabFragment.getArguments().putAll(indexBundle);
@@ -230,7 +228,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         /** Setup Drawer Toggle on the Toolbar ? triple parallel lines on the left **/
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
 //        Toolbar.LayoutParams lp = new Toolbar.LayoutParams(Toolbar.LayoutParams.WRAP_CONTENT, Toolbar.LayoutParams.WRAP_CONTENT);
 //        lp.setMargins(0, 0, 0, 0);
 //        toolbar.getChildAt(0).setLayoutParams(lp);
@@ -258,7 +256,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         int count = getFragmentManager().getBackStackEntryCount();
-        boolean drawerOpen = mDrawerLayout.isDrawerOpen(mNavigationView);
+        boolean drawerOpen = mDrawerLayout.isDrawerOpen(findViewById(R.id.nav_view));
 
         if (drawerOpen) {
             mDrawerLayout.closeDrawers();
@@ -288,8 +286,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (id == R.id.action_search) {
-            TabLayout.Tab tab = tabLayout.getTabAt(TAB_IDS.SEARCH);
-            tab.select();
+            ((TabLayout) mActivity.findViewById(R.id.tabs)).getTabAt(TABS.SEARCH).select();
         }
 
         return super.onOptionsItemSelected(item);
@@ -310,7 +307,7 @@ public class MainActivity extends AppCompatActivity {
         void onNotifySettingsChanged(Boolean hasChanged);
     }
 
-    public static final class TAB_IDS {
+    public static final class TABS {
         public static final int NEWS = 0;
         public static final int WATCHING = 1;
         public static final int SEARCH = 2;

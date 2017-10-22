@@ -101,7 +101,6 @@ import static com.cruz.sergio.myproteinpricechecker.MainActivity.density;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
 import static com.cruz.sergio.myproteinpricechecker.R.id.main_cardview;
 import static com.cruz.sergio.myproteinpricechecker.R.id.notify;
-import static com.cruz.sergio.myproteinpricechecker.TabFragment.tabLayout;
 import static com.cruz.sergio.myproteinpricechecker.helper.Alarm.updatePricesOnReceive;
 import static com.cruz.sergio.myproteinpricechecker.helper.FirebaseJobservice.LAST_DB_UPDATE_PREF_KEY;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomSlimToast;
@@ -115,10 +114,8 @@ import static java.text.DateFormat.getTimeInstance;
 
 public class WatchingFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
     public static final int LOADER_ID = 0;
-    public static final int IMAGE_PERIOD = 5400;
+    public static final int IMAGE_PERIOD = 5400; // (ms)
     public static DeletedProductListener delete_listener;
-    // TODO remove static listview
-    static ListView listViewItems;
     static Loader<Cursor> loaderManager;
     static String[] imageSizesToUse;
     cursorDBAdapter cursorDBAdapter;
@@ -168,6 +165,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
                 @Override
                 public void onAnimationEnd(Animation arg0) {
+                    ListView listViewItems = view.getRootView().findViewById(R.id.watching_listview);
                     listViewItems.smoothScrollToPosition(listViewItems.getMaxScrollAmount());
                 }
             });
@@ -242,8 +240,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             @Override
             public void onProductAdded(Boolean addedNew) {
                 Log.w("Sergio>", this + "\n" + "addedNewProduct= " + addedNew);
-                TabLayout.Tab tab = tabLayout.getTabAt(MainActivity.TAB_IDS.WATCHING);
-                tabLayout.setScrollPosition(MainActivity.TAB_IDS.WATCHING, 0f, true);
+                TabLayout tabLayout = getActivity().findViewById(R.id.tabs);
+                TabLayout.Tab tab = tabLayout.getTabAt(MainActivity.TABS.WATCHING);
+                tabLayout.setScrollPosition(MainActivity.TABS.WATCHING, 0f, true);
                 if (tab != null) tab.select();
                 redrawListView();
                 addedNewProduct = addedNew;
@@ -266,7 +265,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         super.onStart();
         if (UPDATE_ONSTART) {
             //FirebaseJobservice.updatePricesOnStart(mActivity, false, false, null);
-            updatePricesOnReceive(mActivity, false, false, null);
+            updatePricesOnReceive(getActivity(), false, false, null);
         }
     }
 
@@ -281,7 +280,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         loaderManager = getLoaderManager().initLoader(LOADER_ID, null, this);
 
         cursorDBAdapter = new cursorDBAdapter(mActivity, null, 0);
-        listViewItems = rootview.findViewById(R.id.watching_listview);
+        ListView listViewItems = rootview.findViewById(R.id.watching_listview);
         listViewItems.addHeaderView(View.inflate(mActivity, R.layout.watch_list_header_view, null));
         listViewItems.setAdapter(cursorDBAdapter);
 
@@ -350,13 +349,14 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         }
         cursorDBAdapter.swapCursor(data);
         if (addedNewProduct) {
+            ListView listViewItems = mActivity.findViewById(R.id.watching_listview);
             listViewItems.smoothScrollToPosition(listViewItems.getMaxScrollAmount());
             addedNewProduct = false;
         }
     }
 
     public void dump_BIGdata_toLog(String data) {
-        // String cursorToString = dumpCursorToString(data);
+        // String cursorToString = dumpCursorToString((Cursor) data);
         if (data.length() > 4000) {
             Log.v("Sergio", "data.length = " + data.length());
             int chunkCount = data.length() / 4000;     // integer division
@@ -562,7 +562,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         void onProductDeleted(Boolean deleted);
     }
 
-    public static class ViewHolder {
+    static class ViewHolder {
         final TextView titleView; // ou Product Name
         final TextView highestPriceView;
         final TextView lowestPriceView;
@@ -707,7 +707,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             if (globalNotifications) {
                 if (show_notifications[0]) {
                     viewHolder.notify_icon.setImageResource(R.drawable.ic_notifications);
-                    viewHolder.notify_info.setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_notifications), null, null, null);
+                    viewHolder.notify_info.setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_notifications_15dp), null, null, null);
                     String notifyText = "Notify when price drops.";
                     if (notify_value > 0) {
                         notifyText = "Notify when price reaches " + (symb_before ? (currencySymbol + notify_value) : (notify_value + currencySymbol));
@@ -715,7 +715,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                     viewHolder.notify_info.append(notifyText);
                 } else {
                     viewHolder.notify_icon.setImageResource(R.drawable.ic_notifications_none);
-                    viewHolder.notify_info.setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_notifications_none), null, null, null);
+                    viewHolder.notify_info.setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_notifications_none_15dp), null, null, null);
                     viewHolder.notify_info.append("Notifications disabled.");
                 }
             } else {
@@ -728,10 +728,10 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                 viewHolder.notify_info.append(ssb1);
                 if (show_notifications[0]) {
                     viewHolder.notify_icon.setImageResource(R.drawable.ic_notifications_off);
-                    viewHolder.notify_info.setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_notifications_off), null, null, null);
+                    viewHolder.notify_info.setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_notifications_off_15dp), null, null, null);
                 } else {
                     viewHolder.notify_icon.setImageResource(R.drawable.ic_notifications_none);
-                    viewHolder.notify_info.setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_notifications_none), null, null, null);
+                    viewHolder.notify_info.setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mActivity, R.drawable.ic_notifications_none_15dp), null, null, null);
 
                 }
             }
@@ -1206,12 +1206,12 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             }
         }   // End bindView
 
-        public String getAbsDiffString(String currencySymbol, boolean symb_before, double diff) {
+        String getAbsDiffString(String currencySymbol, boolean symb_before, double diff) {
             return symb_before ? currencySymbol + round(diff) : round(diff) + currencySymbol;
         }
 
         @NonNull
-        public String getPercentString(double previous_price_value, double diff) {
+        String getPercentString(double previous_price_value, double diff) {
             DecimalFormat percentFormater = new DecimalFormat("##.#%");
             return percentFormater.format(diff / previous_price_value);
         }

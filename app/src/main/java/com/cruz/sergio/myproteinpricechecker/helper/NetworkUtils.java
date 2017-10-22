@@ -50,7 +50,7 @@ import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
 public class NetworkUtils {
     public static final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36";
     private static final String PING_URL = "www.google.com";
-    public static BroadcastReceiver BCReceiver = null;
+    static BroadcastReceiver BCReceiver = null;
     public static Snackbar noNetworkSnackBar = null;
     public static int NET_TIMEOUT = 11000; // milliseconds (11 seconds)
     public static int STATUS_OK = 0;
@@ -129,7 +129,6 @@ public class NetworkUtils {
     }
 
     public static void makeNoNetworkSnackBar(Activity mActivity) {
-        if (noNetworkSnackBar == null) {
             noNetworkSnackBar = Snackbar.make(mActivity.findViewById(android.R.id.content), "No Network Connection", Snackbar.LENGTH_INDEFINITE)
                     .setActionTextColor(Color.RED)
                     .setAction("Dismiss", new View.OnClickListener() {
@@ -150,7 +149,6 @@ public class NetworkUtils {
                 snack_layout.setForegroundGravity(Gravity.CENTER_VERTICAL);
                 ((SnackbarContentLayout) snack_layout.findViewById(R.id.snackbar_text).getParent()).addView(imageView, 0);
             }
-        }
     }
 
     public static boolean hasActiveNetworkConnection(Activity mActivity) {

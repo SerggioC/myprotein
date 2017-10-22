@@ -37,7 +37,6 @@ import java.util.Locale;
 import static android.content.res.Configuration.SCREENLAYOUT_SIZE_XLARGE;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.CHANGED_NOTIFY_SETTINGS_REF;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
-import static com.cruz.sergio.myproteinpricechecker.MainActivity.mNavigationView;
 
 /**
  * A {@link PreferenceActivity} that presents a set of application settings. On
@@ -358,12 +357,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     public void onDestroy() {
         setActivityResult();
         super.onDestroy();
-        mNavigationView.getMenu().findItem(R.id.nav_item_settings).setChecked(false);
-        Bundle bundle = getIntent().getExtras();
-        if (bundle != null) {
-            int menuId = bundle.getInt("menuId");
-            mNavigationView.setCheckedItem(menuId);
-        }
     }
 
 

@@ -5,6 +5,7 @@ import android.content.res.Configuration;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.design.widget.NavigationView;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -24,12 +25,11 @@ import java.util.List;
 
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.GETNEWS_ONSTART;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.TheMenuItem.lastMenuItem;
-import static com.cruz.sergio.myproteinpricechecker.MainActivity.mNavigationView;
 
 public class TabFragment extends Fragment {
 
-    public static TabLayout tabLayout;
-    public static ViewPager viewPager;
+    public TabLayout tabLayout;
+    public ViewPager viewPager;
     Bundle extras;
     MenuItem menuItem;
     int[] tab_icons;
@@ -78,9 +78,9 @@ public class TabFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
         /*** Inflate tab_layout and setup Views. */
-        View tabLayout = inflater.inflate(R.layout.tab_layout, null);
-        TabFragment.tabLayout = (TabLayout) tabLayout.findViewById(R.id.tabs);
-        viewPager = (ViewPager) tabLayout.findViewById(R.id.viewpager);
+        View view = inflater.inflate(R.layout.tab_layout, null);
+        tabLayout = view.findViewById(R.id.tabs);
+        viewPager = view.findViewById(R.id.viewpager);
 
         /*** Set an Adapter for the View Pager */
         viewPager.setAdapter(new MyTabAdapter(getChildFragmentManager()));
@@ -92,21 +92,21 @@ public class TabFragment extends Fragment {
          * The setupWithViewPager dose't works without the runnable.
          * Maybe a Support Library Bug.
          */
-        TabFragment.tabLayout.post(new Runnable() {
+        tabLayout.post(new Runnable() {
             @Override
             public void run() {
-                TabFragment.tabLayout.setupWithViewPager(viewPager);
+                tabLayout.setupWithViewPager(viewPager);
 
                 Context context = getActivity().getApplicationContext();
 
                 for (int i = 0; i < numberOfTabs; i++) {
                     View one_tab = LayoutInflater.from(context).inflate(R.layout.one_tab_layout, null);
-                    TabFragment.tabLayout.getTabAt(i).setCustomView(one_tab);
-                    TextView textView = (TextView) one_tab.findViewById(R.id.tabText);
+                    tabLayout.getTabAt(i).setCustomView(one_tab);
+                    TextView textView = one_tab.findViewById(R.id.tabText);
                     textView.setText(tab_text[i]);
                     tab_textViews.add(textView);
 
-                    ImageView imageView = (ImageView) one_tab.findViewById(R.id.tabImage);
+                    ImageView imageView = one_tab.findViewById(R.id.tabImage);
                     imageView.setImageResource(tab_icons[i]);
                     tab_imageViews.add(imageView);
 
@@ -121,8 +121,8 @@ public class TabFragment extends Fragment {
                 }
 
                 if (!GETNEWS_ONSTART) {
-                    TabLayout.Tab tab = TabFragment.tabLayout.getTabAt(MainActivity.TAB_IDS.WATCHING);
-                    TabFragment.tabLayout.setScrollPosition(MainActivity.TAB_IDS.WATCHING, 0f, true);
+                    TabLayout.Tab tab = tabLayout.getTabAt(MainActivity.TABS.WATCHING);
+                    tabLayout.setScrollPosition(MainActivity.TABS.WATCHING, 0f, true);
                     if (tab != null) tab.select();
                 }
 
@@ -137,7 +137,7 @@ public class TabFragment extends Fragment {
 
             @Override
             public void onPageSelected(int position) {
-                Menu menulateral = mNavigationView.getMenu();
+                Menu menulateral = ((NavigationView) getActivity().findViewById(R.id.nav_view)).getMenu();
                 switch (position) {
                     case 0:
                         menuItem = menulateral.findItem(R.id.nav_item_news);
@@ -172,7 +172,7 @@ public class TabFragment extends Fragment {
             public void onPageScrollStateChanged(int state) {
             }
         });
-        return tabLayout;
+        return view;
     }
 
 
