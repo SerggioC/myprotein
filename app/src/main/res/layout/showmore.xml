@@ -32,7 +32,6 @@
             android:layout_height="wrap_content"
             android:drawableRight="@drawable/arrow"
             android:gravity="start"
-            android:text="Results from..."
             android:textAlignment="center"
             android:textSize="18sp"/>
 

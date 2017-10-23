@@ -80,20 +80,18 @@ import static com.cruz.sergio.myproteinpricechecker.MainActivity.MAX_NOTIFY_VALU
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.detailsActivityIsActive;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
+import static com.cruz.sergio.myproteinpricechecker.SearchFragment.ADDED_NEW_PROD_REF;
 import static com.cruz.sergio.myproteinpricechecker.WatchingFragment.imageSizesToUse;
 import static com.cruz.sergio.myproteinpricechecker.helper.Alarm.LAST_DB_UPDATE_PREF_KEY;
 import static com.cruz.sergio.myproteinpricechecker.helper.MyProteinDomain.MP_DESKTOP_SITES;
 import static com.cruz.sergio.myproteinpricechecker.helper.MyProteinDomain.MP_MOBILE_SITES;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.UnregisterBroadcastReceiver;
-import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
-import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomToast;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
 import static java.lang.Double.parseDouble;
 
 public class DetailsActivityMyprotein extends AppCompatActivity {
-    public static final String ADDED_NEW_PROD_REF = "addedNewProduct";
     final static String[] MP_ALL_IMAGE_TYPES = new String[]{
             "extrasmall",   // 20/20
             "small",        // 50/50
@@ -206,7 +204,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
         mActivity = this;
         detailsActivityIsActive = true;
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -332,12 +330,17 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
 
             is_web_address = extras.getBoolean("is_web_address");
             webstoreName = extras.getString("webstoreName");
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BRAND, "MyProtein");
+            pref_MP_Locale = extras.getString("language");
+            String shippingCountry = extras.getString("shipping_country");
+            String currency = extras.getString("currency");
+
 
             if (!is_web_address) {
-                pref_MP_Locale = sharedPrefs.getString("mp_website_location", "pt-pt"); // pt-pt
-                String shippingCountry = sharedPrefs.getString("mp_shipping_location", "PT"); //"PT";
-                String currency = sharedPrefs.getString("mp_currencies", "EUR"); //"EUR";
+
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BRAND, webstoreName);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_SHIPPING_LOCATION, shippingCountry);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY, currency);
+                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_LOCALE, pref_MP_Locale);
 
                 MP_Domain = MyProteinDomain.getHref(pref_MP_Locale);
                 URL_suffix = "settingsSaved=Y&shippingcountry=" + shippingCountry + "&switchcurrency=" + currency + "&countrySelected=Y";
@@ -354,9 +357,6 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                 customProductID = "loc" + pref_MP_Locale + "pid" + productID;
 
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_WEBSTORE_DOMAIN_URL, MP_Domain);
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_LOCALE, pref_MP_Locale);
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_SHIPPING_LOCATION, shippingCountry);
-                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY, currency);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_WEBSTORE_NAME, webstoreName + " " + country_name);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID, customProductID);
                 productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME, productName);
@@ -396,7 +396,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
 
 
         } else {
-            showCustomToast(mActivity, "Error getting product details. Try again.", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
+            showCustomToast(mActivity, "Error getting product details.", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
             url = "https://www.myprotein.com/";
             MainActivity.mFragmentManager.popBackStack();
         }
@@ -863,16 +863,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                 }
 
             } else {
-                if (noNetworkSnackBar != null) {
-                    if (noNetworkSnackBar.isShown()) {
-                        noNetworkSnackBar.dismiss();
-                    }
-                    noNetworkSnackBar = null;
-                    makeNoNetworkSnackBar(mActivity);
-                    noNetworkSnackBar.show();
-                } else {
-                    makeNoNetworkSnackBar(mActivity);
-                }
+                NetworkUtils.redrawNoNetworkSnackBar(mActivity);
             }
         }
     }

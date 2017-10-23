@@ -683,9 +683,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             final Boolean[] show_notifications = {cursor.getInt(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS)) == 1};
             final double notify_value = cursor.getDouble(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_NOTIFY_VALUE));
             String current_price_string = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE));
-            String currencySymbol = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL));
+            final String currencySymbol = cursor.getString(cursor.getColumnIndex(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL));
 
-            boolean symb_before = current_price_string.indexOf(currencySymbol) == 0;
+            final boolean symb_before = current_price_string.indexOf(currencySymbol) == 0;
 
             final CardView mainCardView = view.findViewById(R.id.main_cardview);
             mainCardView.findViewById(R.id.open_web).setOnClickListener(new View.OnClickListener() {
@@ -843,10 +843,15 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 
                                     if (update_result == 1) {
                                         redrawListView();
-                                        showCustomToast(mActivity, "Updated notifications for " + prod_name + "\n" +
-                                                        (alertSwitch[0].isChecked() && radio_target[0].isChecked() ? "Alert when price reaches " + String.valueOf(target_val) :
-                                                                (alertSwitch[0].isChecked() && radio_every[0].isChecked()) ? "Alert every time price drops." : "Do not notify"),
-                                                R.mipmap.ic_info, R.color.f_color1, Toast.LENGTH_LONG);
+                                        showCustomToast(mActivity,
+                                                (alertSwitch[0].isChecked() && radio_target[0].isChecked() ?
+                                                        "Alert when price reaches " +
+                                                                (symb_before ? (currencySymbol + String.valueOf(target_val)) : (String.valueOf(target_val) + currencySymbol)) :
+                                                        (alertSwitch[0].isChecked() && radio_every[0].isChecked()) ? "Alert every time price drops." : "Notifications disabled."),
+                                                alertSwitch[0].isChecked() ? R.mipmap.ic_ok2 : R.mipmap.ic_warning,
+                                                alertSwitch[0].isChecked() ? R.color.f_color2 : R.color.orange,
+                                                Toast.LENGTH_LONG);
+
                                     } else {
                                         showCustomToast(mActivity, "Error updating notifications!",
                                                 R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
@@ -1068,7 +1073,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                                         boolean isChecked = switchCompat.isChecked();
                                         if (globalNotifications != isChecked) {
                                             defaultSharedPreferences.edit().putBoolean("notifications_global_key", isChecked).commit();
-                                            showCustomToast(mActivity, "Global Notifications are now " + (isChecked ? "Active" : "Disabled"),
+                                            showCustomToast(mActivity, "Global Notifications are now " + (isChecked ? "Active!" : "Disabled!"),
                                                     isChecked ? R.mipmap.ic_ok2 : R.mipmap.ic_warning,
                                                     isChecked ? R.color.f_color2 : R.color.orange, Toast.LENGTH_LONG);
                                             redrawListView();
@@ -1452,7 +1457,6 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             });
 
         }
-
 
         @NonNull
         private View getNewImageView(int pixels_widthHeight) {

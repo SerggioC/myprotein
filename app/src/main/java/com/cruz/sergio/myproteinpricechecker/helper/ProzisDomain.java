@@ -1,5 +1,7 @@
 package com.cruz.sergio.myproteinpricechecker.helper;
 
+import android.support.annotation.NonNull;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -9,6 +11,7 @@ import java.util.List;
 
 public class ProzisDomain {
 
+    @NonNull
     public static String getProzisWebLocation(String przCountry) {
         List<String> ww_arr = Arrays.asList("AL", "DZ", "AR", "AM", "AU", "BA", "BO", "BW", "CV", "CM", "CA", "ECT",
                 "CL", "CO", "CU", "DO", "EC", "EG", "MK", "FO", "GP", "GT", "GG", "GF", "HT", "HK", "IN", "ID",

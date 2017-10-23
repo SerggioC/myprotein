@@ -58,7 +58,6 @@ import java.util.ArrayList;
 
 import static android.app.Activity.RESULT_OK;
 import static android.content.Context.MODE_PRIVATE;
-import static com.cruz.sergio.myproteinpricechecker.DetailsActivityMyprotein.ADDED_NEW_PROD_REF;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.IOEXCEPTION;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.MALFORMED_URL;
@@ -75,9 +74,10 @@ import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCust
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
 
 public class SearchFragment extends Fragment {
+    static final int NO_RESULTS = -1;
     static final int FIRST_ELEMENT = 0;
-    static final int NO_RESULTS = 1;
-    static final int CARD_INFO = 2;
+    static final int CARD_INFO = 1;
+    public static final String ADDED_NEW_PROD_REF = "addedNewProduct";
     public static SearchCompleteListener searchCompleteListener;
     public static UpdateGraphForNewProduct updateGraphListener;
     public static AddedNewProductListener addedNewProductListener;
@@ -105,6 +105,17 @@ public class SearchFragment extends Fragment {
     ArrayList<String> webstoreNamesToUse = new ArrayList(WEBSTORES_NAMES.length);
     int webStoreIndex = 0;
     int numberOfWebstoresToUse;
+    //prozis
+    String prz_country;
+    String prz_language;
+    //myprotein
+    String pref_MP_locale;
+    String shippingCountry;
+    String currency;
+    public static final String PRZ_Domain = "https://www.prozis.com";
+
+
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -518,10 +529,10 @@ public class SearchFragment extends Fragment {
                     nextPage = StringUtil.isBlank(params[1]) ? "" : params[1];
                 }
                 SharedPreferences prefManager = PreferenceManager.getDefaultSharedPreferences(mActivity);
-                String pref_MP_Domain = prefManager.getString("mp_website_location", "pt-pt");
-                String shippingCountry = prefManager.getString("mp_shipping_location", "PT"); //"PT";
-                String currency = prefManager.getString("mp_currencies", "EUR"); //"EUR";
-                String MP_Domain = MyProteinDomain.getHref(pref_MP_Domain);
+                pref_MP_locale = prefManager.getString("mp_website_location", "pt-pt");
+                shippingCountry = prefManager.getString("mp_shipping_location", "PT"); //"PT";
+                currency = prefManager.getString("mp_currencies", "EUR"); //"EUR";
+                String MP_Domain = MyProteinDomain.getHref(pref_MP_locale);
                 String URL_suffix = "&settingsSaved=Y&shippingcountry=" + shippingCountry + "&switchcurrency=" + currency + "&countrySelected=Y";
                 String queryStrURL = MP_Domain + "elysium.search?search=" + searchString + URL_suffix + nextPage;
                 Log.i("Sergio>>>", "MyproteinSearch: querystr=" + queryStrURL);
@@ -587,7 +598,7 @@ public class SearchFragment extends Fragment {
 
             } else if (rpc_size > 0) {
                 if (pageNumber_MP == 1) {
-                    myproteinProductCards.add(new ProductCards(FIRST_ELEMENT, webstoreNamesToUse.get(thisWebstoreIndex)));
+                    myproteinProductCards.add(new ProductCards(FIRST_ELEMENT, webstoreNamesToUse.get(thisWebstoreIndex), rpc_size));
                 }
                 for (int i = 0; i < rpc_size; i++) {
                     Element singleProductCard = resultProductCards.get(i);
@@ -635,7 +646,7 @@ public class SearchFragment extends Fragment {
                         }
                     }
 
-                    ProductCards productCard = new ProductCards(webstoreNamesToUse.get(thisWebstoreIndex), webstoreNamesToUse.get(thisWebstoreIndex), productID, productTitleStr, productHref, productPrice, imgURL, pptList_stringarray, pptList_SSB, CARD_INFO);
+                    ProductCards productCard = new ProductCards(webstoreNamesToUse.get(thisWebstoreIndex), webstoreNamesToUse.get(thisWebstoreIndex), productID, productTitleStr, productHref, productPrice, imgURL, pptList_stringarray, pptList_SSB.toString(), CARD_INFO);
                     myproteinProductCards.add(productCard);
                 }
 
@@ -660,7 +671,6 @@ public class SearchFragment extends Fragment {
     }
 
     private class ProzisSearch extends AsyncTask<String, Void, ConnectionObject> {
-        String PRZ_Domain = "https://www.prozis.com";
         String searchString;
         int thisWebstoreIndex;
         int searchTypeURL = 1;
@@ -690,10 +700,10 @@ public class SearchFragment extends Fragment {
 
 
                 SharedPreferences sharedPrefEditor = mActivity.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE);
-                String prz_country = sharedPrefEditor.getString("prz_website_location", "pt");
+                prz_country = sharedPrefEditor.getString("prz_website_location", "pt");
 
                 SharedPreferences prefManager = PreferenceManager.getDefaultSharedPreferences(mActivity);
-                String prz_language = prefManager.getString("prz_language", "pt");
+                prz_language = prefManager.getString("prz_language", "pt");
                 //String queryStrURL = PRZ_Domain + "/" + prz_country + "/" + prz_language + "/" + "search/q/page/" + pageNumber_PRZ + "/text/" + searchString;
                 queryStrURL = PRZ_Domain + "/" + prz_country + "/" + prz_language + "/" + "search/q/ctype/inline/page/" + pageNumber_PRZ + "/text/" + searchString;
                 Log.i("Sergio>>>", "ProzisSearch: queryStrURL=" + queryStrURL);
@@ -740,11 +750,15 @@ public class SearchFragment extends Fragment {
             int resultStatus = resultObject.resultStatus;
 
             if (resultStatus == STATUS_NOT_OK || resultStatus == IOEXCEPTION || resultStatus == MALFORMED_URL || resultStatus == UNSUPPORTED_MIME_TYPE) {
-                NetworkUtils.showCustomSlimToast(mActivity, "Error connecting to " + webstoreNamesToUse.get(thisWebstoreIndex) + " website\nException Code = " + resultStatus, Toast.LENGTH_LONG);
+                NetworkUtils.showCustomSlimToast(mActivity,
+                        "Error connecting to " + webstoreNamesToUse.get(thisWebstoreIndex) + " website\nException Code = " + resultStatus,
+                        Toast.LENGTH_LONG);
                 prozisProductCards.add(new ProductCards(NO_RESULTS, webstoreNamesToUse.get(thisWebstoreIndex)));
                 searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, prozisProductCards);
             } else if (resultStatus == TIMEOUT) {
-                NetworkUtils.showCustomSlimToast(mActivity, webstoreNamesToUse.get(thisWebstoreIndex) + " website not responding", Toast.LENGTH_LONG);
+                NetworkUtils.showCustomSlimToast(mActivity,
+                        webstoreNamesToUse.get(thisWebstoreIndex) + " website not responding",
+                        Toast.LENGTH_LONG);
                 prozisProductCards.add(new ProductCards(NO_RESULTS, webstoreNamesToUse.get(thisWebstoreIndex)));
                 searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, prozisProductCards);
             } else {
@@ -752,7 +766,6 @@ public class SearchFragment extends Fragment {
                 Elements resultProductCards = new Elements(0);
 
                 if (searchTypeURL == 5) {
-
 
                     Element div_Products_list = resultDocument.getElementById("products_list");
                     if (div_Products_list != null) {
@@ -768,7 +781,7 @@ public class SearchFragment extends Fragment {
                         Log.w("Sergio>", this + "onPostExecute: \n" + "no prozis results search type " + searchTypeURL);
                     } else {
                         if (pageNumber_PRZ == 1) {
-                            prozisProductCards.add(new ProductCards(FIRST_ELEMENT, webstoreNamesToUse.get(thisWebstoreIndex)));
+                            prozisProductCards.add(new ProductCards(FIRST_ELEMENT, webstoreNamesToUse.get(thisWebstoreIndex), rpc_size));
                         }
                         for (int i = 0; i < rpc_size; i++) {
                             Element singleResult = resultProductCards.get(i);
@@ -782,7 +795,7 @@ public class SearchFragment extends Fragment {
 
                             //<a data-osit-lists="" data-osit-id="NUT00/1330530003" href="#" onclick="return false;" class="tipsy-add-to-favorites"><i class="icon-star"></i></a>
 
-                            ProductCards productCard = new ProductCards(webstoreNamesToUse.get(thisWebstoreIndex), brand, productID, productName, productURL, productPrice, imgURL, new ArrayList<String>(), new SpannableStringBuilder(productDescription), CARD_INFO);
+                            ProductCards productCard = new ProductCards(webstoreNamesToUse.get(thisWebstoreIndex), brand, productID, productName, productURL, productPrice, imgURL, new ArrayList<String>(), productDescription, CARD_INFO);
                             prozisProductCards.add(productCard);
                         }
 
@@ -812,7 +825,7 @@ public class SearchFragment extends Fragment {
                         Log.w("Sergio>", this + "onPostExecute: \n" + "no prozis results search type 1");
                     } else {
                         if (pageNumber_PRZ == 1) {
-                            prozisProductCards.add(new ProductCards(FIRST_ELEMENT, webstoreNamesToUse.get(thisWebstoreIndex)));
+                            prozisProductCards.add(new ProductCards(FIRST_ELEMENT, webstoreNamesToUse.get(thisWebstoreIndex), rpc_size));
                         }
                         for (int i = 0; i < rpc_size; i++) {
                             Element singleResult = resultProductCards.get(i);
@@ -850,7 +863,7 @@ public class SearchFragment extends Fragment {
                         Log.w("Sergio>", this + "onPostExecute: \n" + "no results search type 3");
                     } else {
                         if (pageNumber_PRZ == 1) {
-                            prozisProductCards.add(new ProductCards(FIRST_ELEMENT, webstoreNamesToUse.get(thisWebstoreIndex)));
+                            prozisProductCards.add(new ProductCards(FIRST_ELEMENT, webstoreNamesToUse.get(thisWebstoreIndex), rpc_size));
                         }
                         for (int i = 0; i < rpc_size; i++) {
                             Element singleResult = resultProductCards.get(i);
@@ -900,17 +913,19 @@ public class SearchFragment extends Fragment {
 
             if (product.cardPosition == NO_RESULTS) {
                 view = inflater.inflate(android.R.layout.simple_list_item_1, null);
-                ((TextView) view.findViewById(android.R.id.text1)).setText("No results from " + product.webstoreName);
+                ((TextView) view.findViewById(android.R.id.text1))
+                        .setText("No results from " + product.webstoreName);
 
             } else if (product.cardPosition == FIRST_ELEMENT) {
                 view = inflater.inflate(R.layout.showmore, null);
-                ((TextView) view.findViewById(R.id.showmore_TV)).setText("Results from " + product.webstoreName);
+                ((TextView) view.findViewById(R.id.showmore_TV))
+                        .setText(product.numberOfResults + " Result" + (product.numberOfResults > 1 ? "s" : "") + " from " + product.webstoreName);
 
             } else if (product.cardPosition == CARD_INFO) {
                 //get the inflater and inflate the XML layout for each item
                 view = inflater.inflate(R.layout.product_card, null);
 
-                ImageView productImageView = (ImageView) view.findViewById(R.id.product_image);
+                ImageView productImageView = view.findViewById(R.id.product_image);
                 String imgURL = product.imgURL;
                 if (imgURL != null) {
                     Glide.with(mActivity).load(imgURL).error(R.drawable.noimage).into(productImageView);
@@ -926,10 +941,17 @@ public class SearchFragment extends Fragment {
                         switch (product.webstoreName) {
                             case "Myprotein": {
                                 intent = new Intent(mActivity, DetailsActivityMyprotein.class);
+                                intent.putStringArrayListExtra("description", product.pptList_stringarray);
+                                intent.putExtra("language", pref_MP_locale);
+                                intent.putExtra("shipping_country", shippingCountry);
+                                intent.putExtra("currency", currency);
                                 break;
                             }
                             case "Prozis": {
                                 intent = new Intent(mActivity, DetailsActivityProzis.class);
+                                intent.putExtra("language", prz_language);
+                                intent.putExtra("country", prz_country);
+                                intent.putExtra("ppt_list_SSB", product.pptList_SSB);
                                 break;
                             }
                             case "Bulk Powders": {
@@ -949,8 +971,7 @@ public class SearchFragment extends Fragment {
                         intent.putExtra("url", product.productHref);
                         intent.putExtra("image_url", product.imgURL);
                         intent.putExtra("is_web_address", false);
-                        intent.putStringArrayListExtra("description", product.pptList_stringarray);
-                        //startActivity(intent);
+
                         Bundle bundle = ActivityOptionsCompat.makeCustomAnimation(
                                 mActivity,
                                 android.R.anim.fade_in,
@@ -976,11 +997,12 @@ public class SearchFragment extends Fragment {
         String productPrice;
         String imgURL;
         ArrayList<String> pptList_stringarray;
-        SpannableStringBuilder pptList_SSB;
+        String pptList_SSB;
         String webstoreName;
         int cardPosition;
+        int numberOfResults;
 
-        ProductCards(String webstoreName, String productBrand, String productID, String productTitleStr, String productHref, String productPrice, String imgURL, ArrayList<String> pptList_stringarray, SpannableStringBuilder pptList_SSB, int cardPosition) {
+        ProductCards(String webstoreName, String productBrand, String productID, String productTitleStr, String productHref, String productPrice, String imgURL, ArrayList<String> pptList_stringarray, String pptList_SSB, int cardPosition) {
             this.productBrand = productBrand;
             this.webstoreName = webstoreName;
             this.productID = productID;
@@ -993,6 +1015,11 @@ public class SearchFragment extends Fragment {
             this.cardPosition = cardPosition;
         }
 
+        ProductCards(int cardPosition, String webstoreName, int numberOfResults) {
+            this.cardPosition = cardPosition;
+            this.webstoreName = webstoreName;
+            this.numberOfResults = numberOfResults;
+        }
         ProductCards(int cardPosition, String webstoreName) {
             this.cardPosition = cardPosition;
             this.webstoreName = webstoreName;

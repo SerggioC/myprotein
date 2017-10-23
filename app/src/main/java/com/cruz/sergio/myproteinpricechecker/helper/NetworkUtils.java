@@ -50,7 +50,6 @@ import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
 public class NetworkUtils {
     public static final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36";
     private static final String PING_URL = "www.google.com";
-    static BroadcastReceiver BCReceiver = null;
     public static Snackbar noNetworkSnackBar = null;
     public static int NET_TIMEOUT = 11000; // milliseconds (11 seconds)
     public static int STATUS_OK = 0;
@@ -59,6 +58,7 @@ public class NetworkUtils {
     public static int STATUS_NOT_OK = 3;
     public static int IOEXCEPTION = 4;
     public static int UNSUPPORTED_MIME_TYPE = 5;
+    static BroadcastReceiver BCReceiver = null;
     static Snackbar.SnackbarLayout snack_layout;
 
     public static void UnregisterBroadcastReceiver(Activity mActivity) {
@@ -104,7 +104,7 @@ public class NetworkUtils {
     public static void showCustomSlimToast(Activity cActivity, String toastText, int duration) {
         LayoutInflater inflater = cActivity.getLayoutInflater();
         View layout = inflater.inflate(R.layout.slim_toast, (LinearLayout) cActivity.findViewById(R.id.slim_toast_root));
-        TextView text = (TextView) layout.findViewById(R.id.slimtoast);
+        TextView text = layout.findViewById(R.id.slimtoast);
         text.setText(toastText);
         Toast customToast = new Toast(cActivity);
         customToast.setGravity(Gravity.CENTER, 0, 0);
@@ -129,26 +129,40 @@ public class NetworkUtils {
     }
 
     public static void makeNoNetworkSnackBar(Activity mActivity) {
-            noNetworkSnackBar = Snackbar.make(mActivity.findViewById(android.R.id.content), "No Network Connection", Snackbar.LENGTH_INDEFINITE)
-                    .setActionTextColor(Color.RED)
-                    .setAction("Dismiss", new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            noNetworkSnackBar.dismiss();
-                        }
-                    });
+        noNetworkSnackBar = Snackbar.make(mActivity.findViewById(android.R.id.content), "No Network Connection", Snackbar.LENGTH_INDEFINITE)
+                .setActionTextColor(Color.RED)
+                .setAction("Dismiss", new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        noNetworkSnackBar.dismiss();
+                    }
+                });
 
-            snack_layout = (Snackbar.SnackbarLayout) noNetworkSnackBar.getView();
-            if (snack_layout != null) {
-                ImageView imageView = new ImageView(mActivity);
-                imageView.setImageResource(R.mipmap.offline);
-                int width = (int) (40 * scale + 0.5f);
-                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(width, width);
-                params.gravity = Gravity.CENTER_VERTICAL;
-                imageView.setLayoutParams(params);
-                snack_layout.setForegroundGravity(Gravity.CENTER_VERTICAL);
-                ((SnackbarContentLayout) snack_layout.findViewById(R.id.snackbar_text).getParent()).addView(imageView, 0);
+        snack_layout = (Snackbar.SnackbarLayout) noNetworkSnackBar.getView();
+        if (snack_layout != null) {
+            ImageView imageView = new ImageView(mActivity);
+            imageView.setImageResource(R.mipmap.offline);
+            int width = (int) (40 * scale + 0.5f);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(width, width);
+            params.gravity = Gravity.CENTER_VERTICAL;
+            imageView.setLayoutParams(params);
+            snack_layout.setForegroundGravity(Gravity.CENTER_VERTICAL);
+            ((SnackbarContentLayout) snack_layout.findViewById(R.id.snackbar_text).getParent()).addView(imageView, 0);
+        }
+    }
+
+    public static void redrawNoNetworkSnackBar(Activity mActivity) {
+        if (noNetworkSnackBar != null) {
+            if (noNetworkSnackBar.isShown()) {
+                noNetworkSnackBar.dismiss();
             }
+            noNetworkSnackBar = null;
+            makeNoNetworkSnackBar(mActivity);
+            noNetworkSnackBar.show();
+        } else {
+            makeNoNetworkSnackBar(mActivity);
+            noNetworkSnackBar.show();
+        }
     }
 
     public static boolean hasActiveNetworkConnection(Activity mActivity) {
@@ -157,7 +171,9 @@ public class NetworkUtils {
         NetworkInfo activeNetwork = connManager.getActiveNetworkInfo();
         boolean isConnected = activeNetwork != null && activeNetwork.isConnected() && activeNetwork.isAvailable();
         if (isConnected) {
-            if (noNetworkSnackBar != null && noNetworkSnackBar.isShownOrQueued()) noNetworkSnackBar.dismiss(); // Tem network connection
+            if (noNetworkSnackBar != null && noNetworkSnackBar.isShownOrQueued())
+                noNetworkSnackBar.dismiss(); // Tem network connection
+
 //            try {
 //                InetAddress inet = InetAddress.getByName(PING_URL);
 //                Boolean isOnline = inet.isReachable(3000); // Timeout 5000 ms
@@ -166,6 +182,7 @@ public class NetworkUtils {
 //                e.printStackTrace();
 //                return false;
 //            }
+
         }
         return isConnected;
     }
