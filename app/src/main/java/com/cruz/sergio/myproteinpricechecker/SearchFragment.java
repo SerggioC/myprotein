@@ -646,7 +646,7 @@ public class SearchFragment extends Fragment {
                         }
                     }
 
-                    ProductCards productCard = new ProductCards(webstoreNamesToUse.get(thisWebstoreIndex), webstoreNamesToUse.get(thisWebstoreIndex), productID, productTitleStr, productHref, productPrice, imgURL, pptList_stringarray, pptList_SSB.toString(), CARD_INFO);
+                    ProductCards productCard = new ProductCards(webstoreNamesToUse.get(thisWebstoreIndex), webstoreNamesToUse.get(thisWebstoreIndex), productID, productTitleStr, productHref, productPrice, imgURL, pptList_stringarray, pptList_SSB, CARD_INFO);
                     myproteinProductCards.add(productCard);
                 }
 
@@ -795,7 +795,7 @@ public class SearchFragment extends Fragment {
 
                             //<a data-osit-lists="" data-osit-id="NUT00/1330530003" href="#" onclick="return false;" class="tipsy-add-to-favorites"><i class="icon-star"></i></a>
 
-                            ProductCards productCard = new ProductCards(webstoreNamesToUse.get(thisWebstoreIndex), brand, productID, productName, productURL, productPrice, imgURL, new ArrayList<String>(), productDescription, CARD_INFO);
+                            ProductCards productCard = new ProductCards(webstoreNamesToUse.get(thisWebstoreIndex), brand, productID, productName, productURL, productPrice, imgURL, new ArrayList<String>(), new SpannableStringBuilder(productDescription), CARD_INFO);
                             prozisProductCards.add(productCard);
                         }
 
@@ -997,12 +997,12 @@ public class SearchFragment extends Fragment {
         String productPrice;
         String imgURL;
         ArrayList<String> pptList_stringarray;
-        String pptList_SSB;
+        SpannableStringBuilder pptList_SSB;
         String webstoreName;
         int cardPosition;
         int numberOfResults;
 
-        ProductCards(String webstoreName, String productBrand, String productID, String productTitleStr, String productHref, String productPrice, String imgURL, ArrayList<String> pptList_stringarray, String pptList_SSB, int cardPosition) {
+        ProductCards(String webstoreName, String productBrand, String productID, String productTitleStr, String productHref, String productPrice, String imgURL, ArrayList<String> pptList_stringarray, SpannableStringBuilder pptList_SSB, int cardPosition) {
             this.productBrand = productBrand;
             this.webstoreName = webstoreName;
             this.productID = productID;

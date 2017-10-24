@@ -54,6 +54,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+//        DBHelper dbHelper = new DBHelper(mActivity);
+//        SQLiteDatabase db = dbHelper.getWritableDatabase();
+//        int delete_db_entries_result = db.delete(ProductsContract.ProductsEntry.TABLE_NAME, "_ID= (SELECT MAX(_id) FROM products_table)", null);
+//        db.close();
     }
 
     @Override

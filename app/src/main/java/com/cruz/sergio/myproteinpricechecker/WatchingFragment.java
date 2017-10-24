@@ -904,6 +904,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
                                                 DBHelper dbHelper = new DBHelper(mActivity);
                                                 SQLiteDatabase db = dbHelper.getWritableDatabase();
                                                 int delete_db_entries_result = db.delete(ProductsContract.ProductsEntry.TABLE_NAME, "_ID=" + "'" + this_product_id + "'", null);
+                                                db.close();
                                                 deleteImageFiles(string_array_images);
 
                                                 if (delete_db_entries_result == 1) {
