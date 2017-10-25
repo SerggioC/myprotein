@@ -208,15 +208,15 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
         if (density <= DENSITY_LOW) {
             imageSizesToUse = new String[]{"50x50", "60x60", "70x70"};
         } else if (density > DENSITY_LOW && density <= DENSITY_MEDIUM) {
-            imageSizesToUse = new String[]{"60x60", "70x70"};
+            imageSizesToUse = new String[]{"60x60", "70x70", "100x100"};
         } else if (density > DENSITY_MEDIUM && density <= DENSITY_HIGH) {
-            imageSizesToUse = new String[]{"70x70", "100x100"};
+            imageSizesToUse = new String[]{"70x70", "100x100", "130x130"};
         } else if (density > DENSITY_HIGH && density <= DENSITY_XHIGH) {
-            imageSizesToUse = new String[]{"100x100", "130x130", "180x180"};
+            imageSizesToUse = new String[]{"100x100", "130x130", "180x180", "200x200"};
         } else if (density > DENSITY_XHIGH && density <= DENSITY_XXHIGH) { //galaxy S5: 480dpi scale = 3x; (70x70)*3 = 210x210;
-            imageSizesToUse = new String[]{"180x180", "200x200", "270x270"};
+            imageSizesToUse = new String[]{"180x180", "200x200", "270x270", "300x300"};
         } else {
-            imageSizesToUse = new String[]{"270x270", "300x300", "350x350"};
+            imageSizesToUse = new String[]{"270x270", "300x300", "350x350", "480x480"};
         }
 
         Alarm alarm_jobservice = new Alarm();

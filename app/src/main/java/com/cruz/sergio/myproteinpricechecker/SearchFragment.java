@@ -345,6 +345,7 @@ public class SearchFragment extends Fragment {
     private void go_to_webAdress_details(String url_from_querystr) {
         Intent intent = new Intent(mActivity, DetailsActivityMyprotein.class);
         intent.putExtra("url", url_from_querystr);
+        intent.putExtra("webstoreName", "Myprotein");
         intent.putExtra("is_web_address", true);
         Bundle bundle = ActivityOptionsCompat.makeCustomAnimation(
                 mActivity,

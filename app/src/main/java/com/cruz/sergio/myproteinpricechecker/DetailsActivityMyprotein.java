@@ -92,11 +92,12 @@ import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgen
 import static java.lang.Double.parseDouble;
 
 public class DetailsActivityMyprotein extends AppCompatActivity {
-   final static String[] MP_ALL_IMAGE_TYPES = new String[]{
+   final static String[] MP_ALL_IMAGE_SIZE_NAMES = new String[]{
        "extrasmall",   // 20/20
        "small",        // 50/50
        "smallthumb",   // 60/60
        "thumbnail",    // 70/70
+       "thumbnails",    // 70/70
        "smallprod",    // 100/100
        "product",      // 130/130
        "large",        // 180/180
@@ -113,6 +114,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
        "50x50",        // 50/50
        "60x60",        // 60/60
        "70x70",        // 70/70
+       "70x70",        // 70/70
        "100x100",      // 100/100
        "130x130",      // 130/130
        "180x180",      // 180/180
@@ -128,6 +130,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
        "/20/20/",        // 20/20
        "/50/50/",        // 50/50
        "/60/60/",        // 60/60
+       "/70/70/",        // 70/70
        "/70/70/",        // 70/70
        "/100/100/",      // 100/100
        "/130/130/",      // 130/130
@@ -151,7 +154,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
    String productName;
    String webstoreName;
    String url;
-   String URL_suffix;
+   String URL_suffix = "";
    TextView priceTV;
    LinearLayout ll_variations;
    LinearLayout linearLayoutSpiners;
@@ -165,7 +168,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
    double notify_value = 0;
    Timer timer;
    boolean is_web_address;
-   ArrayList<String> all_image_sizes;
+   ArrayList<String> all_image_sizeNames;
    boolean isMobileSite = false;
    boolean isDesktopSite = false;
 
@@ -225,7 +228,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
       toolbar.setPadding(0, getStatusBarHeight(), 0, 0);
 
       productContentValues = new ContentValues(); //content values para a DB
-      all_image_sizes = new ArrayList<>(Arrays.asList(MP_ALL_IMAGE_TYPES));
+      all_image_sizeNames = new ArrayList<>(Arrays.asList(MP_ALL_IMAGE_SIZE_NAMES));
 
       SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
       CACHE_IMAGES = sharedPrefs.getBoolean("cache_images", false);
@@ -338,9 +341,9 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
          String currency = extras.getString("currency");
 
 
+         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BRAND, webstoreName);
          if (!is_web_address) {
 
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BRAND, webstoreName);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_SHIPPING_LOCATION, shippingCountry);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY, currency);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_LOCALE, pref_MP_Locale);
@@ -820,6 +823,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
       super.onConfigurationChanged(newConfig);
    }
 
+   //FIXME unneeded crap.
    public class checkInternetAsyncMethods extends AsyncTask<String, Void, Boolean> {
       String method;
       String backGround_param; //url
@@ -1060,35 +1064,71 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                   }
 
                   if (isMobileSite) {
-                     //getImagesFromHTML_Tags();
-                     Elements product_Images = resultDocument.getElementsByClass("product-image");
-                     int iSize = product_Images.size();
-                     ArrayList<String> arrayListImageURLsToLoad = new ArrayList<>(iSize);
-                     for (int i = 0; i < iSize; i++) {
-                        String imageURL = product_Images.get(i).child(0).attr("src");
-                        arrayListImageURLsToLoad.add(imageURL);
-                        gotImages = true;
-                     }
-                     if (arrayListImageURLsToLoad.size() > 0) {
-                        placeImagesFromURL_Details(arrayListImageURLsToLoad);
-                        productImageView.setVisibility(View.GONE);
-                        image_switcher_details.setVisibility(View.VISIBLE);
+
+                     JSON_ArrayArray_Images = new JSONArray();
+                     ArrayList<String> arrayListImageURLsToLoad = new ArrayList<>();
+                     try {
+                        gotImages = false;
+
+                        Elements product_Images_ONDisplay = resultDocument.getElementsByClass("product-image");
+
+                        Elements outerZoomImageDivs = resultDocument.getElementsByClass("jZoom_imageLinks").first().children();
+                        int oSize = outerZoomImageDivs.size();
+                        int innerSize = outerZoomImageDivs.get(0).children().size();
+                        for (int i = 0; i < innerSize; i++) {
+                           String urlToLoad = null;
+                           JSONArray innerArray = new JSONArray();
+
+                           for (int j = 0; j < oSize; j++) {
+                              String sizeName = outerZoomImageDivs.get(j).className().replace("jZoom_", "").toLowerCase();
+                              sizeName = MP_XX_IMAGE_TYPES[all_image_sizeNames.indexOf(sizeName)];
+                              Elements innerDivs = outerZoomImageDivs.get(j).children();
+                              String imgURL = "https://s4.thcdn.com/" + innerDivs.get(i).attr("data-image-link");
+
+                              JSONObject innerObject = new JSONObject();
+                              innerObject.put("size", sizeName);
+                              innerObject.put("url", imgURL.replace("\\", ""));
+                              innerArray.put(innerObject);
+                              for (int k = 0; k < imageSizesToUse.length; k++) {
+                                 if (sizeName.equals(imageSizesToUse[k])) {
+                                    urlToLoad = imgURL;
+                                    gotImages = true;
+                                 }
+                              }
+                           }
+                           String imageURL = product_Images_ONDisplay.get(i).child(0).attr("src");
+                           JSONObject innerObject = new JSONObject();
+                           innerObject.put("size", "300x300");
+                           innerObject.put("url", imageURL.replace("\\", ""));
+                           innerArray.put(innerObject);
+                           JSON_ArrayArray_Images.put(innerArray);
+
+                           for (int k = 0; k < imageSizesToUse.length; k++) {
+                              if ("300x300".equals(imageSizesToUse[k])) {
+                                 urlToLoad = imageURL;
+                                 gotImages = true;
+                              }
+                           }
+                           if (gotImages)
+                              arrayListImageURLsToLoad.add(urlToLoad);
+                        }
+
+                        if (gotImages) {
+                           placeImagesFromURL_Details(arrayListImageURLsToLoad);
+                           productImageView.setVisibility(View.GONE);
+                           image_switcher_details.setVisibility(View.VISIBLE);
+                        }
+
+
+                        Log.i("Sergio>", this + " onPostExecute\nJSON_ArrayArray_Images= " + JSON_ArrayArray_Images.toString().replace("\\", "") + "\n" +
+                            "arrayListImageURLsToLoad= \n" + arrayListImageURLsToLoad);
+
+                     } catch (JSONException e) {
+                        e.printStackTrace();
+                     } catch (IndexOutOfBoundsException i) {
+                        i.printStackTrace();
                      }
 
-                     Elements zoomImages = resultDocument.getElementsByClass("jZoom_imageLinks").first().children();
-                     int zSize = zoomImages.size();
-                     ArrayList<ArrayList<String>> arrayListImageURLsToZoom = new ArrayList<>(zSize);
-                     for (int i = 0; i < zSize; i++) {
-                        Elements divs = zoomImages.get(i).children();
-                        int divsSize = divs.size();
-                        ArrayList<String> arrayListDivsToZoom = new ArrayList<>(divsSize);
-                        for (int j = 0; j < divsSize; j++) {
-                           String imgURL = divs.get(j).attr("data-image-link");
-                           arrayListDivsToZoom.add(imgURL);
-                        }
-                        arrayListImageURLsToZoom.add(arrayListDivsToZoom);
-                     }
-                     Log.i("Sergio>", this + " onPostExecute\narrayListImageURLsToZoom= " + arrayListImageURLsToZoom);
 
                   } else if (isDesktopSite) {
 
@@ -1319,7 +1359,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                         JSONObject image_i = (JSONObject) json_images.get(i);
                         int current_img_index = image_i.getInt("index");                            // 0, 1, 2...
                         String image_type = image_i.getString("type");                              // tamanho: "small", "extralarge" "zoom" ...
-                        image_type = MP_XX_IMAGE_TYPES[all_image_sizes.indexOf(image_type)];        // Traduzir o nome para 20x20, 100x100 ...
+                        image_type = MP_XX_IMAGE_TYPES[all_image_sizeNames.indexOf(image_type)];        // Traduzir o nome para 20x20, 100x100 ...
                         String image_url = "https://s4.thcdn.com/" + image_i.getString("name");     // url
 
                         if (current_img_index == image_index) {
