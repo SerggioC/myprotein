@@ -253,6 +253,11 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
                 android:visibility="gone"/>
+<View
+    android:layout_width="match_parent"
+    android:layout_height="1dp"
+    android:layout_margin="8dp"
+    android:background="@color/light_gray"/>
 
             <include layout="@layout/notifications_alert_dialog"/>
 

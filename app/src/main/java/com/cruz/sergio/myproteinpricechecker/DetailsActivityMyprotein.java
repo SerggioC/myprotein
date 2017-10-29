@@ -92,6 +92,7 @@ import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgen
 import static java.lang.Double.parseDouble;
 
 public class DetailsActivityMyprotein extends AppCompatActivity {
+   public static final String MYP_CONTENT_SERVER = "https://s4.thcdn.com/";
    final static String[] MP_ALL_IMAGE_SIZE_NAMES = new String[]{
        "extrasmall",   // 20/20
        "small",        // 50/50
@@ -144,7 +145,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
        "/960/960/",      // 960/960
        "/1600/1600/"};   // 1600/1600
    Activity mActivity;
-   Boolean gotPrice = true;
+   boolean gotPrice = true;
    ArrayList<String> description;
    ContentValues productContentValues;
    String customProductID;
@@ -158,19 +159,20 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
    TextView priceTV;
    LinearLayout ll_variations;
    LinearLayout linearLayoutSpiners;
-   Boolean addedNewProduct = false;
+   boolean addedNewProduct = false;
    ImageView productImageView;
-   Boolean gotImages = false;
+   boolean gotImages = false;
    JSONArray JSON_ArrayArray_Images;
    ImageSwitcher image_switcher_details;
    android.support.v7.widget.SwitchCompat alertSwitch;
    android.support.design.widget.TextInputEditText alertTextView;
    double notify_value = 0;
    Timer timer;
-   boolean is_web_address;
+   Boolean is_web_address;
    ArrayList<String> all_image_sizeNames;
    boolean isMobileSite = false;
    boolean isDesktopSite = false;
+   String imgURLFromExtras = null;
 
 
    @Override
@@ -211,12 +213,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
       detailsActivityIsActive = true;
 
       Toolbar toolbar = findViewById(R.id.toolbar);
-      toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-         @Override
-         public void onClick(View v) {
-            onBackPressed();
-         }
-      });
+      toolbar.setNavigationOnClickListener(v -> onBackPressed());
       int dpvalue = 6;
       float pixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dpvalue, getResources().getDisplayMetrics());
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -236,14 +233,8 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
       ll_variations = mActivity.findViewById(R.id.ll_variations);
       linearLayoutSpiners = mActivity.findViewById(R.id.spiners);
       productImageView = mActivity.findViewById(R.id.p_details_image);
-      productImageView.setOnClickListener(new View.OnClickListener() {
-         @Override
-         public void onClick(View v) {
-            Toast.makeText(mActivity, "Clicked Image", Toast.LENGTH_SHORT).show();
-         }
-      });
+      productImageView.setOnClickListener(v -> Toast.makeText(mActivity, "Clicked Image", Toast.LENGTH_SHORT).show());
       image_switcher_details = mActivity.findViewById(R.id.image_switcher_details);
-
 
       // Notifications section //
       alertSwitch = mActivity.findViewById(R.id.switch_notify);
@@ -270,40 +261,31 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
       alertTextView.setActivated(radio_target.isChecked());
       alertTextView.clearFocus();
 
-      alertSwitch.setOnClickListener(new View.OnClickListener() {
-         @Override
-         public void onClick(View v) {
-            radioGroup.setEnabled(alertSwitch.isChecked());
-            radio_every.setEnabled(alertSwitch.isChecked());
-            radio_target.setEnabled(alertSwitch.isChecked());
-            alertTextView.setEnabled(alertSwitch.isChecked() && radio_target.isChecked());
-            alertTextView.setActivated(alertSwitch.isChecked() && radio_target.isChecked());
-            alertTextView.setText(alertSwitch.isChecked() && radio_target.isChecked() ? String.valueOf(notify_value) : "");
-            textView1.setEnabled(alertSwitch.isChecked() && radio_target.isChecked());
-            textView1.setActivated(alertSwitch.isChecked() && radio_target.isChecked());
-         }
+      alertSwitch.setOnClickListener(v -> {
+         radioGroup.setEnabled(alertSwitch.isChecked());
+         radio_every.setEnabled(alertSwitch.isChecked());
+         radio_target.setEnabled(alertSwitch.isChecked());
+         alertTextView.setEnabled(alertSwitch.isChecked() && radio_target.isChecked());
+         alertTextView.setActivated(alertSwitch.isChecked() && radio_target.isChecked());
+         alertTextView.setText(alertSwitch.isChecked() && radio_target.isChecked() ? String.valueOf(notify_value) : "");
+         textView1.setEnabled(alertSwitch.isChecked() && radio_target.isChecked());
+         textView1.setActivated(alertSwitch.isChecked() && radio_target.isChecked());
       });
 
-      radio_every.setOnClickListener(new View.OnClickListener() {
-         @Override
-         public void onClick(View v) {
-            alertTextView.setEnabled(radio_target.isChecked());
-            alertTextView.setActivated(radio_target.isChecked());
-            alertTextView.setText(radio_target.isChecked() ? String.valueOf(notify_value) : "");
-            textView1.setEnabled(radio_target.isChecked());
-            textView1.setActivated(radio_target.isChecked());
-         }
+      radio_every.setOnClickListener(v -> {
+         alertTextView.setEnabled(radio_target.isChecked());
+         alertTextView.setActivated(radio_target.isChecked());
+         alertTextView.setText(radio_target.isChecked() ? String.valueOf(notify_value) : "");
+         textView1.setEnabled(radio_target.isChecked());
+         textView1.setActivated(radio_target.isChecked());
       });
 
-      radio_target.setOnClickListener(new View.OnClickListener() {
-         @Override
-         public void onClick(View v) {
-            alertTextView.setEnabled(radio_target.isChecked());
-            alertTextView.setActivated(radio_target.isChecked());
-            alertTextView.setText(radio_target.isChecked() ? String.valueOf(notify_value) : "");
-            textView1.setEnabled(radio_target.isChecked());
-            textView1.setActivated(radio_target.isChecked());
-         }
+      radio_target.setOnClickListener(v -> {
+         alertTextView.setEnabled(radio_target.isChecked());
+         alertTextView.setActivated(radio_target.isChecked());
+         alertTextView.setText(radio_target.isChecked() ? String.valueOf(notify_value) : "");
+         textView1.setEnabled(radio_target.isChecked());
+         textView1.setActivated(radio_target.isChecked());
       });
 
 
@@ -322,8 +304,8 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
       });
 
       // bugs do sistema android...
-      //getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
-      // parâmetro no manifest android:windowSoftInputMode="stateHidden|adjustPan"
+      // getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+      // ou parâmetro no manifest: android:windowSoftInputMode="stateHidden|adjustPan"
 
 
       Bundle extras = getIntent().getExtras();
@@ -331,7 +313,6 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
       if (extras != null) {
          mActivity.findViewById(R.id.progressBarRound).setVisibility(View.VISIBLE);
          url = extras.getString("url");
-
          Log.i("Sergio>", this + " onViewCreated: passed url=\n" + url);
 
          is_web_address = extras.getBoolean("is_web_address");
@@ -343,6 +324,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
 
          productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_BRAND, webstoreName);
          if (!is_web_address) {
+            isDesktopSite = true;
 
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_SHIPPING_LOCATION, shippingCountry);
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY, currency);
@@ -358,7 +340,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
             String country_name = texts.get(values.indexOf(pref_MP_Locale));
             productID = extras.getString("productID");
             description = extras.getStringArrayList("description");
-            String imgURL = extras.getString("image_url");
+            imgURLFromExtras = extras.getString("image_url");
             productName = extras.getString("productTitleStr");
             customProductID = "loc" + pref_MP_Locale + "pid" + productID;
 
@@ -383,10 +365,10 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
             }
             productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_DESCRIPTION, description_DB);
 
-            //Lista da descrição enviado da activity anterior (SearchFragment.java) com imagens à esquerda
+            //Lista da descrição enviado da activity anterior (SearchFragment.java) com imagem de lista (tick) à esquerda
             ((TextView) mActivity.findViewById(R.id.p_description)).setText(pptList_SSB);
-            if (imgURL != null) {
-               Glide.with(mActivity).load(imgURL).into(productImageView);
+            if (imgURLFromExtras != null) {
+               Glide.with(mActivity).load(imgURLFromExtras).error(R.drawable.noimage).into(productImageView);
             } else {
                Glide.with(mActivity).load(R.drawable.noimage).into(productImageView);
             }
@@ -409,137 +391,128 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
 
       priceTV = mActivity.findViewById(R.id.price_tv);
 
-      mActivity.findViewById(R.id.open_in_browser).setOnClickListener(new View.OnClickListener() {
-         @Override
-         public void onClick(View v) {
-            Intent browser = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-            startActivity(browser);
-         }
+      mActivity.findViewById(R.id.open_in_browser).setOnClickListener(v -> {
+         Intent browser = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+         startActivity(browser);
       });
 
         /*
          *   Guardar produto na DB ao clicar no botão
         */
-      mActivity.findViewById(R.id.button_add_to_db).setOnClickListener(new View.OnClickListener() {
-         @Override
-         public void onClick(View v) {
-            long timeMillis = System.currentTimeMillis();
-            String price = priceTV.getText().toString();
-            String priceString = price;
+      mActivity.findViewById(R.id.button_add_to_db).setOnClickListener(v -> {
+         long timeMillis = System.currentTimeMillis();
+         String price = priceTV.getText().toString();
+         String priceString = price;
 
-            Pattern regex = Pattern.compile("[^.,\\d]+"); // matches . , e números de 0 a 9
-            Matcher match = regex.matcher(price);
-            price = match.replaceAll("");
-            price = price.replaceAll(",", ".");
-            double price_value = parseDouble(price);
+         Pattern regex = Pattern.compile("[^.,\\d]+"); // matches . , e números de 0 a 9
+         Matcher match = regex.matcher(price);
+         price = match.replaceAll("");
+         price = price.replaceAll(",", ".");
+         double price_value = parseDouble(price);
 
-            String notifyValueStr = alertTextView.getText().toString();
+         String notifyValueStr = alertTextView.getText().toString();
 
-            if (StringUtil.isBlank(notifyValueStr)) {
-               notify_value = 0;
-            } else {
-               try {
-                  notify_value = parseDouble(notifyValueStr);
-               } catch (NumberFormatException e) {
-                  // número demasiado grande
-                  e.printStackTrace();
-                  notify_value = parseDouble(String.valueOf(MAX_NOTIFY_VALUE));
-               }
+         if (StringUtil.isBlank(notifyValueStr)) {
+            notify_value = 0;
+         } else {
+            try {
+               notify_value = parseDouble(notifyValueStr);
+            } catch (NumberFormatException e) {
+               // número demasiado grande
+               e.printStackTrace();
+               notify_value = parseDouble(String.valueOf(MAX_NOTIFY_VALUE));
             }
+         }
 
-            ContentValues priceContentValues = new ContentValues();
-            priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE, priceString);
-            priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_VALUE, price_value);
-            priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_DATE, timeMillis);
+         ContentValues priceContentValues = new ContentValues();
+         priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE, priceString);
+         priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_VALUE, price_value);
+         priceContentValues.put(ProductsContract.PricesEntry.COLUMN_PRODUCT_PRICE_DATE, timeMillis);
 
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID, productID);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, priceString);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE, price_value);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, timeMillis);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, priceString);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE, price_value);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, timeMillis);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE, priceString);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE, price_value);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE, timeMillis);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE, 0);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS, alertSwitch.isChecked() ? 1 : 0);
-            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_NOTIFY_VALUE, notify_value);
+         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_ID, productID);
+         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE, priceString);
+         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_VALUE, price_value);
+         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MIN_PRICE_DATE, timeMillis);
+         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE, priceString);
+         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_VALUE, price_value);
+         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MAX_PRICE_DATE, timeMillis);
+         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE, priceString);
+         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_VALUE, price_value);
+         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ACTUAL_PRICE_DATE, timeMillis);
+         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PREVIOUS_PRICE_VALUE, 0);
+         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS, alertSwitch.isChecked() ? 1 : 0);
+         productContentValues.put(ProductsContract.ProductsEntry.COLUMN_NOTIFY_VALUE, notify_value);
 
-            if (JSON_ArrayArray_Images != null) { // Imagens do JSON (Mais completo)
-               ArrayList<ArrayList<String>> arrayListArrayListImageURIs = new ArrayList<>();
-               for (int i = 0; i < JSON_ArrayArray_Images.length(); i++) {
-                  JSONArray json_array_i = JSON_ArrayArray_Images.optJSONArray(i);
-                  ArrayList<String> arrayListImageURIs = new ArrayList<>();
-                  for (int j = 0; j < json_array_i.length(); j++) {
-                     try {
-                        String size = (String) ((JSONObject) json_array_i.get(j)).get("size");
-                        String url = (String) ((JSONObject) json_array_i.get(j)).get("url");
-                        if (url != null && CACHE_IMAGES) {
-                           for (int k = 0; k < imageSizesToUse.length; k++) {
-                              if (size.equals(imageSizesToUse[k])) {
-                                 String filename = customProductID + "_" + imageSizesToUse[k] + "_index_" + i + ".jpg"; // ex.: tamanho 200x200 imageSizesToUse
-                                 saveImageWithGlide(url, filename); //guarda as imagens todas. index_i=variação imageSizesToUse[k]=tamanho
-                                 arrayListImageURIs.add(filename);
-                                 ((JSONObject) JSON_ArrayArray_Images.optJSONArray(i).get(j)).put("file", filename);
-                              }
+         if (JSON_ArrayArray_Images != null) { // Imagens do JSON (Mais completo)
+            for (int i = 0; i < JSON_ArrayArray_Images.length(); i++) {
+               JSONArray json_array_i = JSON_ArrayArray_Images.optJSONArray(i);
+               for (int j = 0; j < json_array_i.length(); j++) {
+                  try {
+                     String size = (String) ((JSONObject) json_array_i.get(j)).get("size");
+                     String url = (String) ((JSONObject) json_array_i.get(j)).get("url");
+                     if (url != null && CACHE_IMAGES) {
+                        for (int k = 0; k < imageSizesToUse.length; k++) {
+                           if (size.equals(imageSizesToUse[k])) {
+                              String filename = customProductID + "_" + imageSizesToUse[k] + "_index_" + i + ".jpg"; // ex.: tamanho 200x200 imageSizesToUse
+                              saveImageWithGlide(url, filename); //guarda as imagens todas. index_i=variação imageSizesToUse[k]=tamanho
+                              ((JSONObject) JSON_ArrayArray_Images.optJSONArray(i).get(j)).put("file", filename);
                            }
                         }
-                     } catch (JSONException e) {
-                        e.printStackTrace();
                      }
+                  } catch (JSONException e) {
+                     e.printStackTrace();
                   }
-                  arrayListArrayListImageURIs.add(arrayListImageURIs);
                }
-               productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGES, JSON_ArrayArray_Images.toString().replace("\\", ""));
-
             }
+            productContentValues.put(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGES, JSON_ArrayArray_Images.toString().replace("\\", ""));
 
-            DBHelper dbHelper = new DBHelper(mActivity);
-            SQLiteDatabase db = dbHelper.getWritableDatabase();
+         }
 
-            Cursor exists_CustomPID = db.rawQuery("SELECT 1 FROM " +
-                ProductsContract.ProductsEntry.TABLE_NAME + " WHERE " +
-                ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID + " = '" + customProductID + "' LIMIT 1", null); //Atenção à single quote (')
+         DBHelper dbHelper = new DBHelper(mActivity);
+         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
-            int numEntries = exists_CustomPID.getCount();
-            exists_CustomPID.close();
+         Cursor exists_CustomPID = db.rawQuery("SELECT 1 FROM " +
+             ProductsContract.ProductsEntry.TABLE_NAME + " WHERE " +
+             ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID + " = '" + customProductID + "' LIMIT 1", null); //Atenção à single quote (')
 
-            if (numEntries >= 1) { // Só poderá haver uma entrada
-               showCustomToast(mActivity, "Product already in DataBase!",
-                   R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_LONG);
+         int numEntries = exists_CustomPID.getCount();
+         exists_CustomPID.close();
+
+         if (numEntries >= 1) { // Só poderá haver uma entrada
+            showCustomToast(mActivity, "Product already in DataBase!",
+                R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_LONG);
+         } else {
+            long productRowID = db.insert(ProductsContract.ProductsEntry.TABLE_NAME, null, productContentValues);
+            if (productRowID < 0L) {
+               showCustomToast(mActivity, "Error inserting product to DataBase " +
+                       ProductsContract.ProductsEntry.TABLE_NAME + "! Try again.",
+                   R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
             } else {
-               long productRowID = db.insert(ProductsContract.ProductsEntry.TABLE_NAME, null, productContentValues);
-               if (productRowID < 0L) {
+               // A _ID do produto vai entrar para a Tabela dos preços
+               // ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS = ProductsContract.ProductsEntry._ID
+               // Podem existir vários _id_products iguais na tabela de preços
+               priceContentValues.put(ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS, productRowID);
+               long priceRowId = db.insert(ProductsContract.PricesEntry.TABLE_NAME, null, priceContentValues);
+               if (priceRowId < 0L) {
                   showCustomToast(mActivity, "Error inserting product to DataBase " +
-                          ProductsContract.ProductsEntry.TABLE_NAME + "! Try again.",
+                          ProductsContract.PricesEntry.TABLE_NAME + "! Try again.",
                       R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
                } else {
-                  // A _ID do produto vai entrar para a Tabela dos preços
-                  // ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS = ProductsContract.ProductsEntry._ID
-                  // Podem existir vários _id_products iguais na tabela de preços
-                  priceContentValues.put(ProductsContract.PricesEntry.COLUMN_ID_PRODUCTS, productRowID);
-                  long priceRowId = db.insert(ProductsContract.PricesEntry.TABLE_NAME, null, priceContentValues);
-                  if (priceRowId < 0L) {
-                     showCustomToast(mActivity, "Error inserting product to DataBase " +
-                             ProductsContract.PricesEntry.TABLE_NAME + "! Try again.",
-                         R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
-                  } else {
-                     showCustomToast(mActivity, "Now following product price!",
-                         R.mipmap.ic_ok2, R.color.green, Toast.LENGTH_LONG);
-                     addedNewProduct = true;
+                  showCustomToast(mActivity, "Now following product price!",
+                      R.mipmap.ic_ok2, R.color.green, Toast.LENGTH_LONG);
+                  addedNewProduct = true;
 
-                     Cursor dbSize = db.rawQuery("SELECT COUNT(*) FROM" + ProductsContract.ProductsEntry.TABLE_NAME, null);
-                     if (dbSize.getCount() == 1) {
-                        SharedPreferences.Editor editor = mActivity.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE).edit();
-                        editor.putLong(LAST_DB_UPDATE_PREF_KEY, timeMillis);
-                        editor.commit();
-                     }
+                  Cursor dbSize = db.rawQuery("SELECT COUNT(*) FROM" + ProductsContract.ProductsEntry.TABLE_NAME, null);
+                  if (dbSize.getCount() == 1) {
+                     SharedPreferences.Editor editor = mActivity.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE).edit();
+                     editor.putLong(LAST_DB_UPDATE_PREF_KEY, timeMillis);
+                     editor.commit();
                   }
+                  dbSize.close();
                }
             }
-            db.close();
          }
+         db.close();
       });
 
 
@@ -583,7 +556,6 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
 
    }
 
-
    public int getStatusBarHeight() {
       int height = 0;
       int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
@@ -596,6 +568,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
           .load(imageURL)
           .asBitmap()
           .toBytes(Bitmap.CompressFormat.JPEG, 100)
+          .error(R.drawable.noimage)
           .asIs()
           .format(PREFER_ARGB_8888)
           .dontTransform()
@@ -623,71 +596,170 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
           });
    }
 
-   private boolean getImagesFromScriptTag(Document resultDocument) {
-      Elements scriptTags = resultDocument.getElementsByTag("script");
-      for (Element tag : scriptTags) {
-         for (DataNode node : tag.dataNodes()) {
-            String script = node.getWholeData();
-            if (script.contains("arProductImages")) {
-               JSON_ArrayArray_Images = new JSONArray();
-               String[] imageFileTypes = new String[]{".jpg", ".png", ".bmp"};
-               String IMG_FILETYPE = "";
+   private void getImagesFromHTML_Tags(Document resultDocument) {
+      ArrayList<String> arrayListImageURLsToLoad = new ArrayList<>();
+      JSON_ArrayArray_Images = new JSONArray();
 
-               for (int i = 0; i < imageFileTypes.length; i++) {
-                  if (script.contains(imageFileTypes[i])) {
-                     IMG_FILETYPE = imageFileTypes[i];
-                  }
-               }
+      // extract images from script tags
 
-               int indexOfarray = script.indexOf("arProductImages[");
+      if (isDesktopSite) {
+         Elements scriptTags = resultDocument.getElementsByTag("script");
+         if (scriptTags.size() > 0) {
+            for (Element tag : scriptTags) {
+               for (DataNode node : tag.dataNodes()) {
+                  String script = node.getWholeData();
+                  if (script.contains("arProductImages")) {
 
-               while (indexOfarray >= 0 && !IMG_FILETYPE.isEmpty()) {
-                  String sub_script = script.substring(indexOfarray, script.indexOf(");", indexOfarray));
-                  JSONArray inner_array = new JSONArray();
+                     String[] imageFileTypes = new String[]{".jpg", ".png", ".bmp"};
+                     String IMG_FILETYPE = "";
+                     for (int i = 0; i < imageFileTypes.length; i++) {
+                        if (script.contains(imageFileTypes[i]))
+                           IMG_FILETYPE = imageFileTypes[i];
+                     }
 
-                  int indexOfHttps = sub_script.indexOf("https");
+                     int indexOfarray = script.indexOf("arProductImages[");
+                     while (indexOfarray >= 0 && !IMG_FILETYPE.isEmpty()) {
+                        gotImages = false;
+                        String urlToLoad = null;
+                        String sub_script = script.substring(indexOfarray, script.indexOf(");", indexOfarray));
+                        JSONArray inner_array = new JSONArray();
 
-                  while (indexOfHttps >= 0) {
+                        int indexOfHttps = sub_script.indexOf("https");
+                        while (indexOfHttps >= 0) {
+                           String imgURL = sub_script.substring(indexOfHttps, sub_script.indexOf(IMG_FILETYPE, indexOfHttps) + 4);
 
-                     String imgURL = sub_script.substring(indexOfHttps, sub_script.indexOf(IMG_FILETYPE, indexOfHttps) + 4);
+                           String size = "";
+                           for (int k = 0; k < MP_BB_IMAGE_TYPES.length; k++) {
+                              if (imgURL.contains(MP_BB_IMAGE_TYPES[k])) {
+                                 size = MP_XX_IMAGE_TYPES[k];
+                                 break;
+                              }
 
-                     String size = "";
-                     for (int k = 0; k < MP_BB_IMAGE_TYPES.length; k++) {
-                        if (imgURL.contains(MP_BB_IMAGE_TYPES[k])) {
-                           size = MP_XX_IMAGE_TYPES[k];
+                           }
+
+                           for (int k = 0; k < imageSizesToUse.length; k++) {
+                              if (size.equals(imageSizesToUse[k])) {
+                                 urlToLoad = imgURL;
+                                 gotImages = true;
+                              }
+                           }
+
+                           JSONObject innerObject = new JSONObject();
+                           try {
+                              innerObject.put("url", imgURL);
+                              innerObject.put("size", size);
+                           } catch (JSONException e) {
+                              e.printStackTrace();
+                           }
+                           inner_array.put(innerObject);
+
+                           indexOfHttps = sub_script.indexOf("https", indexOfHttps + 1);
                         }
-                     }
 
-                     JSONObject innerObject = new JSONObject();
-                     try {
-                        innerObject.put("url", imgURL);
-                        innerObject.put("size", size);
-                     } catch (JSONException e) {
-                        e.printStackTrace();
+                        JSON_ArrayArray_Images.put(inner_array);
+                        indexOfarray = script.indexOf("arProductImages[", indexOfarray + 1);
+                        if (gotImages)
+                           arrayListImageURLsToLoad.add(urlToLoad);
                      }
-                     inner_array.put(innerObject);
-
-                     indexOfHttps = sub_script.indexOf("https", indexOfHttps + 1);
                   }
-
-                  JSON_ArrayArray_Images.put(inner_array);
-
-                  indexOfarray = script.indexOf("arProductImages[", indexOfarray + 1);
                }
             }
          }
       }
 
-      if (JSON_ArrayArray_Images != null) {
-         return true;
-      } else {
-         return false;
+
+      // extract images from jzoom divs
+      try {
+
+
+         Elements outerZoomImageDivs = resultDocument.getElementsByClass("jZoom_imageLinks").first().children();
+         int oSize = outerZoomImageDivs.size();
+         int innerSize = outerZoomImageDivs.get(0).children().size();
+         for (int i = 0; i < innerSize; i++) {
+            gotImages = false;
+            String urlToLoad = null;
+            JSONArray innerArray = new JSONArray();
+
+            for (int j = 0; j < oSize; j++) {
+               String sizeName = outerZoomImageDivs.get(j).className().replace("jZoom_", "").toLowerCase();
+               sizeName = MP_XX_IMAGE_TYPES[all_image_sizeNames.indexOf(sizeName)];
+               Elements innerDivs = outerZoomImageDivs.get(j).children();
+               String imgURL = MYP_CONTENT_SERVER + innerDivs.get(i).attr("data-image-link");
+               if (!StringUtil.isBlank(imgURL)) {
+                  JSONObject innerObject = new JSONObject();
+                  innerObject.put("size", sizeName);
+                  innerObject.put("url", imgURL);
+                  innerArray.put(innerObject);
+                  for (int k = 0; k < imageSizesToUse.length; k++) {
+                     if (sizeName.equals(imageSizesToUse[k])) {
+                        urlToLoad = imgURL;
+                        gotImages = true;
+                     }
+                  }
+               }
+
+            }
+            if (gotImages) arrayListImageURLsToLoad.add(urlToLoad);
+
+
+            Elements product_Images_OnDisplay = isMobileSite ? resultDocument.getElementsByClass("product-img rsImg") :
+                resultDocument.getElementsByClass("m-unit-1 firstContainer");
+
+            gotImages = false;
+            urlToLoad = null;
+            String imageURL = isMobileSite ? product_Images_OnDisplay.get(i).attr("src") :
+                product_Images_OnDisplay.get(i).child(0).child(0).attr("src");
+            if (!StringUtil.isBlank(imageURL)) {
+               JSONObject innerObject = new JSONObject();
+               innerObject.put("size", isMobileSite ? "300x300" : "480x480");
+               innerObject.put("url", imageURL);
+               innerArray.put(innerObject);
+               JSON_ArrayArray_Images.put(innerArray);
+
+               for (int k = 0; k < imageSizesToUse.length; k++) {
+                  if ("300x300".equals(imageSizesToUse[k])) {
+                     urlToLoad = imageURL;
+                     gotImages = true;
+                  }
+               }
+               if (gotImages) arrayListImageURLsToLoad.add(urlToLoad);
+            }
+
+         }
+
+      } catch (JSONException e) {
+         e.printStackTrace();
+      } catch (IndexOutOfBoundsException i) {
+         i.printStackTrace();
       }
+
+      Log.i("Sergio>", this + " onPostExecute\nJSON_ArrayArray_Images= " + JSON_ArrayArray_Images.toString().replace("\\", "") + "\n" +
+          "arrayListImageURLsToLoad= \n" + arrayListImageURLsToLoad);
+
+      gotImages = arrayListImageURLsToLoad.size() > 0;
+
+      if (gotImages) {
+         placeImagesFromURL_Details(arrayListImageURLsToLoad);
+         productImageView.setVisibility(View.GONE);
+         image_switcher_details.setVisibility(View.VISIBLE);
+
+      } else if (!gotImages && imgURLFromExtras != null) {
+         productImageView.setVisibility(View.VISIBLE);
+         image_switcher_details.setVisibility(View.GONE);
+         Glide.with(mActivity).load(imgURLFromExtras).error(R.drawable.noimage).into(productImageView);
+
+      } else if (!gotImages && imgURLFromExtras == null) {
+         productImageView.setVisibility(View.VISIBLE);
+         image_switcher_details.setVisibility(View.GONE);
+         Glide.with(mActivity).load(R.drawable.noimage).into(productImageView);
+      }
+
+
    }
 
    private void get_Available_Options() {
       String full_JSON_URL = MP_Domain + "variations.json?productId=" + productID + "&" + URL_suffix;
-      AsyncTask<String, Void, Boolean> checkinternetAsyncTask = new checkInternetAsyncMethods("get_Available_Options");
+      AsyncTask<String, Void, Boolean> checkinternetAsyncTask = new checkInternetAsyncMethods("GetAvailableOptionsFromJSON");
       checkinternetAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, full_JSON_URL);
       Log.i("Sergio>", this + " get_Available_Options: \nfull_JSON_URL=\n" + full_JSON_URL);
    }
@@ -717,7 +789,6 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
       String JSON_URL_Details = MP_Domain + "variations.json?productId=" + productID + options + "&" + URL_suffix;
       //String jsonurl = "https://pt.myprotein.com/variations.json?productId=10530943";
       //String options = "&selected=3 &variation1=5 &option1=2413 &variation2=6 &option2=2407 &variation3=7 &option3=5935"
-      //String mais = "&settingsSaved=Y&shippingcountry=PT&switchcurrency=GBP&countrySelected=Y"
       //String mais = "&settingsSaved=Y&shippingcountry=PT&switchcurrency=GBP&countrySelected=Y"
 
       Log.i("Sergio>>>", "getPriceMethod: \nJSON_URL_Details=\n" + JSON_URL_Details);
@@ -750,10 +821,8 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                       if (timer != null) {
                          timer.cancel();
                          timer.purge();
-                         timer = new Timer();
-                      } else {
-                         timer = new Timer();
                       }
+                      timer = new Timer();
                       bitmapsReady(arrayListImageBitmap);
                    }
                 }
@@ -844,7 +913,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
 
          if (hasInternet) {
             switch (method) {
-               case "get_Available_Options": {
+               case "GetAvailableOptionsFromJSON": {
                   AsyncTask<String, Void, JSONObject> getDetailsFromJSON = new GetAvailableOptionsFromJSON();
                   getDetailsFromJSON.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, backGround_param);
                   break;
@@ -910,6 +979,8 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                ((TextView) mActivity.findViewById(R.id.p_subtitle)).append(subtitle);
                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_PRODUCT_SUBTITLE, subtitle);
 
+               getImagesFromHTML_Tags(resultDocument);
+
                // Labels: Sabor, Quantidade, Embalagem
                Elements productVariationsLabels = resultDocument.getElementsByClass("productVariations__label");
                int pvl_size = productVariationsLabels.size();
@@ -933,8 +1004,6 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                   Matcher match = regex.matcher(price);
                   String currency_symbol = match.replaceAll("");
                   productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL, currency_symbol);
-
-                  getImagesFromScriptTag(resultDocument);
 
                   priceTV.setText(price);
                   gotPrice = true;
@@ -996,11 +1065,13 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                      break;
                   }
                }
-               for (int i = 0; i < MP_DESKTOP_SITES.length; i++) {
-                  if (url.contains(MP_DESKTOP_SITES[i])) {
-                     isDesktopSite = true;
-                     theSite = MP_DESKTOP_SITES[i];
-                     break;
+               if (!isMobileSite) {
+                  for (int i = 0; i < MP_DESKTOP_SITES.length; i++) {
+                     if (url.contains(MP_DESKTOP_SITES[i])) {
+                        isDesktopSite = true;
+                        theSite = MP_DESKTOP_SITES[i];
+                        break;
+                     }
                   }
                }
 
@@ -1036,9 +1107,12 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                customProductID = theSite + "pid" + productID;
                productContentValues.put(ProductsContract.ProductsEntry.COLUMN_CUSTOM_PRODUCT_ID, customProductID);
 
-               Elements productVariationsLabels = null;
+               Elements productVariationsLabels = new Elements();
                if (isMobileSite) {
-                  productVariationsLabels = resultDocument.getElementsByClass("product-variations").get(0).getElementsByTag("legend");
+                  Elements elementsByClass = resultDocument.getElementsByClass("product-variations");
+                  if (elementsByClass.size() > 0) {
+                     productVariationsLabels = elementsByClass.get(0).getElementsByTag("legend");
+                  }
                } else if (isDesktopSite) {
                   productVariationsLabels = resultDocument.getElementsByClass("productVariations__label");
                }
@@ -1047,6 +1121,9 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                    "productVariationsLabels= " + productVariationsLabels + "\n" +
                    "productID= " + productID + "\n" +
                    "customProductID= " + customProductID);
+
+               JSON_ArrayArray_Images = new JSONArray();
+               getImagesFromHTML_Tags(resultDocument);
 
                int pvl_size = productVariationsLabels.size();
                if (pvl_size > 0) {
@@ -1062,80 +1139,8 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                      int vIndex = i + 1;
                      productContentValues.put("mp_variation_name" + vIndex, variationText);
                   }
-
-                  if (isMobileSite) {
-
-                     JSON_ArrayArray_Images = new JSONArray();
-                     ArrayList<String> arrayListImageURLsToLoad = new ArrayList<>();
-                     try {
-                        gotImages = false;
-
-                        Elements product_Images_ONDisplay = resultDocument.getElementsByClass("product-image");
-
-                        Elements outerZoomImageDivs = resultDocument.getElementsByClass("jZoom_imageLinks").first().children();
-                        int oSize = outerZoomImageDivs.size();
-                        int innerSize = outerZoomImageDivs.get(0).children().size();
-                        for (int i = 0; i < innerSize; i++) {
-                           String urlToLoad = null;
-                           JSONArray innerArray = new JSONArray();
-
-                           for (int j = 0; j < oSize; j++) {
-                              String sizeName = outerZoomImageDivs.get(j).className().replace("jZoom_", "").toLowerCase();
-                              sizeName = MP_XX_IMAGE_TYPES[all_image_sizeNames.indexOf(sizeName)];
-                              Elements innerDivs = outerZoomImageDivs.get(j).children();
-                              String imgURL = "https://s4.thcdn.com/" + innerDivs.get(i).attr("data-image-link");
-
-                              JSONObject innerObject = new JSONObject();
-                              innerObject.put("size", sizeName);
-                              innerObject.put("url", imgURL.replace("\\", ""));
-                              innerArray.put(innerObject);
-                              for (int k = 0; k < imageSizesToUse.length; k++) {
-                                 if (sizeName.equals(imageSizesToUse[k])) {
-                                    urlToLoad = imgURL;
-                                    gotImages = true;
-                                 }
-                              }
-                           }
-                           String imageURL = product_Images_ONDisplay.get(i).child(0).attr("src");
-                           JSONObject innerObject = new JSONObject();
-                           innerObject.put("size", "300x300");
-                           innerObject.put("url", imageURL.replace("\\", ""));
-                           innerArray.put(innerObject);
-                           JSON_ArrayArray_Images.put(innerArray);
-
-                           for (int k = 0; k < imageSizesToUse.length; k++) {
-                              if ("300x300".equals(imageSizesToUse[k])) {
-                                 urlToLoad = imageURL;
-                                 gotImages = true;
-                              }
-                           }
-                           if (gotImages)
-                              arrayListImageURLsToLoad.add(urlToLoad);
-                        }
-
-                        if (gotImages) {
-                           placeImagesFromURL_Details(arrayListImageURLsToLoad);
-                           productImageView.setVisibility(View.GONE);
-                           image_switcher_details.setVisibility(View.VISIBLE);
-                        }
-
-
-                        Log.i("Sergio>", this + " onPostExecute\nJSON_ArrayArray_Images= " + JSON_ArrayArray_Images.toString().replace("\\", "") + "\n" +
-                            "arrayListImageURLsToLoad= \n" + arrayListImageURLsToLoad);
-
-                     } catch (JSONException e) {
-                        e.printStackTrace();
-                     } catch (IndexOutOfBoundsException i) {
-                        i.printStackTrace();
-                     }
-
-
-                  } else if (isDesktopSite) {
-
-
-                  }
-
                   get_Available_Options();
+
                } else {
                   // Sem opções de sabor, embalagem, tamanho para selecionar
 
@@ -1150,8 +1155,6 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                   Matcher match = regex.matcher(price);
                   String currency_symbol = match.replaceAll("");
                   productContentValues.put(ProductsContract.ProductsEntry.COLUMN_MP_CURRENCY_SYMBOL, currency_symbol);
-
-                  getImagesFromScriptTag(resultDocument);
 
                   priceTV.setText(price);
                   gotPrice = true;
@@ -1346,6 +1349,8 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                //
                //  Criar o JSONArray com array das imagens a colocar na base de dados. no array está um JSON Object ()
                //
+               ArrayList<String> arrayListImageURLsToLoad = new ArrayList<>();
+
                try {
                   // Parse do url das imagens se existirem no json
                   if (json.has("images")) {
@@ -1360,7 +1365,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                         int current_img_index = image_i.getInt("index");                            // 0, 1, 2...
                         String image_type = image_i.getString("type");                              // tamanho: "small", "extralarge" "zoom" ...
                         image_type = MP_XX_IMAGE_TYPES[all_image_sizeNames.indexOf(image_type)];        // Traduzir o nome para 20x20, 100x100 ...
-                        String image_url = "https://s4.thcdn.com/" + image_i.getString("name");     // url
+                        String image_url = MYP_CONTENT_SERVER + image_i.getString("name");     // url
 
                         if (current_img_index == image_index) {
                            JSONObject innerObject = new JSONObject();
@@ -1382,7 +1387,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                      JSON_ArrayArray_Images.put(inner_array);
 
                      // Carregar imagens no ecrã atual (details)
-                     ArrayList<String> arrayListImageURLsToLoad = new ArrayList<>();
+
                      for (int i = 0; i < JSON_ArrayArray_Images.length(); i++) {
                         JSONArray json_array_i = JSON_ArrayArray_Images.optJSONArray(i);
                         String urlToLoad = null;
@@ -1408,13 +1413,25 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
                         }
                      }
 
-                     if (gotImages) {
-                        placeImagesFromURL_Details(arrayListImageURLsToLoad);
-                        productImageView.setVisibility(View.GONE);
-                        image_switcher_details.setVisibility(View.VISIBLE);
-                     }
+
                   } else {
                      gotImages = false;
+                  }
+
+                  if (gotImages) {
+                     placeImagesFromURL_Details(arrayListImageURLsToLoad);
+                     productImageView.setVisibility(View.GONE);
+                     image_switcher_details.setVisibility(View.VISIBLE);
+
+                  } else if (!gotImages && imgURLFromExtras != null) {
+                     productImageView.setVisibility(View.VISIBLE);
+                     image_switcher_details.setVisibility(View.GONE);
+                     Glide.with(mActivity).load(imgURLFromExtras).error(R.drawable.noimage).into(productImageView);
+
+                  } else if (!gotImages && imgURLFromExtras == null) {
+                     productImageView.setVisibility(View.VISIBLE);
+                     image_switcher_details.setVisibility(View.GONE);
+                     Glide.with(mActivity).load(R.drawable.noimage).into(productImageView);
                   }
 
                } catch (JSONException erro) {

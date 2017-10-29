@@ -22,11 +22,11 @@ import android.support.v7.widget.AppCompatCheckedTextView;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.ImageSpan;
 import android.util.Log;
 import android.util.Patterns;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -167,21 +167,20 @@ public class SearchFragment extends Fragment {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        resultsListView = (ListView) mActivity.findViewById(R.id.results);
+        resultsListView = mActivity.findViewById(R.id.results);
         resultsListView.addHeaderView(View.inflate(mActivity, R.layout.search_result_header_view, null));
 
-        searchTV = (EditText) resultsListView.findViewById(R.id.searchTextView);
-        searchTV.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_SEARCH) { //search no keyboard
-                    String querystr = searchTV.getText().toString();
-                    checkSearchQuery(querystr);
-                    return true;
-                }
-                return false;
+        searchTV = resultsListView.findViewById(R.id.searchTextView);
+        searchTV.setSingleLine();
+        searchTV.setEllipsize(TextUtils.TruncateAt.END);
+        searchTV.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
+                actionId == EditorInfo.IME_ACTION_GO) { //search ou 'ir' no keyboard
+                String querystr = searchTV.getText().toString();
+                checkSearchQuery(querystr);
+                return true;
             }
-
+            return false;
         });
 
         //final View btn_search = resultsListView.findViewById(R.id.btn_search);
@@ -191,9 +190,7 @@ public class SearchFragment extends Fragment {
 
         searchTV.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -202,9 +199,18 @@ public class SearchFragment extends Fragment {
                     btn_clear.setVisibility(View.VISIBLE);
                     btn_voice.setVisibility(View.GONE);
                     btn_clear_visible = true;
+                    if (Patterns.WEB_URL.matcher(s).matches()) {
+                        searchTV.setImeOptions(EditorInfo.IME_ACTION_NONE);
+                        searchTV.setImeOptions(EditorInfo.IME_ACTION_GO);
+                    } else {
+                        searchTV.setImeOptions(EditorInfo.IME_ACTION_NONE);
+                        searchTV.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
+                    }
                 }
                 if (s.length() == 0) {
                     //btn_search.setVisibility(View.GONE);
+                    searchTV.setImeOptions(EditorInfo.IME_ACTION_NONE);
+                    searchTV.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
                     btn_clear.setVisibility(View.GONE);
                     btn_voice.setVisibility(View.VISIBLE);
                     btn_clear_visible = false;
@@ -212,107 +218,91 @@ public class SearchFragment extends Fragment {
             }
 
             @Override
-            public void afterTextChanged(Editable s) {
-
-            }
+            public void afterTextChanged(Editable s) {}
         });
 
-        resultsListView.findViewById(R.id.btn_search).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String querystr = searchTV.getText().toString();
-                checkSearchQuery(querystr);
-            }
+        resultsListView.findViewById(R.id.btn_search).setOnClickListener(v -> {
+            String querystr = searchTV.getText().toString();
+            checkSearchQuery(querystr);
         });
 
-        btn_voice.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-                //intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, "en-US");
-                try {
-                    startActivityForResult(intent, VOICE_REQUEST_CODE);
-                } catch (ActivityNotFoundException a) {
-                    NetworkUtils.showCustomToast(mActivity, "Your device doesn't support Speech Recognition", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
+        btn_voice.setOnClickListener(v -> {
+            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+            //intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, "en-US");
+            try {
+                startActivityForResult(intent, VOICE_REQUEST_CODE);
+            } catch (ActivityNotFoundException a) {
+                NetworkUtils.showCustomToast(mActivity, "Your device doesn't support Speech Recognition", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
+            }
+
+        });
+
+        btn_clear.setOnClickListener(v -> searchTV.setText(""));
+
+        btn_options.setOnClickListener(v -> {
+
+            final AlertDialog.Builder builderDialog = new AlertDialog.Builder(mActivity);
+            builderDialog.setTitle("Webstores to search from");
+
+            final boolean[] in_which = which_webstores_checked.clone();
+            // Creating multiple selection by using setMultiChoiceItem method
+            builderDialog.setMultiChoiceItems(WEBSTORES_NAMES, which_webstores_checked, new DialogInterface.OnMultiChoiceClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton, boolean isChecked) {
+                    // Não permitir desmarcar todos os items
+                    AlertDialog adialog = (AlertDialog) dialog;
+                    ListView listView = adialog.getListView();
+                    listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+
+                    if (listView.getCheckedItemCount() == 0) {
+                        listView.setItemChecked(whichButton, true);
+                        which_webstores_checked[whichButton] = true;
+                    }
+                    // disallow last 2 webstores
+                    if (listView.isItemChecked(2)) {
+                        ((AppCompatCheckedTextView) listView.getChildAt(2)).setChecked(false);
+                        which_webstores_checked[2] = false;
+                    }
+                    if (listView.isItemChecked(3)) {
+                        ((AppCompatCheckedTextView) listView.getChildAt(3)).setChecked(false);
+                        which_webstores_checked[3] = false;
+                    }
+                    if (listView.getCheckedItemCount() == 0) {
+                        ((AppCompatCheckedTextView) listView.getChildAt(0)).setChecked(false);
+                        listView.setItemChecked(0, true);
+                        which_webstores_checked[0] = true;
+                    }
                 }
+            });
 
-            }
-        });
-
-        btn_clear.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                searchTV.setText("");
-            }
-        });
-
-        btn_options.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                final AlertDialog.Builder builderDialog = new AlertDialog.Builder(mActivity);
-                builderDialog.setTitle("Webstores to search from");
-
-                final boolean[] in_which = which_webstores_checked.clone();
-                // Creating multiple selection by using setMultiChoiceItem method
-                builderDialog.setMultiChoiceItems(WEBSTORES_NAMES, which_webstores_checked, new DialogInterface.OnMultiChoiceClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton, boolean isChecked) {
-                        // Não permitir desmarcar todos os items
-                        AlertDialog adialog = (AlertDialog) dialog;
-                        ListView listView = adialog.getListView();
-                        listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-
-                        if (listView.getCheckedItemCount() == 0) {
-                            listView.setItemChecked(whichButton, true);
-                            which_webstores_checked[whichButton] = true;
-                        }
-                        // disallow last 2 webstores
-                        if (listView.isItemChecked(2)) {
-                            ((AppCompatCheckedTextView) listView.getChildAt(2)).setChecked(false);
-                            which_webstores_checked[2] = false;
-                        }
-                        if (listView.isItemChecked(3)) {
-                            ((AppCompatCheckedTextView) listView.getChildAt(3)).setChecked(false);
-                            which_webstores_checked[3] = false;
-                        }
-                        if (listView.getCheckedItemCount() == 0) {
-                            ((AppCompatCheckedTextView) listView.getChildAt(0)).setChecked(false);
-                            listView.setItemChecked(0, true);
-                            which_webstores_checked[0] = true;
+            builderDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    webstoresToUse.clear();
+                    webstoreNamesToUse.clear();
+                    SharedPreferences sharedPref = mActivity.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE);
+                    SharedPreferences.Editor editor = sharedPref.edit();
+                    for (int i = 0; i < which_webstores_checked.length; i++) {
+                        editor.putBoolean(SUPPORTED_WEBSTORES[i], which_webstores_checked[i]);
+                        editor.commit();
+                        if (which_webstores_checked[i]) {
+                            webstoresToUse.add(SUPPORTED_WEBSTORES[i]);
+                            webstoreNamesToUse.add(WEBSTORES_NAMES[i]);
                         }
                     }
-                });
+                    numberOfWebstoresToUse = webstoresToUse.size();
+                }
+            });
 
-                builderDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        webstoresToUse.clear();
-                        webstoreNamesToUse.clear();
-                        SharedPreferences sharedPref = mActivity.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE);
-                        SharedPreferences.Editor editor = sharedPref.edit();
-                        for (int i = 0; i < which_webstores_checked.length; i++) {
-                            editor.putBoolean(SUPPORTED_WEBSTORES[i], which_webstores_checked[i]);
-                            editor.commit();
-                            if (which_webstores_checked[i]) {
-                                webstoresToUse.add(SUPPORTED_WEBSTORES[i]);
-                                webstoreNamesToUse.add(WEBSTORES_NAMES[i]);
-                            }
+            builderDialog.setNegativeButton("Cancel",
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            which_webstores_checked = in_which.clone();
                         }
-                        numberOfWebstoresToUse = webstoresToUse.size();
-                    }
-                });
+                    });
 
-                builderDialog.setNegativeButton("Cancel",
-                        new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                which_webstores_checked = in_which.clone();
-                            }
-                        });
-
-                AlertDialog alert = builderDialog.create();
-                alert.show();
-            }
+            AlertDialog alert = builderDialog.create();
+            alert.show();
         });
 
         ArrayList item = new ArrayList(1);

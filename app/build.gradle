@@ -9,8 +9,8 @@ android {
         applicationId "com.cruz.sergio.myproteinpricechecker"
         minSdkVersion 16
         targetSdkVersion 26
-        versionCode 10
-        versionName "0.991"
+        versionCode 11
+        versionName '0.992'
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }
@@ -23,6 +23,10 @@ android {
     }
     productFlavors {
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 }
 
 
@@ -33,7 +37,6 @@ dependencies {
     })
     //compile 'org.jsoup:jsoup:1.10.3'
     //compile 'commons-io:commons-io:2.5'
-
     compile 'com.android.support:appcompat-v7:26.1.0'
     compile 'com.android.support:design:26.1.0'
     compile 'com.android.support:support-v4:26.1.0'

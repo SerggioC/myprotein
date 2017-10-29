@@ -30,6 +30,7 @@ import com.cruz.sergio.myproteinpricechecker.R;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
+import org.jsoup.helper.StringUtil;
 import org.jsoup.nodes.Document;
 
 import java.io.IOException;
@@ -191,7 +192,7 @@ public class Alarm extends BroadcastReceiver {
     private static void savePriceToDB(Context context, CursorObj cursorObj, String priceString) {
         long currentTimeMillis = System.currentTimeMillis();
         double price_value;
-        if (priceString != null) {
+        if (!StringUtil.isBlank(priceString)) {
             Pattern regex = Pattern.compile("[^.,\\d]+"); // matches . , e números de 0 a 9; só ficam números . e ,
             Matcher match = regex.matcher(priceString);
 
@@ -524,9 +525,13 @@ public class Alarm extends BroadcastReceiver {
             if (resultDocument != null) {
                 try {
                     price = resultDocument.getElementsByClass("priceBlock_current_price").text();
+                    if (StringUtil.isBlank(price)) {
+                        price = resultDocument.getElementsByClass("product-price price").text();
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+
 
             }
             savePriceToDB(context, cursorObj, price);
