@@ -942,7 +942,7 @@ public class SearchFragment extends Fragment {
                                 intent = new Intent(mActivity, DetailsActivityProzis.class);
                                 intent.putExtra("language", prz_language);
                                 intent.putExtra("country", prz_country);
-                                intent.putExtra("ppt_list_SSB", product.pptList_SSB);
+                                intent.putExtra("ppt_list_SSB", product.pptList_SSB.toString());
                                 break;
                             }
                             case "Bulk Powders": {

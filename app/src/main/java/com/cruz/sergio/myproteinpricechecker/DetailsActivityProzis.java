@@ -14,9 +14,14 @@ import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.KeyEvent;
@@ -170,8 +175,8 @@ public class DetailsActivityProzis extends AppCompatActivity {
       // Corrigir posição da toolbar que fica debaixo da status bar (dar padding para cima do tamanho da status bar)
       toolbar.setPadding(0, getStatusBarHeight(), 0, 0);
 
-      productContentValues = new ContentValues(); //content values para a DB
-      priceContentValues = new ContentValues();
+      productContentValues = new ContentValues();  //content values para a DB
+      priceContentValues = new ContentValues();    //
 
       SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
       CACHE_IMAGES = sharedPrefs.getBoolean("cache_images", false);
@@ -262,7 +267,6 @@ public class DetailsActivityProzis extends AppCompatActivity {
                e.printStackTrace();
                notify_value = parseDouble(String.valueOf(MAX_NOTIFY_VALUE));
             }
-            Log.i("Sergio>", this + " onEditorAction\nnotify_value= " + notify_value);
             return true;
          }
       });
@@ -312,7 +316,7 @@ public class DetailsActivityProzis extends AppCompatActivity {
             ((TextView) mActivity.findViewById(R.id.p_subtitle_tv)).setText(productBrand + "\n" + webstoreName + " " + country_name);
             ((TextView) mActivity.findViewById(R.id.p_description)).setText(pptList_SSB);
             if (imgURL != null) {
-               Glide.with(mActivity).load(imgURL).into(productImageView);
+               Glide.with(mActivity).load(imgURL).error(R.drawable.noimage).into(productImageView);
             } else {
                Glide.with(mActivity).load(R.drawable.noimage).into(productImageView);
             }
@@ -324,14 +328,7 @@ public class DetailsActivityProzis extends AppCompatActivity {
                NetworkUtils.redrawNoNetworkSnackBar(mActivity);
             }
 
-//                AsyncTask<String, Void, Boolean> get_product_page = new checkInternetAsyncMethods("getProductPage");
-//                get_product_page.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url);
          } else {
-
-
-//                AsyncTask<String, Void, Boolean> get_product_page = new checkInternetAsyncMethods("getProductPageFromWebAddress");
-//                get_product_page.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url);
-
 
             if (NetworkUtils.hasActiveNetworkConnection(mActivity)) {
 
@@ -562,9 +559,9 @@ public class DetailsActivityProzis extends AppCompatActivity {
                Log.w("Sergio>", this + "doInBackground IOException: Going NetCipher");
                resultDocument = getHTMLDocument_with_NetCipher(url);
                resultStatus = STATUS_OK;
-            } catch (Exception e) {
+            } catch (Exception e41) {
                resultStatus = IOEXCEPTION;
-               e.printStackTrace();
+               e41.printStackTrace();
             }
          }
          return new ConnectionObject(resultDocument, resultStatus);
@@ -587,7 +584,7 @@ public class DetailsActivityProzis extends AppCompatActivity {
                 Toast.LENGTH_LONG);
 
          } else {
-            // ASSERT resultDocument != null
+
             if (resultDocument == null) {
                NetworkUtils.showCustomSlimToast(mActivity,
                    "Failed getting product page.",
@@ -596,12 +593,11 @@ public class DetailsActivityProzis extends AppCompatActivity {
                JSONObject jsonData = null;
                final String[] priceString = {null};
 
-
-               final ArrayList<String> variationNamesArray;
-               final ArrayList<String> variationValuesArray;
+               // Se tiver opções
                Elements selectTag = resultDocument.getElementsByClass("var-sel first trigger-choosen"); // "var-sel first trigger-choosen"
-
                if (selectTag != null) {
+                  final ArrayList<String> variationNamesArray;
+                  final ArrayList<String> variationValuesArray;
                   Element first = selectTag.first();
                   if (first != null) {
                      Elements options = first.getElementsByTag("option");
@@ -639,7 +635,7 @@ public class DetailsActivityProzis extends AppCompatActivity {
                            @Override
                            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                               gotImages = false;
-                              priceString[0] = getPriceMethodFromSJSONData(finalJsonData, variationValuesArray.get(spinner.getSelectedItemPosition()));
+                              priceString[0] = getPriceMethodFromJSONData(finalJsonData, variationValuesArray.get(spinner.getSelectedItemPosition()));
                               if (priceString[0] == null) {
                                  priceString[0] = getPriceFromHTML(resultDocument);
                               }
@@ -652,17 +648,49 @@ public class DetailsActivityProzis extends AppCompatActivity {
                            public void onNothingSelected(AdapterView<?> parent) {
                            }
                         });
-
-                        priceString[0] = getPriceMethodFromSJSONData(jsonData, variationValuesArray.get(spinner.getSelectedItemPosition()));
-                        if (priceString[0] == null) {
-                           priceString[0] = getPriceFromHTML(resultDocument);
-                        }
-                        mActivity.findViewById(R.id.button_add_to_db).setEnabled(true);
-                        priceTV.setVisibility(View.VISIBLE);
-                        priceTV.setText(priceString[0]);
+                        priceString[0] = getPriceMethodFromJSONData(jsonData, variationValuesArray.get(spinner.getSelectedItemPosition()));
                      }
+
                   }
                }
+
+               if (priceString[0] == null) priceString[0] = getPriceFromHTML(resultDocument);
+
+               // Produto fora de stock
+               //boolean isOutOfStock = resultDocument.hasClass("out-of-stock-notice") || resultDocument.hasClass("out-of-stock");
+               boolean isOutOfStock = resultDocument.getElementsByClass("out-of-stock-notice").size() > 0 ||
+                   resultDocument.getElementsByClass("out-of-stock").size() > 0;
+               if (isOutOfStock) {
+                  SpannableString ss = new SpannableString(" Out of Stock");
+                  ss.setSpan(new ForegroundColorSpan(ContextCompat.getColor(mActivity, R.color.red_light)), 0, ss.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                  ss.setSpan(new RelativeSizeSpan(0.7f), 0, ss.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                  ((TextView) mActivity.findViewById(R.id.title_tv)).append(ss);
+               }
+
+               mActivity.findViewById(R.id.button_add_to_db).setEnabled(true);
+               priceTV.setVisibility(View.VISIBLE);
+               priceTV.setText(priceString[0]);
+
+               // TODO SACAR IMAGENS
+
+               String zoomTagClassName = "zoomed-image slick-slide";
+               Elements zoomTags = resultDocument.getElementsByClass(zoomTagClassName);
+               int zsize = zoomTags.size();
+               for (int i = 0; i < zsize; i++) {
+                  String imgURL = "https:" + zoomTags.get(i).child(0).attr("src");
+                  JSONArray inner_array = new JSONArray();
+
+                  JSONObject innerObject = new JSONObject();
+                  try {
+                     innerObject.put("url", imgURL);
+                     innerObject.put("size", "1000x1000");
+                  } catch (JSONException e) {
+                     e.printStackTrace();
+                  }
+                  inner_array.put(innerObject);
+                  JSON_ArrayArray_Images.put(inner_array);
+               }
+               Log.i("Sergio>", this + " onPostExecute\nJSON_ArrayArray_Images= " + JSON_ArrayArray_Images);
 
             }
 
@@ -701,7 +729,7 @@ public class DetailsActivityProzis extends AppCompatActivity {
          return jsonData;
       }
 
-      private String getPriceMethodFromSJSONData(JSONObject jsonData, String optionKey) {
+      private String getPriceMethodFromJSONData(JSONObject jsonData, String optionKey) {
          String priceCurrency = "N/A";
          double priceValue;
 

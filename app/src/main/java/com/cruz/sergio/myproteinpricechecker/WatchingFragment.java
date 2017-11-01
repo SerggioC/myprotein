@@ -630,13 +630,15 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
          // com imageSwitcher das views que desapareciam multiplicando timers e imagens misturando tudo,
          // mas fica mais lento
          // TODO: melhorar performance
-         View view;
+
          if (showPercent == null || showPercent.length != mCursor.getCount()) {
             showPercent = new Boolean[mCursor.getCount()];
             for (int i = 0; i < mCursor.getCount(); i++) {
                showPercent[i] = true;
             }
          }
+
+         View view;
          if (convertView != null) {
             //view = newView(mContext, mCursor, null);
             view = newView(null, null, null);
