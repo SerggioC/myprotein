@@ -249,12 +249,9 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
          }
       });
 
-      MainActivity.notifySettingsChanged = new MainActivity.ChangedNotifySettings() {
-         @Override
-         public void onNotifySettingsChanged(Boolean hasChanged) {
-            if (hasChanged) {
-               redrawListView();
-            }
+      MainActivity.notifySettingsChanged = hasChanged -> {
+         if (hasChanged) {
+            redrawListView();
          }
       };
 

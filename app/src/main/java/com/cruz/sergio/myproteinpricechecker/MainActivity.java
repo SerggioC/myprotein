@@ -1,5 +1,6 @@
 package com.cruz.sergio.myproteinpricechecker;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -119,6 +120,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         UnregisterBroadcastReceiver(mActivity);
+        Alarm alarm = new Alarm();
+        alarm.setAlarm(this);
         super.onPause();
     }
 
@@ -276,6 +279,7 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+    @SuppressLint("RestrictedApi") // error on startActivityForResult
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
@@ -284,6 +288,7 @@ public class MainActivity extends AppCompatActivity {
                     mActivity,
                     android.R.anim.fade_in,
                     android.R.anim.fade_out).toBundle();
+
             startActivityForResult(new Intent(mActivity, SettingsActivity.class), SETTINGS_REQUEST_CODE, bundle);
 
             //startActivity(new Intent(mActivity, SettingsActivity.class));

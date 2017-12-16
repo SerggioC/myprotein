@@ -282,6 +282,7 @@ public class Alarm extends BroadcastReceiver {
                 .setLights(Color.RED, 500, 400)
                 .setTicker(prod_name + " price has dropped to " + priceString);
 
+        //test
         Intent resultIntent = new Intent(context, MainActivity.class);
         PendingIntent resultPendingIntent = PendingIntent.getActivity(context, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         notification_Builder.setContentIntent(resultPendingIntent);
@@ -328,9 +329,11 @@ public class Alarm extends BroadcastReceiver {
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         Intent intent = new Intent(ACTION_ALARM_REF, null, context, Alarm.class);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(context, ALARM_REQ_CODE, intent, PendingIntent.FLAG_CANCEL_CURRENT);
+
         // Se já ultrapassou o tempo executa agora, else executa daqui à diferença que falta.
         long triggerAtMillis = now > last_update_date + DELTA_INTERVAL ? now : last_update_date + DELTA_INTERVAL; // now + DELTA_INTERVAL - (now - last_update_date)
-        // *** Repete o alarme a cada DELTA_INTERVAL segundos ***
+
+       // *** Repete o alarme a cada DELTA_INTERVAL segundos ***
         alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, triggerAtMillis, DELTA_INTERVAL, pendingIntent);
 
         Log.i("Sergio>", this + "Alarm extends BroadcastReceiver setAlarm()\n" +

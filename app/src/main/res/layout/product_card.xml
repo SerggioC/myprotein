@@ -5,6 +5,7 @@
     android:id="@+id/cardview"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/listview_statelist"
     app:cardBackgroundColor="@color/cardsColor"
     app:cardCornerRadius="@dimen/card_radius"
     app:cardElevation="@dimen/card_elevation"
