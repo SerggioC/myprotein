@@ -83,11 +83,12 @@ import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
 import static com.cruz.sergio.myproteinpricechecker.SearchFragment.ADDED_NEW_PROD_REF;
 import static com.cruz.sergio.myproteinpricechecker.WatchingFragment.imageSizesToUse;
 import static com.cruz.sergio.myproteinpricechecker.helper.Alarm.LAST_DB_UPDATE_PREF_KEY;
+import static com.cruz.sergio.myproteinpricechecker.helper.MPUtils.showCustomSlimToast;
 import static com.cruz.sergio.myproteinpricechecker.helper.MyProteinDomain.MP_DESKTOP_SITES;
 import static com.cruz.sergio.myproteinpricechecker.helper.MyProteinDomain.MP_MOBILE_SITES;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.UnregisterBroadcastReceiver;
-import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomToast;
+import static com.cruz.sergio.myproteinpricechecker.helper.MPUtils.showCustomToast;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
 import static java.lang.Double.parseDouble;
 
@@ -1018,7 +1019,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
             }
 
          } else {
-            NetworkUtils.showCustomSlimToast(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT);
+            showCustomSlimToast(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT);
 
             //Toast.makeText(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT).show();
          }
@@ -1168,7 +1169,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
             }
 
          } else {
-            NetworkUtils.showCustomSlimToast(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT);
+            showCustomSlimToast(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT);
          }
 
       }
@@ -1265,11 +1266,11 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
             } else {
                Log.w("Sergio>", this + " onPostExecute: falhou ao sacar o json ");
                mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
-               NetworkUtils.showCustomSlimToast(mActivity, "Error getting price.", Toast.LENGTH_SHORT);
+               showCustomSlimToast(mActivity, "Error getting price.", Toast.LENGTH_SHORT);
             }
 
          } else {
-            NetworkUtils.showCustomSlimToast(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT);
+            showCustomSlimToast(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT);
          }
 
       }
@@ -1447,7 +1448,7 @@ public class DetailsActivityMyprotein extends AppCompatActivity {
             mActivity.findViewById(R.id.progressBarRound).setVisibility(View.GONE);
 
          } else {
-            NetworkUtils.showCustomSlimToast(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT);
+            showCustomSlimToast(mActivity, "Details Screen Terminated", Toast.LENGTH_SHORT);
 
             //Toast.makeText(mActivity, "Details Fragment Terminated", Toast.LENGTH_SHORT).show();
          }

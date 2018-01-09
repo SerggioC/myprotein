@@ -20,7 +20,7 @@ import android.os.Build;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.preference.PreferenceManager;
-import android.support.v7.app.NotificationCompat;
+import android.support.v4.app.NotificationCompat;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -282,7 +282,6 @@ public class Alarm extends BroadcastReceiver {
                 .setLights(Color.RED, 500, 400)
                 .setTicker(prod_name + " price has dropped to " + priceString);
 
-        //test
         Intent resultIntent = new Intent(context, MainActivity.class);
         PendingIntent resultPendingIntent = PendingIntent.getActivity(context, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         notification_Builder.setContentIntent(resultPendingIntent);

@@ -42,7 +42,6 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.cruz.sergio.myproteinpricechecker.helper.MyProteinDomain;
-import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
 
 import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
@@ -59,6 +58,8 @@ import java.util.ArrayList;
 import static android.app.Activity.RESULT_OK;
 import static android.content.Context.MODE_PRIVATE;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
+import static com.cruz.sergio.myproteinpricechecker.helper.MPUtils.showCustomSlimToast;
+import static com.cruz.sergio.myproteinpricechecker.helper.MPUtils.showCustomToast;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.IOEXCEPTION;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.MALFORMED_URL;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
@@ -70,7 +71,6 @@ import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.getHTMLD
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.hasActiveNetworkConnection;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.noNetworkSnackBar;
-import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomSlimToast;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
 
 public class SearchFragment extends Fragment {
@@ -232,7 +232,7 @@ public class SearchFragment extends Fragment {
             try {
                 startActivityForResult(intent, VOICE_REQUEST_CODE);
             } catch (ActivityNotFoundException a) {
-                NetworkUtils.showCustomToast(mActivity, "Your device doesn't support Speech Recognition", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
+                showCustomToast(mActivity, "Your device doesn't support Speech Recognition", R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
             }
 
         });
@@ -356,10 +356,10 @@ public class SearchFragment extends Fragment {
     public void performSearch(String searchString) {
         hideKeyBoard();
         if (hasAsyncTaskRuning) {
-            NetworkUtils.showCustomToast(mActivity, "Search in progress...", R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_SHORT);
+            showCustomToast(mActivity, "Search in progress...", R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_SHORT);
         } else {
             if (StringUtil.isBlank(searchString)) {
-                NetworkUtils.showCustomToast(mActivity, "Search product name or enter product URL", R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_LONG);
+                showCustomToast(mActivity, "Search product name or enter product URL", R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_LONG);
             } else {
                 horizontalProgressBar.setVisibility(View.VISIBLE);
 
@@ -403,7 +403,7 @@ public class SearchFragment extends Fragment {
         if (requestCode == VOICE_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
             String voiceText = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).get(0);
             if (voiceText.isEmpty()) {
-                NetworkUtils.showCustomToast(mActivity, "Search product name or enter product URL", R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_SHORT);
+                showCustomToast(mActivity, "Search product name or enter product URL", R.mipmap.ic_info, R.color.colorPrimaryDarker, Toast.LENGTH_SHORT);
             } else {
                 searchTV.setText(voiceText);
                 performSearch(voiceText);
@@ -561,11 +561,11 @@ public class SearchFragment extends Fragment {
 
             Elements resultProductCards = new Elements(0);
             if (resultStatus == STATUS_NOT_OK || resultStatus == IOEXCEPTION || resultStatus == MALFORMED_URL || resultStatus == UNSUPPORTED_MIME_TYPE) {
-                NetworkUtils.showCustomSlimToast(mActivity, "Error connecting to " + webstoreNamesToUse.get(thisWebstoreIndex) + " website\nException Code = " + resultStatus, Toast.LENGTH_LONG);
+                showCustomSlimToast(mActivity, "Error connecting to " + webstoreNamesToUse.get(thisWebstoreIndex) + " website\nException Code = " + resultStatus, Toast.LENGTH_LONG);
                 myproteinProductCards.add(new ProductCards(NO_RESULTS, webstoreNamesToUse.get(thisWebstoreIndex)));
                 searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, myproteinProductCards);
             } else if (resultStatus == TIMEOUT) {
-                NetworkUtils.showCustomSlimToast(mActivity, webstoreNamesToUse.get(thisWebstoreIndex) + " website not responding", Toast.LENGTH_LONG);
+                showCustomSlimToast(mActivity, webstoreNamesToUse.get(thisWebstoreIndex) + " website not responding", Toast.LENGTH_LONG);
                 myproteinProductCards.add(new ProductCards(NO_RESULTS, webstoreNamesToUse.get(thisWebstoreIndex)));
                 searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, myproteinProductCards);
             } else {
@@ -741,13 +741,13 @@ public class SearchFragment extends Fragment {
             int resultStatus = resultObject.resultStatus;
 
             if (resultStatus == STATUS_NOT_OK || resultStatus == IOEXCEPTION || resultStatus == MALFORMED_URL || resultStatus == UNSUPPORTED_MIME_TYPE) {
-                NetworkUtils.showCustomSlimToast(mActivity,
+                showCustomSlimToast(mActivity,
                         "Error connecting to " + webstoreNamesToUse.get(thisWebstoreIndex) + " website\nException Code = " + resultStatus,
                         Toast.LENGTH_LONG);
                 prozisProductCards.add(new ProductCards(NO_RESULTS, webstoreNamesToUse.get(thisWebstoreIndex)));
                 searchCompleteListener.onSearchComplete(true, thisWebstoreIndex, prozisProductCards);
             } else if (resultStatus == TIMEOUT) {
-                NetworkUtils.showCustomSlimToast(mActivity,
+                showCustomSlimToast(mActivity,
                         webstoreNamesToUse.get(thisWebstoreIndex) + " website not responding",
                         Toast.LENGTH_LONG);
                 prozisProductCards.add(new ProductCards(NO_RESULTS, webstoreNamesToUse.get(thisWebstoreIndex)));

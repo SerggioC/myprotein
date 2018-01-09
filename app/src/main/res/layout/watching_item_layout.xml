@@ -314,8 +314,7 @@
                 android:layout_marginTop="4dp"
                 android:drawableLeft="@drawable/ic_updateclock"
                 android:drawablePadding="2dp"
-                android:gravity="center"
-                android:text="Last updated: "/>
+                android:gravity="center"/>
 
             <TextView
                 android:id="@+id/notifications_info"

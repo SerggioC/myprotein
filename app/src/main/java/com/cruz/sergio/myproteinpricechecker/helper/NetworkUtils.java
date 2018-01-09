@@ -11,17 +11,11 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.design.internal.SnackbarContentLayout;
 import android.support.design.widget.Snackbar;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import com.cruz.sergio.myproteinpricechecker.R;
 
@@ -81,6 +75,9 @@ public class NetworkUtils {
                     Bundle extras = intent.getExtras();
                     NetworkInfo info = extras.getParcelable("networkInfo");
                     NetworkInfo.State state = info != null ? info.getState() : null;
+                    if (noNetworkSnackBar != null) {
+                        return;
+                    }
                     if (state == NetworkInfo.State.CONNECTED) {
                         noNetworkSnackBar.dismiss();
                     } else if (state != NetworkInfo.State.CONNECTED) {
@@ -101,42 +98,12 @@ public class NetworkUtils {
         }
     }
 
-    public static void showCustomSlimToast(Activity cActivity, String toastText, int duration) {
-        LayoutInflater inflater = cActivity.getLayoutInflater();
-        View layout = inflater.inflate(R.layout.slim_toast, (LinearLayout) cActivity.findViewById(R.id.slim_toast_root));
-        TextView text = layout.findViewById(R.id.slimtoast);
-        text.setText(toastText);
-        Toast customToast = new Toast(cActivity);
-        customToast.setGravity(Gravity.CENTER, 0, 0);
-        customToast.setDuration(duration);
-        customToast.setView(layout);
-        customToast.show();
-    }
 
-    public static void showCustomToast(Activity cActivity, String toastText, int icon_RID, int text_color_RID, int duration) {
-        LayoutInflater inflater = cActivity.getLayoutInflater();
-        View layout = inflater.inflate(R.layout.custom_toast, (ViewGroup) cActivity.findViewById(R.id.toast_layout_root));
-        TextView text = (TextView) layout.findViewById(R.id.toast_layout_text);
-        text.setText(toastText);
-        text.setTextColor(ContextCompat.getColor(cActivity, text_color_RID));
-        ImageView imageV = (ImageView) layout.findViewById(R.id.toast_img);
-        imageV.setImageResource(icon_RID);
-        Toast theCustomToast = new Toast(cActivity);
-        theCustomToast.setGravity(Gravity.CENTER_VERTICAL, 0, 0);
-        theCustomToast.setDuration(duration);
-        theCustomToast.setView(layout);
-        theCustomToast.show();
-    }
 
     public static void makeNoNetworkSnackBar(Activity mActivity) {
         noNetworkSnackBar = Snackbar.make(mActivity.findViewById(android.R.id.content), "No Network Connection", Snackbar.LENGTH_INDEFINITE)
                 .setActionTextColor(Color.RED)
-                .setAction("Dismiss", new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        noNetworkSnackBar.dismiss();
-                    }
-                });
+                .setAction("Dismiss", v -> noNetworkSnackBar.dismiss());
 
         snack_layout = (Snackbar.SnackbarLayout) noNetworkSnackBar.getView();
         if (snack_layout != null) {

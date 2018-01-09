@@ -73,6 +73,7 @@ import static com.cruz.sergio.myproteinpricechecker.SearchFragment.ADDED_NEW_PRO
 import static com.cruz.sergio.myproteinpricechecker.SearchFragment.PRZ_Domain;
 import static com.cruz.sergio.myproteinpricechecker.WatchingFragment.imageSizesToUse;
 import static com.cruz.sergio.myproteinpricechecker.helper.Alarm.LAST_DB_UPDATE_PREF_KEY;
+import static com.cruz.sergio.myproteinpricechecker.helper.MPUtils.showCustomSlimToast;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.IOEXCEPTION;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.MALFORMED_URL;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
@@ -82,7 +83,7 @@ import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.UNSUPPORTED_MIME_TYPE;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.UnregisterBroadcastReceiver;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.getHTMLDocument_with_NetCipher;
-import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.showCustomToast;
+import static com.cruz.sergio.myproteinpricechecker.helper.MPUtils.showCustomToast;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.userAgent;
 import static java.lang.Double.parseDouble;
 import static org.jsoup.helper.StringUtil.isBlank;
@@ -574,19 +575,19 @@ public class DetailsActivityProzis extends AppCompatActivity {
          int resultStatus = resultObject.resultStatus;
 
          if (resultStatus == STATUS_NOT_OK || resultStatus == IOEXCEPTION || resultStatus == MALFORMED_URL || resultStatus == UNSUPPORTED_MIME_TYPE) {
-            NetworkUtils.showCustomSlimToast(mActivity,
+            showCustomSlimToast(mActivity,
                 "Error connecting to " + url + " website\nException Code = " + resultStatus,
                 Toast.LENGTH_LONG);
 
          } else if (resultStatus == TIMEOUT) {
-            NetworkUtils.showCustomSlimToast(mActivity,
+            showCustomSlimToast(mActivity,
                 webstoreName + " website not responding.",
                 Toast.LENGTH_LONG);
 
          } else {
 
             if (resultDocument == null) {
-               NetworkUtils.showCustomSlimToast(mActivity,
+               showCustomSlimToast(mActivity,
                    "Failed getting product page.",
                    Toast.LENGTH_LONG);
             } else {
