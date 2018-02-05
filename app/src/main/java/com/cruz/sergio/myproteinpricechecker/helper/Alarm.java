@@ -151,7 +151,7 @@ public class Alarm extends BroadcastReceiver {
                 Log.w("Sergio>", "updatePricesOnStart: " + "cursor Size = 0, empty database!");
                 job_status = "empty db";
                 if (listener != null) {
-                    listener.onUpdateReady(false, isSingleLine);
+                    listener.onUpdateReady(false, isSingleLine, null);
                 }
             }
         }
@@ -264,7 +264,7 @@ public class Alarm extends BroadcastReceiver {
             }
 
             if (listener != null) {
-                listener.onUpdateReady(true, isSingleLine);
+                listener.onUpdateReady(true, isSingleLine, ProductsContract.ProductsEntry.buildProductsUri(cursorObj.row_id));
             }
         }
 
@@ -355,7 +355,7 @@ public class Alarm extends BroadcastReceiver {
 
     // This interface defines the type of messages I want to communicate to my owner
     public interface UpdateCompleteListener {
-        void onUpdateReady(Boolean isReady, Boolean isSingleLine);
+        void onUpdateReady(Boolean isReady, Boolean isSingleLine, Uri uri);
     }
 
     static class CursorObj {
@@ -431,7 +431,7 @@ public class Alarm extends BroadcastReceiver {
                 }
             } else {
                 if (listener != null) {
-                    listener.onUpdateReady(false, isSingleLine);
+                    listener.onUpdateReady(false, isSingleLine, null);
                 }
             }
         }

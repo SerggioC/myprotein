@@ -160,12 +160,7 @@ public class DetailsActivityProzis extends AppCompatActivity {
       detailsActivityIsActive = true;
 
       Toolbar toolbar = findViewById(R.id.toolbar);
-      toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-         @Override
-         public void onClick(View v) {
-            onBackPressed();
-         }
-      });
+      toolbar.setNavigationOnClickListener(v -> onBackPressed());
       int dpvalue = 6;
       float pixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dpvalue, getResources().getDisplayMetrics());
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -222,40 +217,31 @@ public class DetailsActivityProzis extends AppCompatActivity {
       alertTextView.setActivated(radio_target.isChecked());
       alertTextView.clearFocus();
 
-      alertSwitch.setOnClickListener(new View.OnClickListener() {
-         @Override
-         public void onClick(View v) {
-            radioGroup.setEnabled(alertSwitch.isChecked());
-            radio_every.setEnabled(alertSwitch.isChecked());
-            radio_target.setEnabled(alertSwitch.isChecked());
-            alertTextView.setEnabled(alertSwitch.isChecked() && radio_target.isChecked());
-            alertTextView.setActivated(alertSwitch.isChecked() && radio_target.isChecked());
-            alertTextView.setText(alertSwitch.isChecked() && radio_target.isChecked() ? String.valueOf(notify_value) : "");
-            textView1.setEnabled(alertSwitch.isChecked() && radio_target.isChecked());
-            textView1.setActivated(alertSwitch.isChecked() && radio_target.isChecked());
-         }
+      alertSwitch.setOnClickListener(v -> {
+         radioGroup.setEnabled(alertSwitch.isChecked());
+         radio_every.setEnabled(alertSwitch.isChecked());
+         radio_target.setEnabled(alertSwitch.isChecked());
+         alertTextView.setEnabled(alertSwitch.isChecked() && radio_target.isChecked());
+         alertTextView.setActivated(alertSwitch.isChecked() && radio_target.isChecked());
+         alertTextView.setText(alertSwitch.isChecked() && radio_target.isChecked() ? String.valueOf(notify_value) : "");
+         textView1.setEnabled(alertSwitch.isChecked() && radio_target.isChecked());
+         textView1.setActivated(alertSwitch.isChecked() && radio_target.isChecked());
       });
 
-      radio_every.setOnClickListener(new View.OnClickListener() {
-         @Override
-         public void onClick(View v) {
-            alertTextView.setEnabled(radio_target.isChecked());
-            alertTextView.setActivated(radio_target.isChecked());
-            alertTextView.setText(radio_target.isChecked() ? String.valueOf(notify_value) : "");
-            textView1.setEnabled(radio_target.isChecked());
-            textView1.setActivated(radio_target.isChecked());
-         }
+      radio_every.setOnClickListener(v -> {
+         alertTextView.setEnabled(radio_target.isChecked());
+         alertTextView.setActivated(radio_target.isChecked());
+         alertTextView.setText(radio_target.isChecked() ? String.valueOf(notify_value) : "");
+         textView1.setEnabled(radio_target.isChecked());
+         textView1.setActivated(radio_target.isChecked());
       });
 
-      radio_target.setOnClickListener(new View.OnClickListener() {
-         @Override
-         public void onClick(View v) {
-            alertTextView.setEnabled(radio_target.isChecked());
-            alertTextView.setActivated(radio_target.isChecked());
-            alertTextView.setText(radio_target.isChecked() ? String.valueOf(notify_value) : "");
-            textView1.setEnabled(radio_target.isChecked());
-            textView1.setActivated(radio_target.isChecked());
-         }
+      radio_target.setOnClickListener(v -> {
+         alertTextView.setEnabled(radio_target.isChecked());
+         alertTextView.setActivated(radio_target.isChecked());
+         alertTextView.setText(radio_target.isChecked() ? String.valueOf(notify_value) : "");
+         textView1.setEnabled(radio_target.isChecked());
+         textView1.setActivated(radio_target.isChecked());
       });
 
 
@@ -350,12 +336,9 @@ public class DetailsActivityProzis extends AppCompatActivity {
       }
 
 
-      mActivity.findViewById(R.id.open_in_browser).setOnClickListener(new View.OnClickListener() {
-         @Override
-         public void onClick(View v) {
-            Intent browser = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-            startActivity(browser);
-         }
+      mActivity.findViewById(R.id.open_in_browser).setOnClickListener(v -> {
+         Intent browser = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+         startActivity(browser);
       });
 
         /*

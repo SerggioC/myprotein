@@ -52,7 +52,7 @@ import static com.cruz.sergio.myproteinpricechecker.helper.ProductsContract.Prod
 
 public class WatchingFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor>, WatchingAdapter.RedrawRecyclerViewHandler {
    public static final int LOADER_ID = 0;
-   public static final int IMAGE_PERIOD = 5400; // (ms)
+   public static final int IMAGE_PERIOD = 2400; // (ms)
    public static DeletedProductListener delete_listener;
    static String[] imageSizesToUse;
    WatchingAdapter adapter;
@@ -94,14 +94,14 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
       Alarm alarm_jobservice = new Alarm();
       alarm_jobservice.setUpdateCompleteListener(new Alarm.UpdateCompleteListener() {
          @Override
-         public void onUpdateReady(Boolean isReady, Boolean isSingleLine) {
+         public void onUpdateReady(Boolean isReady, Boolean isSingleLine, Uri uri) {
             Log.w("Sergio>", this + "\n" + "onUpdateReady= " + isReady);
             if (WatchingFragment.this.isAdded()) {
                if (watchingSwipeRefreshLayout != null && !isSingleLine) {
                   watchingSwipeRefreshLayout.setRefreshing(false);
                }
                if (isReady || isSingleLine) {
-                  redrawListView();
+                  redrawListView(uri);
                }
             }
          }
@@ -116,14 +116,14 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
             TabLayout.Tab tab = tabLayout.getTabAt(MainActivity.TABS.WATCHING);
             tabLayout.setScrollPosition(MainActivity.TABS.WATCHING, 0f, true);
             if (tab != null) tab.select();
-            redrawListView();
+            redrawListView(ProductsContract.ProductsEntry.CONTENT_URI);
             addedNewProduct = addedNew;
          }
       });
 
       MainActivity.notifySettingsChanged = hasChanged -> {
          if (hasChanged) {
-            redrawListView();
+            redrawListView(ProductsContract.ProductsEntry.CONTENT_URI);
          }
       };
 
@@ -154,6 +154,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
       watching_recyclerView.setAdapter(adapter);
       watching_recyclerView.setLayoutManager(new LinearLayoutManager(getActivity().getApplicationContext(), LinearLayoutManager.VERTICAL, false));
       watching_recyclerView.setHasFixedSize(true);
+      //watching_recyclerView.notify();
 
       loaderManager = getActivity().getSupportLoaderManager().initLoader(LOADER_ID, null, this);
       //loaderManager.forceLoad();
@@ -190,6 +191,8 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
 //                .appendPath(ProductsContract.ProductsEntry.TABLE_NAME)
 //                .build();
 
+//    *> content://com.cruz.sergio.myproteinpricechecker/products
+
       Uri uri = ProductsContract.ProductsEntry.CONTENT_URI;
       Log.i("Sergio>>>", this + " onCreateLoader:  id= " + id + "\n" +
           "CONTENT_DIR_TYPE= " + CONTENT_DIR_TYPE + "\n" +
@@ -225,29 +228,38 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
       }
    }
 
-
    @Override
    public void onLoaderReset(Loader<Cursor> loader) {
       adapter.swapCursor(null);
    }
 
-   public void redrawListView() {
+   public void redrawListView(Uri uri) {
       timer.cancel();
       timer.purge();
       timer = new Timer();
-      getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
-      getActivity().getSupportLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
-      //loaderManager.forceLoad();
+      //getLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
+      //getActivity().getSupportLoaderManager().restartLoader(LOADER_ID, null, WatchingFragment.this);
+      getContext().getContentResolver().notifyChange(uri, null);
+      Log.d("Sergio>", "redrawListView() called");
    }
 
    @Override
    public void onRedrawRecyclerView(Boolean redraw) {
       Log.i("Sergio>", this + " onRedrawRecyclerView\nredraw= " + redraw);
-      if (redraw) redrawListView();
+      if (redraw) redrawListView(ProductsContract.ProductsEntry.CONTENT_URI);
    }
 
    interface DeletedProductListener {
       void onProductDeleted(Boolean deleted);
+   }
+
+
+   void dosomething() {
+      try {
+         Thread.sleep(2100);
+      } catch (InterruptedException e) {
+         e.printStackTrace();
+      }
    }
 
 

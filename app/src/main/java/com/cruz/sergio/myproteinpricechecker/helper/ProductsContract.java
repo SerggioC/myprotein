@@ -256,7 +256,7 @@ public class ProductsContract {
           CartsEntry.COLUMN_CART_ID
       };
 
-      public static Uri buildCartssUri(long id) {
+      public static Uri buildCartsUri(long id) {
          return ContentUris.withAppendedId(CONTENT_URI, id);
       }
 

@@ -3,6 +3,7 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/watch_ll_item"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -40,6 +41,7 @@
                 android:layout_marginRight="2dp"
                 android:layout_marginTop="4dp"
                 android:drawableLeft="@drawable/arrow"
+                android:drawableStart="@drawable/arrow"
                 android:textAlignment="viewStart"
                 android:textSize="16sp"/>
 
@@ -65,6 +67,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
+                    android:layout_toEndOf="@id/image_switcher"
                     android:layout_toRightOf="@id/image_switcher"
                     android:orientation="vertical">
 
@@ -74,8 +77,9 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="6dp"
                         android:layout_marginLeft="2dp"
-                        android:text="Brand"
-                        android:textSize="12sp"/>
+                        android:layout_marginStart="2dp"
+                        android:textSize="12sp"
+                        tools:text="MyProtein"/>
 
                     <LinearLayout
                         android:id="@+id/ll_highest_price"
@@ -93,9 +97,9 @@
                             android:drawableLeft="@drawable/ic_high_price"
                             android:drawablePadding="2dp"
                             android:gravity="center"
-                            android:text="0.00€"
                             android:textColor="@color/red"
-                            android:textSize="12sp"/>
+                            android:textSize="12sp"
+                            tools:text="0.00€"/>
 
 
                         <TextView
@@ -105,9 +109,9 @@
                             android:drawableLeft="@drawable/ic_updateclock"
                             android:drawablePadding="2dp"
                             android:gravity="center"
-                            android:text="Never"
                             android:textColor="@color/text_gray"
-                            android:textSize="10sp"/>
+                            android:textSize="10sp"
+                            tools:text="Never"/>
 
                     </LinearLayout>
 
@@ -126,9 +130,9 @@
                             android:drawableLeft="@drawable/ic_low_price"
                             android:drawablePadding="2dp"
                             android:gravity="center"
-                            android:text="0.00€"
                             android:textColor="@color/green"
-                            android:textSize="12sp"/>
+                            android:textSize="12sp"
+                            tools:text="0.00€"/>
 
 
                         <TextView
@@ -138,9 +142,9 @@
                             android:drawableLeft="@drawable/ic_updateclock"
                             android:drawablePadding="2dp"
                             android:gravity="center"
-                            android:text="Never"
                             android:textColor="@color/text_gray"
-                            android:textSize="10sp"/>
+                            android:textSize="10sp"
+                            tools:text="Never"/>
 
                     </LinearLayout>
 
@@ -179,10 +183,10 @@
                             android:id="@+id/item_current_price_textview"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="€0.00"
                             android:textColor="@color/colorPrimaryDark"
                             android:textSize="24sp"
-                            android:textStyle="bold"/>
+                            android:textStyle="bold"
+                            tools:text="€0.00"/>
 
                         <ImageView
                             android:id="@+id/up_down_arrow"
@@ -267,7 +271,8 @@
                         android:layout_marginRight="4dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:clickable="true"
-                        android:contentDescription="Set notification"/>
+                        android:contentDescription="Set notification"
+                        tools:src="@drawable/ic_notifications_active"/>
                 </LinearLayout>
 
             </LinearLayout>

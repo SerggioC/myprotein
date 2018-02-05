@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import static android.content.Context.MODE_PRIVATE;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
 import static com.cruz.sergio.myproteinpricechecker.R.id.webview;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.CheckGooglePlayServices;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.getHTMLDocument_with_NetCipher;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
@@ -116,7 +117,7 @@ public class VoucherFragment extends Fragment {
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            //Importante porque ao executar o ping bloqueia o interface7
+            //Importante porque ao executar o ping bloqueia o interface
             return NetworkUtils.hasActiveNetworkConnection(mActivity);
         }
 
@@ -168,6 +169,13 @@ public class VoucherFragment extends Fragment {
     }
 
     class GetMPVouchersAsync extends AsyncTask<String, Void, Document> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            CheckGooglePlayServices(VoucherFragment.this.getContext());
+        }
+
         @Override
         protected Document doInBackground(String... params) {
             Document resultDocument = null;
@@ -212,6 +220,13 @@ public class VoucherFragment extends Fragment {
     }
 
     class GetPRZVouchersAsync extends AsyncTask<String, Void, Document> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            CheckGooglePlayServices(VoucherFragment.this.getContext());
+        }
+
         @Override
         protected Document doInBackground(String... params) {
             Document resultDocument;

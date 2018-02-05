@@ -4,4 +4,6 @@
     <item type="id" name="viewholderid" />
     <item type="id" name="expanded" />
     <item type="id" name="view_position" />
+    <item type="id" name="timer" />
+    <item type="id" name="timertask" />
 </resources>

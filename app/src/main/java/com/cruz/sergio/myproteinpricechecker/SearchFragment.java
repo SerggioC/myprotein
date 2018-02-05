@@ -60,6 +60,7 @@ import static android.content.Context.MODE_PRIVATE;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
 import static com.cruz.sergio.myproteinpricechecker.helper.MPUtils.showCustomSlimToast;
 import static com.cruz.sergio.myproteinpricechecker.helper.MPUtils.showCustomToast;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.CheckGooglePlayServices;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.IOEXCEPTION;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.MALFORMED_URL;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
@@ -506,6 +507,7 @@ public class SearchFragment extends Fragment {
         protected void onPreExecute() {
             super.onPreExecute();
             hasAsyncTaskRuning = true;
+            CheckGooglePlayServices(SearchFragment.this.getContext());
         }
 
         @Override
@@ -674,6 +676,7 @@ public class SearchFragment extends Fragment {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+            CheckGooglePlayServices(SearchFragment.this.getContext());
             hasAsyncTaskRuning = true;
         }
 

@@ -35,6 +35,7 @@ import java.util.List;
 import static android.content.Context.MODE_PRIVATE;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.GETNEWS_ONSTART;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
+import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.CheckGooglePlayServices;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.NET_TIMEOUT;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.getHTMLDocument_with_NetCipher;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.makeNoNetworkSnackBar;
@@ -283,6 +284,12 @@ public class NewsFragment extends Fragment {
         String url;
 
         @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            CheckGooglePlayServices(NewsFragment.this.getContext());
+        }
+
+        @Override
         protected Document doInBackground(String... params) {
             this.url = params[0];
             Document resultDocument = null;
@@ -331,6 +338,12 @@ public class NewsFragment extends Fragment {
 
     class GetPRZNewsAsync extends AsyncTask<String, Void, Document> {
         String url;
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            CheckGooglePlayServices(NewsFragment.this.getContext());
+        }
 
         @Override
         protected Document doInBackground(String... params) {

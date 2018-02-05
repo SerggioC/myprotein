@@ -63,9 +63,10 @@ public class MPUtils {
       // Alternative Layout inflaters
       // Activity mActivity;
       // LayoutInflater inflater = mActivity.getLayoutInflater();
-      //             inflater.inflate(R.layout.custom_toast, (ViewGroup) mActivity.findViewById(R.id.toast_layout_root));
+      // inflater.inflate(R.layout.custom_toast, (ViewGroup) mActivity.findViewById(R.id.toast_layout_root));
       //  --- ou ---
-      // LayoutInflater inflater = LayoutInflater.from(context); => igual a context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+      // LayoutInflater inflater = LayoutInflater.from(context);
+      // => igual a context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
       //
 
 
@@ -84,7 +85,6 @@ public class MPUtils {
 
       LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
       View layout = inflater.inflate(R.layout.custom_toast, null);
-
 
       TextView text = layout.findViewById(R.id.toast_layout_text);
       text.setText(toastText);

@@ -3,8 +3,10 @@ package com.cruz.sergio.myproteinpricechecker.helper;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -16,8 +18,14 @@ import android.util.Log;
 import android.view.Gravity;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import com.cruz.sergio.myproteinpricechecker.R;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
+import com.google.android.gms.common.GooglePlayServicesRepairableException;
+import com.google.android.gms.security.ProviderInstaller;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -26,12 +34,21 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
+import java.net.Socket;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 
 import info.guardianproject.netcipher.NetCipher;
 
+import static android.content.Context.MODE_PRIVATE;
+import static com.cruz.sergio.myproteinpricechecker.MainActivity.PREFERENCE_FILE_NAME;
 import static com.cruz.sergio.myproteinpricechecker.MainActivity.scale;
+import static com.cruz.sergio.myproteinpricechecker.helper.MPUtils.showCustomToast;
 
 /*****
  *
@@ -97,7 +114,6 @@ public class NetworkUtils {
             return false;
         }
     }
-
 
 
     public static void makeNoNetworkSnackBar(Activity mActivity) {
@@ -180,6 +196,18 @@ public class NetworkUtils {
         StringBuilder stringBuilder = new StringBuilder();
         try {
             HttpsURLConnection netCipherconnection = NetCipher.getHttpsURLConnection(url);
+
+            SSLContext sslContext = null;
+            try {
+                sslContext = SSLContext.getInstance("TLS");
+                sslContext.init(null, null, null);
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            } catch (KeyManagementException e) {
+                e.printStackTrace();
+            }
+            SSLSocketFactory noSSLv3Factory = new TLSSocketFactory(sslContext.getSocketFactory());
+            netCipherconnection.setSSLSocketFactory(noSSLv3Factory);
             netCipherconnection.connect();
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(netCipherconnection.getInputStream()));
             String stringHTML;
@@ -189,7 +217,121 @@ public class NetworkUtils {
         } catch (IOException e) {
             e.printStackTrace();
             return null;
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (KeyManagementException e) {
+            e.printStackTrace();
         }
         return Jsoup.parse(String.valueOf(stringBuilder));
     }
+
+    public static void CheckGooglePlayServices(Context context) {
+        // This method should run on the main UI thread!
+        SharedPreferences sharedPrefEditor = context.getSharedPreferences(PREFERENCE_FILE_NAME, MODE_PRIVATE);
+        boolean gms_installed = sharedPrefEditor.getBoolean("gms_installed", context.getResources().getBoolean(R.bool.gms_installed));
+        if (gms_installed) return;
+        try {
+            ProviderInstaller.installIfNeeded(context);
+        } catch (GooglePlayServicesRepairableException e) {
+            // Indicates that Google Play services is out of date, disabled, etc.
+            // Prompt the user to install/update/enable Google Play services.
+            GoogleApiAvailability googleAPI = GoogleApiAvailability.getInstance();
+            if (googleAPI.isGooglePlayServicesAvailable(context) != ConnectionResult.SUCCESS) {
+                googleAPI.showErrorDialogFragment((Activity) context, 1, 2, new DialogInterface.OnCancelListener() {
+                    /**
+                     * This method will be invoked when the dialog is canceled.
+                     * @param dialog the dialog that was canceled will be passed into the method
+                     */
+                    @Override
+                    public void onCancel(DialogInterface dialog) {
+                        showCustomToast(context, "This app might not function properly until you install GooglePlayServices",
+                                R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
+                    }
+                });
+            }
+            return;
+
+        } catch (GooglePlayServicesNotAvailableException e) {
+            // Indicates a non-recoverable error; the ProviderInstaller is not able
+            // to install an up-to-date Provider.
+            showCustomToast(context, "GooglePlayServices not available.\n" +
+                            "This app might not function properly until you install GooglePlayServices.",
+                    R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
+            //"https://www.apkmirror.com/apk/google-inc/google-play-store/google-play-store-8-8-12-release/"
+            return;
+        }
+
+        // If this is reached, you know that the provider was already up-to-date,
+        // or was successfully updated.
+        sharedPrefEditor.edit().putBoolean("gms_installed", true);
+
+    }
+
+
+    public static class TLSSocketFactory extends SSLSocketFactory {
+
+        /*
+         * Utility methods
+         */
+        static String TLS_v1_1 = "TLSv1.1";
+        static String TLS_v1_2 = "TLSv1.2";
+        private SSLSocketFactory internalSSLSocketFactory;
+
+        public TLSSocketFactory(SSLSocketFactory delegate) throws KeyManagementException, NoSuchAlgorithmException {
+            internalSSLSocketFactory = delegate;
+        }
+
+        private static Socket enableTLSOnSocket(Socket socket) {
+            if (socket != null && (socket instanceof SSLSocket) && isTLSServerEnabled((SSLSocket) socket)) { // skip the fix if server doesn't provide there TLS version
+                ((SSLSocket) socket).setEnabledProtocols(new String[]{TLS_v1_1, TLS_v1_2});
+            }
+            return socket;
+        }
+
+        private static boolean isTLSServerEnabled(SSLSocket sslSocket) {
+            System.out.println("__prova__ :: " + sslSocket.getSupportedProtocols().toString());
+            for (String protocol : sslSocket.getSupportedProtocols()) {
+                if (protocol.equals(TLS_v1_1) || protocol.equals(TLS_v1_2)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public String[] getDefaultCipherSuites() {
+            return internalSSLSocketFactory.getDefaultCipherSuites();
+        }
+
+        @Override
+        public String[] getSupportedCipherSuites() {
+            return internalSSLSocketFactory.getSupportedCipherSuites();
+        }
+
+        @Override
+        public Socket createSocket(Socket s, String host, int port, boolean autoClose) throws IOException {
+            return enableTLSOnSocket(internalSSLSocketFactory.createSocket(s, host, port, autoClose));
+        }
+
+        @Override
+        public Socket createSocket(String host, int port) throws IOException {
+            return enableTLSOnSocket(internalSSLSocketFactory.createSocket(host, port));
+        }
+
+        @Override
+        public Socket createSocket(String host, int port, InetAddress localHost, int localPort) throws IOException {
+            return enableTLSOnSocket(internalSSLSocketFactory.createSocket(host, port, localHost, localPort));
+        }
+
+        @Override
+        public Socket createSocket(InetAddress host, int port) throws IOException {
+            return enableTLSOnSocket(internalSSLSocketFactory.createSocket(host, port));
+        }
+
+        @Override
+        public Socket createSocket(InetAddress address, int port, InetAddress localAddress, int localPort) throws IOException {
+            return enableTLSOnSocket(internalSSLSocketFactory.createSocket(address, port, localAddress, localPort));
+        }
+    }
+
 }
