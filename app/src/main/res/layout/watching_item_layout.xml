@@ -194,7 +194,6 @@
                             android:layout_height="15dp"/>
 
                     </LinearLayout>
-
                     <TextView
                         android:id="@+id/current_info"
                         android:layout_width="match_parent"

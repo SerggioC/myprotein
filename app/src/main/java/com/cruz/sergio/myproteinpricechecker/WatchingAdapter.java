@@ -89,8 +89,8 @@ import static com.cruz.sergio.myproteinpricechecker.helper.MPUtils.showCustomToa
  */
 
 public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-    private static final int VIEW_TYPE_HEADER = 0;
-    private static final int VIEW_TYPE_ITEM = 1;
+    protected static final int VIEW_TYPE_HEADER = 0;
+    protected static final int VIEW_TYPE_ITEM = 1;
     private final Context mContext;
     SharedPreferences defaultSharedPreferences;
     Boolean[] isExpandedArray = null;
@@ -189,9 +189,10 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     @Override
     public void onViewRecycled(RecyclerView.ViewHolder holder) {
         super.onViewRecycled(holder);
+
         int adapterPosition = holder.getAdapterPosition();
         int itemViewType = getItemViewType(adapterPosition);
-        if (itemViewType <= VIEW_TYPE_HEADER) {
+        if (itemViewType == VIEW_TYPE_HEADER) {
             return;
         }
 
@@ -200,8 +201,11 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             WatchingViewHolder viewHolder = (WatchingViewHolder) holder;
             ((TimerTask) viewHolder.imageSwitcher.getTag(R.id.timertask)).cancel();
             ((Timer) viewHolder.imageSwitcher.getTag(R.id.timer)).cancel();
+            viewHolder.currentInfo.setText("");
+            viewHolder.info_top.setText("");
+            viewHolder.up_down_icon.setImageDrawable(null);
+            viewHolder.ll_current_price.setBackground(null);
         }
-
 
     }
 
@@ -282,17 +286,17 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
      *
      * @param holder    The ViewHolder which should be updated to represent the contents of the
      *                  item at the given position in the data set.
-     * @param positione The position of the item within the adapter's data set.
+     * @param position The position of the item within the adapter's data set.
      */
     @Override
-    public void onBindViewHolder(RecyclerView.ViewHolder holder, int positione) {
-        int position = holder.getAdapterPosition();
-        mCursor.moveToPosition(position);
+    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+        final int this_position = holder.getAdapterPosition();
+        mCursor.moveToPosition(this_position);
 
-        if (getItemViewType(position) == VIEW_TYPE_HEADER) {
+        if (getItemViewType(this_position) == VIEW_TYPE_HEADER) {
             // Casting to the desired viewHolder
             HeaderViewHolder headerViewHolder = (HeaderViewHolder) holder;
-            BindHeaderView(headerViewHolder, position);
+            BindHeaderView(headerViewHolder, this_position);
             return;
         }
 
@@ -428,7 +432,7 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             Glide.with(mContext).load(R.drawable.noimage).asBitmap().format(PREFER_ARGB_8888).asIs().dontTransform().into(iv);
         }
 
-        String str_title = prod_name + " " + options_sabor + " " + options_caixa + " " + options_quant + " position= " + position;
+        String str_title = prod_name + " " + options_sabor + " " + options_caixa + " " + options_quant + " position= " + this_position;
         viewHolder.titleView.setText(str_title);
         viewHolder.product_brand.setText(productBrand);
         viewHolder.highestPriceView.setText(max_price_string);
@@ -456,7 +460,7 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 }
 
                 viewHolder.currentInfo.setVisibility(View.VISIBLE);
-                viewHolder.currentInfo.setText(showPercent[position] ? percentStr : absDiffStr);
+                viewHolder.currentInfo.setText(showPercent[this_position] ? percentStr : absDiffStr);
                 viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mContext, R.color.dark_green));
                 viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mContext, R.drawable.down_arrow));
 
@@ -475,7 +479,7 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                     hasPercent = true;
                 }
                 viewHolder.currentInfo.setVisibility(View.VISIBLE);
-                viewHolder.currentInfo.setText(showPercent[position] ? percentStr : absDiffStr);
+                viewHolder.currentInfo.setText(showPercent[this_position] ? percentStr : absDiffStr);
                 viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mContext, R.color.red));
                 viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mContext, R.drawable.up_arrow));
             }
@@ -491,11 +495,11 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 }
 
                 viewHolder.info_top.setVisibility(View.VISIBLE);
-                viewHolder.info_top.setText("Highest price!");
+                viewHolder.info_top.setText("Highest price!"+"\n"+"position= " + this_position);
                 viewHolder.info_top.setTextColor(ContextCompat.getColor(mContext, R.color.red));
 
                 viewHolder.currentInfo.setVisibility(View.VISIBLE);
-                viewHolder.currentInfo.setText(showPercent[position] ? percentStr : absDiffStr);
+                viewHolder.currentInfo.setText(showPercent[this_position] ? percentStr : absDiffStr);
                 viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mContext, R.color.red));
                 viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mContext, R.drawable.up_arrow));
                 viewHolder.ll_current_price.setBackground(ContextCompat.getDrawable(mContext, R.drawable.ll_red_bg));
@@ -516,7 +520,7 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 viewHolder.info_top.setTextColor(ContextCompat.getColor(mContext, R.color.dark_green));
 
                 viewHolder.currentInfo.setVisibility(View.VISIBLE);
-                viewHolder.currentInfo.setText(showPercent[position] ? percentStr : absDiffStr);
+                viewHolder.currentInfo.setText(showPercent[this_position] ? percentStr : absDiffStr);
                 viewHolder.currentInfo.setTextColor(ContextCompat.getColor(mContext, R.color.dark_green));
                 viewHolder.up_down_icon.setImageDrawable(ContextCompat.getDrawable(mContext, R.drawable.down_arrow));
                 viewHolder.ll_current_price.setBackground(ContextCompat.getDrawable(mContext, R.drawable.ll_green_bg));
@@ -526,7 +530,7 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             if (hasPercent) {
                 String finalPercentStr = percentStr;
                 String finalAbsoluteDiff = absDiffStr;
-                int finalPosition = position;
+                int finalPosition = this_position;
                 viewHolder.llPriceInfo.setOnClickListener(v -> {
                     if (showPercent[finalPosition]) {
                         viewHolder.currentInfo.setText(finalAbsoluteDiff);
@@ -541,7 +545,7 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
         } else {
 
-            SpannableStringBuilder ssb_title = new SpannableStringBuilder(str_title + " (Not available)" + " position= " + position);
+            SpannableStringBuilder ssb_title = new SpannableStringBuilder(str_title + " (Not available)" + " position= " + this_position);
             ssb_title.setSpan(new ForegroundColorSpan(Color.RED), str_title.length(), ssb_title.length(), SPAN_EXCLUSIVE_EXCLUSIVE);
             ssb_title.setSpan(new RelativeSizeSpan(0.9f), str_title.length(), ssb_title.length(), SPAN_EXCLUSIVE_EXCLUSIVE);
             viewHolder.titleView.setText(ssb_title);
