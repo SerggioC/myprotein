@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
@@ -50,7 +49,6 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
-import com.cruz.sergio.myproteinpricechecker.helper.DBHelper;
 import com.cruz.sergio.myproteinpricechecker.helper.ProductsContract;
 
 import org.json.JSONArray;
@@ -94,18 +92,32 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     private final Context mContext;
     SharedPreferences defaultSharedPreferences;
     Boolean[] isExpandedArray = null;
+    int lastExpandedPosition = -1;
     RedrawRecyclerViewHandler redrawHandler;
     private Cursor mCursor;
     private Boolean[] showPercent = null;
     private Boolean globalNotifications = null;
-
+    private RecyclerView recyclerView;
 
     public WatchingAdapter(Context context, RedrawRecyclerViewHandler handler) {
         this.mContext = context;
         this.redrawHandler = handler;
     }
 
-    public static void expandIt(final View view, Boolean isLastItem) {
+    public void expandIt(final View view, TextView textview, Boolean isLastItem, int position) {
+
+        if (lastExpandedPosition != position) {
+            WatchingViewHolder viewHolderForAdapterPosition = (WatchingViewHolder) recyclerView.findViewHolderForAdapterPosition(lastExpandedPosition);
+            if (viewHolderForAdapterPosition != null) {
+                collapseIt(viewHolderForAdapterPosition.under_cardview, viewHolderForAdapterPosition.expand_underview_tv, lastExpandedPosition);
+            }
+        }
+
+        lastExpandedPosition = position;
+        textview.setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mContext, R.drawable.ic_expand_less_black_24dp), null, null, null);
+        textview.setText("Close");
+        isExpandedArray[position] = true;
+
         view.measure(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         final int targetHeight = view.getMeasuredHeight();
         // Older versions of android (pre API 21) cancel animations for views with a height of 0.
@@ -123,8 +135,8 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 return true;
             }
         };
-        // 1dp/ms
-        animation.setDuration((int) (targetHeight / view.getContext().getResources().getDisplayMetrics().density));
+        // animation speed: 1dp/ms
+        animation.setDuration((int) (targetHeight / (view.getContext().getResources().getDisplayMetrics().density) * 1.5));
         view.startAnimation(animation);
 
         if (isLastItem) {
@@ -139,14 +151,18 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
                 @Override
                 public void onAnimationEnd(Animation arg0) {
-                    android.support.v7.widget.RecyclerView recyclerView = view.getRootView().findViewById(R.id.watching_recyclerview);
                     recyclerView.smoothScrollToPosition(recyclerView.getMeasuredHeight());
                 }
             });
         }
     }
 
-    public static void collapseIt(final View view) {
+    public void collapseIt(final View view, TextView textView, int position) {
+        lastExpandedPosition = -1;
+        isExpandedArray[position] = false;
+        textView.setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mContext, R.drawable.ic_expand_more), null, null, null);
+        textView.setText("Details");
+
         final int initialHeight = view.getMeasuredHeight();
         Animation animation = new Animation() {
             @Override
@@ -165,8 +181,22 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             }
         };
         // 1dp/ms
-        animation.setDuration((int) (initialHeight / view.getContext().getResources().getDisplayMetrics().density));
+        animation.setDuration((int) (initialHeight / (view.getContext().getResources().getDisplayMetrics().density) * 1.5));
         view.startAnimation(animation);
+    }
+
+    /**
+     * Called by RecyclerView when it starts observing this Adapter.
+     * <p>
+     * Keep in mind that same adapter may be observed by multiple RecyclerViews.
+     *
+     * @param recyclerView The RecyclerView instance which started observing this adapter.
+     * @see #onDetachedFromRecyclerView(RecyclerView)
+     */
+    @Override
+    public void onAttachedToRecyclerView(RecyclerView recyclerView) {
+        super.onAttachedToRecyclerView(recyclerView);
+        this.recyclerView = recyclerView;
     }
 
     /**
@@ -189,7 +219,6 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     @Override
     public void onViewRecycled(RecyclerView.ViewHolder holder) {
         super.onViewRecycled(holder);
-
         int adapterPosition = holder.getAdapterPosition();
         int itemViewType = getItemViewType(adapterPosition);
         if (itemViewType == VIEW_TYPE_HEADER) {
@@ -205,6 +234,10 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             viewHolder.info_top.setText("");
             viewHolder.up_down_icon.setImageDrawable(null);
             viewHolder.ll_current_price.setBackground(null);
+            if (adapterPosition < 0) return;
+            if (isExpandedArray[adapterPosition]) {
+                collapseIt(viewHolder.under_cardview, viewHolder.expand_underview_tv, adapterPosition);
+            }
         }
 
     }
@@ -284,8 +317,8 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
      * Override {@link #onBindViewHolder(RecyclerView.ViewHolder, int)} instead if Adapter can
      * handle efficient partial bind.
      *
-     * @param holder    The ViewHolder which should be updated to represent the contents of the
-     *                  item at the given position in the data set.
+     * @param holder   The ViewHolder which should be updated to represent the contents of the
+     *                 item at the given position in the data set.
      * @param position The position of the item within the adapter's data set.
      */
     @Override
@@ -303,7 +336,7 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         // Casting to the desired viewHolder
         WatchingViewHolder viewHolder = (WatchingViewHolder) holder;
 
-        expandOrCollapse(viewHolder.under_cardview, viewHolder.expand_underview_tv, mCursor);
+        expandOrCollapse(viewHolder.under_cardview, viewHolder.expand_underview_tv, this_position);
 
         //final int position = view.getTag(R.id.view_position) == null ? -1 : (int) view.getTag(R.id.view_position);
         //final int this_product_id = mCursor.getInt(ProductsContract.ProductsEntry._ID_INDEX);
@@ -432,7 +465,7 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             Glide.with(mContext).load(R.drawable.noimage).asBitmap().format(PREFER_ARGB_8888).asIs().dontTransform().into(iv);
         }
 
-        String str_title = prod_name + " " + options_sabor + " " + options_caixa + " " + options_quant + " position= " + this_position;
+        String str_title = prod_name + " " + options_sabor + " " + options_caixa + " " + options_quant;
         viewHolder.titleView.setText(str_title);
         viewHolder.product_brand.setText(productBrand);
         viewHolder.highestPriceView.setText(max_price_string);
@@ -495,7 +528,7 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 }
 
                 viewHolder.info_top.setVisibility(View.VISIBLE);
-                viewHolder.info_top.setText("Highest price!"+"\n"+"position= " + this_position);
+                viewHolder.info_top.setText("Highest price!");
                 viewHolder.info_top.setTextColor(ContextCompat.getColor(mContext, R.color.red));
 
                 viewHolder.currentInfo.setVisibility(View.VISIBLE);
@@ -545,7 +578,7 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
         } else {
 
-            SpannableStringBuilder ssb_title = new SpannableStringBuilder(str_title + " (Not available)" + " position= " + this_position);
+            SpannableStringBuilder ssb_title = new SpannableStringBuilder(str_title + " (Not available)");
             ssb_title.setSpan(new ForegroundColorSpan(Color.RED), str_title.length(), ssb_title.length(), SPAN_EXCLUSIVE_EXCLUSIVE);
             ssb_title.setSpan(new RelativeSizeSpan(0.9f), str_title.length(), ssb_title.length(), SPAN_EXCLUSIVE_EXCLUSIVE);
             viewHolder.titleView.setText(ssb_title);
@@ -621,6 +654,7 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
     /**
      * Returns the total number of items in the data set held by the adapter.
+     *
      * @return The total number of items in this adapter.
      */
     @Override
@@ -650,7 +684,7 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         return bd.toString();
     }
 
-    public void expandOrCollapse(View view, TextView expand_underview_tv, Cursor cursor) {
+    public void expandOrCollapse(View view, TextView expand_underview_tv, int position) {
         int itemCount = getItemCount();
         if (isExpandedArray == null || isExpandedArray.length != itemCount) {
             isExpandedArray = new Boolean[itemCount];
@@ -658,11 +692,8 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 isExpandedArray[i] = false;
             }
         }
-        if (isExpandedArray[cursor.getPosition()]) {
-            expandIt(view, false);
-            //TextView textView = ((LinearLayout) view.getParent()).findViewById(R.id.expand_underview_tv);
-            expand_underview_tv.setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mContext, R.drawable.ic_expand_less_black_24dp), null, null, null);
-            expand_underview_tv.setText("Close");
+        if (isExpandedArray[position]) {
+            expandIt(view, expand_underview_tv, false, position);
         }
     }
 
@@ -963,7 +994,7 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         ObjectAnimator alphaAnim2 = ObjectAnimator.ofFloat(under_view, "alpha", 1f, 0f);
         ObjectAnimator transAnim2 = ObjectAnimator.ofFloat(under_view, "translationX", under_view.getWidth());
         animSet.playTogether(transAnim, alphaAnim, alphaAnim2, transAnim2);
-        animSet.setDuration(250);
+        animSet.setDuration(350);
         animSet.start();
         animSet.addListener(new Animator.AnimatorListener() {
             @Override
@@ -1147,77 +1178,69 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
         }
 
+
         //
         // Handling clicks in the hidden cardview
         //
         void UnderViewClickHandler() {
             expand_underview_tv.setOnClickListener(v -> {
+                if (mCursor == null) return;
 
-                if (mCursor != null) {
+                int position = getAdapterPosition();
+                mCursor.moveToPosition(position);
+                String this_product_id = String.valueOf(mCursor.getInt(mCursor.getColumnIndex(ProductsContract.ProductsEntry._ID)));
 
-                    int position = getAdapterPosition();
-                    mCursor.moveToPosition(position);
-                    String this_product_id = String.valueOf(mCursor.getInt(mCursor.getColumnIndex(ProductsContract.ProductsEntry._ID)));
+                //UPDATE THIS ITEM ONLY
+                update_this_entry_icon.setOnClickListener(v1 -> {
+                    //updatePricesOnStart(mContext, false, true, String.valueOf(this_product_id));
+                    updatePricesOnReceive(mContext, false, true, this_product_id);
+                    v1.setVisibility(View.GONE);
+                    small_pb_undercard.setVisibility(View.VISIBLE);
+                });
 
-                    //UPDATE THIS ITEM ONLY
-                    update_this_entry_icon.setOnClickListener(v1 -> {
+                delete_entry.setOnClickListener(v12 -> {
 
-                        //updatePricesOnStart(mContext, false, true, String.valueOf(this_product_id));
-                        updatePricesOnReceive(mContext, false, true, this_product_id);
-                        v1.setVisibility(View.GONE);
-                        small_pb_undercard.setVisibility(View.VISIBLE);
-                    });
+                    AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(mContext);
+                    alertDialogBuilder.setTitle("Delete Product?");
+                    alertDialogBuilder.setIcon(R.mipmap.ic_error);
+                    alertDialogBuilder
+                            .setMessage("Are you sure you want to delete this entry?\nAll logged prices for this product will be lost!")
+                            .setCancelable(true)
+                            .setPositiveButton("Yes", (dialog, id) -> {
+//                                    DBHelper dbHelper = new DBHelper(mContext);
+//                                    SQLiteDatabase db = dbHelper.getWritableDatabase();
+//                                    int entries_deleted = db.delete(ProductsContract.ProductsEntry.TABLE_NAME, "_ID=" + "'" + this_product_id + "'", null);
+//                                    db.close();
 
-                    delete_entry.setOnClickListener(v12 -> {
+                                int entries_deleted = mContext.getContentResolver()
+                                        .delete(ProductsContract.ProductsEntry.CONTENT_URI.buildUpon().appendPath(this_product_id).build(),
+                                                null, null);
 
-                        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(mContext);
-                        alertDialogBuilder.setTitle("Delete Product?");
-                        alertDialogBuilder.setIcon(R.mipmap.ic_error);
-                        alertDialogBuilder
-                                .setMessage("Are you sure you want to delete this entry?\nAll logged prices for this product will be lost!")
-                                .setCancelable(true)
-                                .setPositiveButton("Yes", (dialog, id) -> {
-                                    DBHelper dbHelper = new DBHelper(mContext);
-                                    SQLiteDatabase db = dbHelper.getWritableDatabase();
-                                    int delete_db_entries_result = db.delete(ProductsContract.ProductsEntry.TABLE_NAME, "_ID=" + "'" + this_product_id + "'", null);
-                                    db.close();
+                                String string_array_images = mCursor.getString(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGES_INDEX);
+                                deleteImageFiles(string_array_images);// ignoring delete result
 
-                                    String string_array_images = mCursor.getString(ProductsContract.ProductsEntry.COLUMN_ARRAYLIST_IMAGES_INDEX);
-                                    deleteImageFiles(string_array_images);
+                                final String prod_name = mCursor.getString(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME_INDEX);
 
-                                    final String prod_name = mCursor.getString(ProductsContract.ProductsEntry.COLUMN_PRODUCT_NAME_INDEX);
+                                if (entries_deleted == 1) {
+                                    animateRemoving(main_cardView, under_cardview, prod_name);
+                                } else {
+                                    showCustomToast(mContext, "Error deleting " + prod_name + " from DataBase!",
+                                            R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
+                                }
 
-                                    if (delete_db_entries_result == 1) {
-                                        animateRemoving(main_cardView, under_cardview, prod_name);
-                                    } else {
-                                        showCustomToast(mContext, "Error deleting " + prod_name + " from DataBase!",
-                                                R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
-                                    }
+                            })
+                            .setNegativeButton("Cancel", (dialog, id) -> dialog.cancel());
 
-                                })
-                                .setNegativeButton("Cancel", (dialog, id) -> dialog.cancel());
+                    AlertDialog alertDialog = alertDialogBuilder.create();
+                    alertDialog.show();
+                });
 
-                        AlertDialog alertDialog = alertDialogBuilder.create();
-                        alertDialog.show();
-                    });
-
-                    Boolean isExpanded = isExpandedArray[position];
-                    if (isExpanded) {
-                        ((TextView) v).setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mContext, R.drawable.ic_expand_more), null, null, null);
-                        ((TextView) v).setText("Details");
-                        collapseIt(under_cardview);
-                        isExpandedArray[position] = false;
-                    } else {
-                        ((TextView) v).setCompoundDrawablesWithIntrinsicBounds(ContextCompat.getDrawable(mContext, R.drawable.ic_expand_less_black_24dp), null, null, null);
-                        ((TextView) v).setText("Close");
-                        if (position == mCursor.getCount() - 1) {
-                            expandIt(under_cardview, true);
-                        } else {
-                            expandIt(under_cardview, false);
-                        }
-                        isExpandedArray[position] = true;
-                    }
+                if (isExpandedArray[position]) {
+                    collapseIt(under_cardview, expand_underview_tv, position);
+                } else {
+                    expandIt(under_cardview, expand_underview_tv, position == mCursor.getCount() - 1, position);
                 }
+
             });
         }
 
@@ -1306,8 +1329,8 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         .setMessage("Edit notification settings for this item.")
                         .setCancelable(true)
                         .setPositiveButton("Save", (dialog, id) -> {
-                            DBHelper dbHelper = new DBHelper(mContext);
-                            SQLiteDatabase db = dbHelper.getWritableDatabase();
+//                            DBHelper dbHelper = new DBHelper(mContext);
+//                            SQLiteDatabase db = dbHelper.getWritableDatabase();
 
                             double target_val;
                             String target_val_str = alertTextView[0].getText().toString();
@@ -1330,7 +1353,13 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                             contentValues.put(ProductsContract.ProductsEntry.COLUMN_NOTIFICATIONS, alertSwitch[0].isChecked() ? 1 : 0);
 
                             int this_ID = mCursor.getInt(mCursor.getColumnIndex(ProductsContract.ProductsEntry._ID));
-                            int update_result = db.update(ProductsContract.ProductsEntry.TABLE_NAME, contentValues, "_ID=" + "'" + this_ID + "'", null);
+//                            int update_result = db.update(ProductsContract.ProductsEntry.TABLE_NAME, contentValues, "_ID=" + "'" + this_ID + "'", null);
+//                            db.close();
+                            int update_result = mContext.getContentResolver()
+                                    .update(ProductsContract.ProductsEntry.CONTENT_URI.buildUpon().appendPath(String.valueOf(this_ID)).build(),
+                                            contentValues,
+                                            null,
+                                            null);
 
                             if (update_result == 1) {
                                 redrawHandler.onRedrawRecyclerView(true);
@@ -1349,7 +1378,6 @@ public class WatchingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                                 showCustomToast(mContext, "Error updating notifications!",
                                         R.mipmap.ic_error, R.color.red, Toast.LENGTH_LONG);
                             }
-
 
                         })
                         .setNegativeButton("Cancel", (dialog, id) -> dialog.cancel());

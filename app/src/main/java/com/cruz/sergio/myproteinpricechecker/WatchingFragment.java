@@ -150,6 +150,7 @@ public class WatchingFragment extends Fragment implements LoaderManager.LoaderCa
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View rootview = inflater.inflate(R.layout.watching_fragment, null);
 
+
         adapter = new WatchingAdapter(this.getContext(), this);
 
         android.support.v7.widget.RecyclerView watching_recyclerView = rootview.findViewById(R.id.watching_recyclerview);

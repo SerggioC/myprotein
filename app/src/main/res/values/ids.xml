@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <item type="id" name="viewholder" />
-    <item type="id" name="viewholderid" />
-    <item type="id" name="expanded" />
-    <item type="id" name="view_position" />
-    <item type="id" name="timer" />
-    <item type="id" name="timertask" />
+    <item name="viewholder" type="id"/>
+    <item name="viewholderid" type="id"/>
+    <item name="is_expanded" type="id"/>
+    <item name="show_percent" type="id"/>
+    <item name="view_position" type="id"/>
+    <item name="timer" type="id"/>
+    <item name="timertask" type="id"/>
 </resources>
