@@ -23,23 +23,11 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 import com.cruz.sergio.myproteinpricechecker.helper.Alarm;
 import com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils;
 import com.cruz.sergio.myproteinpricechecker.helper.ProzisDomain;
 
 import org.jsoup.nodes.Document;
-
-import java.util.List;
-
-import retrofit2.Call;
-import retrofit2.http.GET;
-import retrofit2.http.Path;
 
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.CheckGooglePlayServices;
 import static com.cruz.sergio.myproteinpricechecker.helper.NetworkUtils.UnregisterBroadcastReceiver;
@@ -291,26 +279,26 @@ public class MainActivity extends AppCompatActivity {
    }
 
 
-   public void test2with_Volley(String url) {
-      // Instantiate the RequestQueue.
-      RequestQueue queue = Volley.newRequestQueue(this);
-
-      // Request a string response from the provided URL.
-      StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
-          new Response.Listener<String>() {
-             @Override
-             public void onResponse(String response) {
-                Log.i("Sergio>", this + " onResponse\nresponse= " + response);
-             }
-          }, new Response.ErrorListener() {
-         @Override
-         public void onErrorResponse(VolleyError error) {
-            Log.w("Sergio>", this + "onErrorResponse: \n" + "error= " + error);
-         }
-      });
-      // Add the request to the RequestQueue.
-      queue.add(stringRequest);
-   }
+//   public void test2with_Volley(String url) {
+//      // Instantiate the RequestQueue.
+//      RequestQueue queue = Volley.newRequestQueue(this);
+//
+//      // Request a string response from the provided URL.
+//      StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+//          new Response.Listener<String>() {
+//             @Override
+//             public void onResponse(String response) {
+//                Log.i("Sergio>", this + " onResponse\nresponse= " + response);
+//             }
+//          }, new Response.ErrorListener() {
+//         @Override
+//         public void onErrorResponse(VolleyError error) {
+//            Log.w("Sergio>", this + "onErrorResponse: \n" + "error= " + error);
+//         }
+//      });
+//      // Add the request to the RequestQueue.
+//      queue.add(stringRequest);
+//   }
 
    public void test1(String url) {
       new AsyncTask<Void, Void, Document>() {
@@ -426,10 +414,10 @@ public class MainActivity extends AppCompatActivity {
       }
    }
 
-   public interface GitHubService {
-      @GET("users/{user}/repos")
-      Call<List<String>> listRepos(@Path("user") String user);
-   }
+//   public interface GitHubService {
+//      @GET("users/{user}/repos")
+//      Call<List<String>> listRepos(@Path("user") String user);
+//   }
 
    public interface ChangedNotifySettings {
       void onNotifySettingsChanged(Boolean hasChanged);
